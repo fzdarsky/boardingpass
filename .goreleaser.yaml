@@ -1,0 +1,95 @@
+version: 2
+
+project_name: boardingpass
+
+before:
+  hooks:
+    - go mod download
+    - go mod tidy
+
+builds:
+  - id: boardingpass
+    main: ./cmd/boardingpass
+    binary: boardingpass
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    flags:
+      - -trimpath
+
+archives:
+  - id: boardingpass
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+      - build/boardingpass.service
+      - build/boardingpass.sudoers
+      - build/password-generator.example
+
+nfpms:
+  - id: boardingpass
+    package_name: boardingpass
+    vendor: BoardingPass Project
+    homepage: https://github.com/fzdarsky/boardingpass
+    maintainer: BoardingPass Team
+    description: Lightweight ephemeral bootstrap service for headless Linux devices
+    license: Apache-2.0
+    formats:
+      - rpm
+      - deb
+    dependencies:
+      - systemd
+    contents:
+      - src: build/boardingpass.service
+        dst: /usr/lib/systemd/system/boardingpass.service
+        type: config
+      - src: build/boardingpass.sudoers
+        dst: /etc/sudoers.d/boardingpass
+        type: config
+        file_info:
+          mode: 0440
+      - src: build/password-generator.example
+        dst: /usr/share/doc/boardingpass/password-generator.example
+    scripts:
+      preinstall: build/scripts/install-hooks.sh
+    rpm:
+      group: System Environment/Daemons
+      compression: xz
+    deb:
+      compression: xz
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+dist: _output/dist
+
+release:
+  github:
+    owner: fzdarsky
+    name: boardingpass
+  draft: false
+  prerelease: auto

@@ -21,17 +21,17 @@
 
 **Purpose**: Project initialization, basic structure, and automated testing infrastructure
 
-- [ ] T001 Create project directory structure per plan.md (cmd/, internal/, pkg/, tests/, build/, _output/)
-- [ ] T002 Initialize Go module with go.mod and go.sum
-- [ ] T003 [P] Create .gitignore file with _output/ and build artifacts
-- [ ] T004 [P] Create .golangci.yml configuration file including gosec and govulncheck linters
-- [ ] T005 [P] Create .github/workflows/service-ci.yaml with lint, test, build jobs (Go 1.25, golangci-lint v2.7.1)
-- [ ] T006 [P] Create .github/workflows/release.yaml with tag-triggered release workflow
-- [ ] T007 [P] Create .goreleaser.yaml configuration file for build orchestration to _output/dist/
-- [ ] T008 [P] Create build/Containerfile for build environment, using registry.access.redhat.com/ubi9/go-toolset:1.25 as base
-- [ ] T009 [P] Create Makefile with build, test, lint, coverage targets
-- [ ] T010 [P] Create LICENSE file (Apache 2.0)
-- [ ] T011 [P] Create README.md with project overview and badges
+- [X] T001 Create project directory structure per plan.md (cmd/, internal/, pkg/, tests/, build/, _output/)
+- [X] T002 Initialize Go module with go.mod and go.sum
+- [X] T003 [P] Create .gitignore file with _output/ and build artifacts
+- [X] T004 [P] Create .golangci.yml configuration file including gosec and govulncheck linters
+- [X] T005 [P] Create .github/workflows/service-ci.yaml with lint, test, build jobs (Go 1.25, golangci-lint v2.7.1)
+- [X] T006 [P] Create .github/workflows/release.yaml with tag-triggered release workflow
+- [X] T007 [P] Create .goreleaser.yaml configuration file for build orchestration to _output/dist/
+- [X] T008 [P] Create build/Containerfile for build environment, using registry.access.redhat.com/ubi9/go-toolset:1.25 as base
+- [X] T009 [P] Create Makefile with build, test, lint, coverage targets
+- [X] T010 [P] Create LICENSE file (Apache 2.0)
+- [X] T011 [P] Create README.md with project overview and badges
 
 **Checkpoint**: CI/CD and testing infrastructure ready - all commits will now be automatically linted and tested
 
