@@ -1,0 +1,15 @@
+{
+  "request": {
+    "id": "restart-networkmanager"
+  },
+  "response_success": {
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "response_failure": {
+    "exit_code": 1,
+    "stdout": "",
+    "stderr": "Failed to start NetworkManager.service: Unit not found."
+  }
+}

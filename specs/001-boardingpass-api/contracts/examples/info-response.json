@@ -1,0 +1,21 @@
+{
+  "tpm": {
+    "present": true,
+    "manufacturer": "STMicroelectronics",
+    "model": "ST33HTPH2E32",
+    "version": "2.0"
+  },
+  "board": {
+    "manufacturer": "Raspberry Pi Foundation",
+    "model": "Raspberry Pi 4 Model B",
+    "serial": "10000000abcdef01"
+  },
+  "cpu": {
+    "architecture": "aarch64"
+  },
+  "os": {
+    "distribution": "Red Hat Enterprise Linux",
+    "version": "9.3"
+  },
+  "fips_mode": true
+}

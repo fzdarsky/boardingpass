@@ -1,0 +1,720 @@
+openapi: 3.1.0
+
+info:
+  title: BoardingPass API
+  version: 0.1.0
+  description: |
+    BoardingPass is a lightweight, ephemeral bootstrap service for headless Linux devices.
+    It exposes a RESTful API over HTTPS (TLS 1.3) with SRP-6a authentication for secure
+    device provisioning.
+
+    **Note**: Version 0.1.0 is pre-stable. Breaking changes may occur before 1.0.0 release.
+
+    ## Authentication Flow
+
+    1. **SRP Init**: Client sends username and ephemeral public value `A`
+    2. **SRP Init Response**: Server returns salt and ephemeral public value `B`
+    3. **SRP Verify**: Client sends proof `M1`
+    4. **SRP Verify Response**: Server returns proof `M2` and session token
+    5. **Authenticated Requests**: All subsequent requests include session token in `Authorization` header
+
+    ## Security
+
+    - TLS 1.3 required (rejects TLS 1.2 and below)
+    - SRP-6a mutual authentication (no PKI required)
+    - Session tokens expire after 30 minutes (configurable, min 5m)
+    - Device-unique passwords generated from hardware identifiers
+
+    ## Lifecycle
+
+    - Service self-terminates after 10 minutes of inactivity (configurable)
+    - Service exits immediately if sentinel file (`/etc/boardingpass/issued`) exists
+    - Sentinel file created after successful configuration provisioning
+  contact:
+    name: BoardingPass Project
+    url: https://github.com/fzdarsky/boardingpass
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: https://{device_ip}:8443
+    description: BoardingPass device endpoint
+    variables:
+      device_ip:
+        default: "192.168.1.100"
+        description: IP address of the target device
+
+tags:
+  - name: Authentication
+    description: SRP-6a authentication endpoints
+  - name: Device Info
+    description: Device inventory and network state queries
+  - name: Provisioning
+    description: Configuration bundle provisioning
+  - name: Commands
+    description: Allow-listed command execution
+  - name: Lifecycle
+    description: Service lifecycle management
+
+paths:
+  /auth/srp/init:
+    post:
+      operationId: srpInit
+      tags:
+        - Authentication
+      summary: Initialize SRP-6a handshake
+      description: |
+        Initiates the SRP-6a authentication handshake. Client sends username and
+        ephemeral public value `A`. Server executes password generator script,
+        computes verifier, and returns salt and ephemeral public value `B`.
+
+        This endpoint does NOT require authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SRPInitRequest'
+            example:
+              username: "boardingpass"
+              A: "dGhpc2lzYW5leGFtcGxlZXBoZW1lcmFscHVibGljdmFsdWVB..."
+      responses:
+        '200':
+          description: SRP handshake initialized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SRPInitResponse'
+              example:
+                salt: "c29tZXJhbmRvbXNhbHR2YWx1ZQ=="
+                B: "dGhpc2lzYW5leGFtcGxlZXBoZW1lcmFscHVibGljdmFsdWVC..."
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/srp/verify:
+    post:
+      operationId: srpVerify
+      tags:
+        - Authentication
+      summary: Verify SRP-6a proof and obtain session token
+      description: |
+        Completes the SRP-6a authentication handshake. Client sends proof `M1`.
+        Server verifies the proof, computes proof `M2`, and issues a session token.
+
+        This endpoint does NOT require authentication.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SRPVerifyRequest'
+            example:
+              M1: "dGhpc2lzYW5leGFtcGxlY2xpZW50cHJvb2Y="
+      responses:
+        '200':
+          description: SRP verification successful, session token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SRPVerifyResponse'
+              example:
+                M2: "dGhpc2lzYW5leGFtcGxlc2VydmVycHJvb2Y="
+                session_token: "dGhpc2lzYXRva2VuaWQ.c2lnbmF0dXJlaGVyZQ"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Authentication failed (invalid proof)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "authentication_failed"
+                message: "SRP proof verification failed"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /info:
+    get:
+      operationId: getSystemInfo
+      tags:
+        - Device Info
+      summary: Query device system information
+      description: |
+        Returns hardware and software characteristics of the device including
+        TPM details, board information, CPU architecture, OS distribution, and FIPS mode status.
+
+        Requires authentication.
+      security:
+        - sessionToken: []
+      responses:
+        '200':
+          description: System information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /network:
+    get:
+      operationId: getNetworkConfig
+      tags:
+        - Device Info
+      summary: Query network interface state
+      description: |
+        Returns current network interface state including interface names, MAC addresses,
+        link states, and IP addresses. Data is queried from NetworkManager via D-Bus.
+
+        Requires authentication.
+      security:
+        - sessionToken: []
+      responses:
+        '200':
+          description: Network configuration retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /configure:
+    post:
+      operationId: provisionConfig
+      tags:
+        - Provisioning
+      summary: Provision configuration bundle
+      description: |
+        Atomically provisions a configuration bundle containing multiple files.
+        Files are written to a temporary directory, validated, then atomically moved
+        to target paths under `/etc`. If any file operation fails, the entire
+        bundle is rejected and no files are modified.
+
+        On success, creates sentinel file (`/etc/boardingpass/issued`) and initiates
+        service shutdown.
+
+        Requires authentication.
+      security:
+        - sessionToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigBundle'
+      responses:
+        '200':
+          description: Configuration bundle applied successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                properties:
+                  status:
+                    type: string
+                    enum: [success]
+                    description: Operation status
+                  message:
+                    type: string
+                    description: Human-readable success message
+                    example: "Configuration bundle applied successfully. Service will terminate."
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          description: Configuration bundle application failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "provisioning_failed"
+                message: "Failed to write file /etc/systemd/network/10-eth0.network: permission denied"
+
+  /command:
+    post:
+      operationId: executeCommand
+      tags:
+        - Commands
+      summary: Execute allow-listed command
+      description: |
+        Executes a command from the allow-list with sudo privileges. Commands are
+        identified by string IDs (e.g., "reboot", "restart-networkmanager") mapped to
+        filesystem paths in the service configuration.
+
+        No arbitrary command execution is permitted. Arguments are fixed in the
+        allow-list configuration.
+
+        Requires authentication.
+      security:
+        - sessionToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandRequest'
+            example:
+              id: "restart-networkmanager"
+      responses:
+        '200':
+          description: Command executed (exit code may be non-zero)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Command not in allow-list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "command_forbidden"
+                message: "Command 'unauthorized-command' is not in the allow-list"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /complete:
+    post:
+      operationId: completeProvisioning
+      tags:
+        - Lifecycle
+      summary: Signal provisioning completion
+      description: |
+        Signals that provisioning is complete. This endpoint creates the sentinel
+        file (`/etc/boardingpass/issued`) and initiates graceful service termination.
+
+        After calling this endpoint, the service will begin shutting down and
+        subsequent API requests may fail. This is the final API call in a
+        successful provisioning workflow.
+
+        Typical workflow: authenticate → query → configure → command → **complete**
+
+        Requires authentication.
+      security:
+        - sessionToken: []
+      responses:
+        '200':
+          description: Provisioning marked complete, service shutting down
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          description: Failed to create sentinel file or initiate shutdown
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    sessionToken:
+      type: http
+      scheme: bearer
+      bearerFormat: HMAC
+      description: |
+        Session token obtained from `/auth/srp/verify` endpoint.
+        Format: `<token_id>.<signature>`
+
+        Include in Authorization header: `Authorization: Bearer <session_token>`
+
+  schemas:
+    # ========== Authentication Schemas ==========
+
+    SRPInitRequest:
+      type: object
+      required:
+        - username
+        - A
+      properties:
+        username:
+          type: string
+          description: SRP username (typically 'boardingpass')
+          minLength: 1
+          maxLength: 64
+          example: "boardingpass"
+        A:
+          type: string
+          description: Client ephemeral public value (Base64-encoded)
+          pattern: '^[A-Za-z0-9+/]+=*$'
+          example: "dGhpc2lzYW5leGFtcGxlZXBoZW1lcmFscHVibGljdmFsdWVB..."
+
+    SRPInitResponse:
+      type: object
+      required:
+        - salt
+        - B
+      properties:
+        salt:
+          type: string
+          description: Base64-encoded salt (unique per bootc image build)
+          pattern: '^[A-Za-z0-9+/]+=*$'
+          example: "c29tZXJhbmRvbXNhbHR2YWx1ZQ=="
+        B:
+          type: string
+          description: Server ephemeral public value (Base64-encoded)
+          pattern: '^[A-Za-z0-9+/]+=*$'
+          example: "dGhpc2lzYW5leGFtcGxlZXBoZW1lcmFscHVibGljdmFsdWVC..."
+
+    SRPVerifyRequest:
+      type: object
+      required:
+        - M1
+      properties:
+        M1:
+          type: string
+          description: Client proof (Base64-encoded)
+          pattern: '^[A-Za-z0-9+/]+=*$'
+          example: "dGhpc2lzYW5leGFtcGxlY2xpZW50cHJvb2Y="
+
+    SRPVerifyResponse:
+      type: object
+      required:
+        - M2
+        - session_token
+      properties:
+        M2:
+          type: string
+          description: Server proof (Base64-encoded)
+          pattern: '^[A-Za-z0-9+/]+=*$'
+          example: "dGhpc2lzYW5leGFtcGxlc2VydmVycHJvb2Y="
+        session_token:
+          type: string
+          description: Session token (format: token_id.signature)
+          pattern: '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
+          example: "dGhpc2lzYXRva2VuaWQ.c2lnbmF0dXJlaGVyZQ"
+
+    # ========== Device Info Schemas ==========
+
+    SystemInfo:
+      type: object
+      required:
+        - tpm
+        - board
+        - cpu
+        - os
+        - fips_mode
+      properties:
+        tpm:
+          $ref: '#/components/schemas/TPMInfo'
+        board:
+          $ref: '#/components/schemas/BoardInfo'
+        cpu:
+          $ref: '#/components/schemas/CPUInfo'
+        os:
+          $ref: '#/components/schemas/OSInfo'
+        fips_mode:
+          type: boolean
+          description: Whether FIPS 140-3 mode is enabled
+          example: true
+
+    TPMInfo:
+      type: object
+      required:
+        - present
+      properties:
+        present:
+          type: boolean
+          description: Whether TPM is present on device
+          example: true
+        manufacturer:
+          type: string
+          nullable: true
+          description: TPM manufacturer (null if not present)
+          example: "STMicroelectronics"
+        model:
+          type: string
+          nullable: true
+          description: TPM model/version (null if not present)
+          example: "ST33HTPH2E32"
+        version:
+          type: string
+          nullable: true
+          description: TPM specification version (null if not present)
+          example: "2.0"
+
+    BoardInfo:
+      type: object
+      required:
+        - manufacturer
+        - model
+        - serial
+      properties:
+        manufacturer:
+          type: string
+          description: Board manufacturer
+          example: "Raspberry Pi Foundation"
+        model:
+          type: string
+          description: Board model
+          example: "Raspberry Pi 4 Model B"
+        serial:
+          type: string
+          description: Board serial number
+          example: "10000000abcdef01"
+
+    CPUInfo:
+      type: object
+      required:
+        - architecture
+      properties:
+        architecture:
+          type: string
+          description: CPU architecture
+          enum:
+            - x86_64
+            - aarch64
+            - armv7l
+          example: "aarch64"
+
+    OSInfo:
+      type: object
+      required:
+        - distribution
+        - version
+      properties:
+        distribution:
+          type: string
+          description: Linux distribution name
+          example: "Red Hat Enterprise Linux"
+        version:
+          type: string
+          description: Distribution version
+          example: "9.3"
+
+    NetworkConfig:
+      type: object
+      required:
+        - interfaces
+      properties:
+        interfaces:
+          type: array
+          description: List of network interfaces
+          maxItems: 32
+          items:
+            $ref: '#/components/schemas/NetworkInterface'
+
+    NetworkInterface:
+      type: object
+      required:
+        - name
+        - mac
+        - link_state
+        - addresses
+      properties:
+        name:
+          type: string
+          description: Interface name
+          pattern: '^[a-zA-Z0-9]+$'
+          example: "eth0"
+        mac:
+          type: string
+          description: MAC address (colon-separated hex)
+          pattern: '^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$'
+          example: "dc:a6:32:12:34:56"
+        link_state:
+          type: string
+          description: Link state
+          enum:
+            - up
+            - down
+          example: "up"
+        addresses:
+          type: array
+          description: Assigned IP addresses
+          items:
+            $ref: '#/components/schemas/IPAddress'
+
+    IPAddress:
+      type: object
+      required:
+        - ip
+        - prefix
+        - family
+      properties:
+        ip:
+          type: string
+          description: IP address (IPv4 or IPv6)
+          oneOf:
+            - format: ipv4
+            - format: ipv6
+          example: "192.168.1.100"
+        prefix:
+          type: integer
+          description: Prefix length (CIDR notation)
+          minimum: 0
+          maximum: 128
+          example: 24
+        family:
+          type: string
+          description: Address family
+          enum:
+            - ipv4
+            - ipv6
+          example: "ipv4"
+
+    # ========== Provisioning Schemas ==========
+
+    ConfigBundle:
+      type: object
+      required:
+        - files
+      properties:
+        files:
+          type: array
+          description: List of files to provision
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ConfigFile'
+
+    ConfigFile:
+      type: object
+      required:
+        - path
+        - content
+        - mode
+      properties:
+        path:
+          type: string
+          description: Target file path relative to /etc
+          pattern: '^[a-zA-Z0-9/_.-]+$'
+          minLength: 1
+          maxLength: 255
+          example: "systemd/network/10-eth0.network"
+        content:
+          type: string
+          description: Base64-encoded file content
+          pattern: '^[A-Za-z0-9+/]+=*$'
+          example: "W01hdGNoXQpOYW1lPWV0aDAK..."
+        mode:
+          type: integer
+          description: Unix file permissions (octal as decimal, e.g., 0644 = 420)
+          minimum: 0
+          maximum: 511
+          example: 420
+
+    # ========== Command Schemas ==========
+
+    CommandRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: Command identifier from allow-list
+          pattern: '^[a-z0-9-]+$'
+          example: "restart-networkmanager"
+
+    CommandResponse:
+      type: object
+      required:
+        - exit_code
+        - stdout
+        - stderr
+      properties:
+        exit_code:
+          type: integer
+          description: Command exit code
+          example: 0
+        stdout:
+          type: string
+          description: Standard output (UTF-8)
+          example: "Service reloaded successfully."
+        stderr:
+          type: string
+          description: Standard error (UTF-8)
+          example: ""
+
+    CompleteResponse:
+      type: object
+      required:
+        - status
+        - sentinel_file
+      properties:
+        status:
+          type: string
+          description: Completion status
+          enum: ["shutting_down"]
+          example: "shutting_down"
+        sentinel_file:
+          type: string
+          description: Path to created sentinel file
+          example: "/etc/boardingpass/issued"
+        message:
+          type: string
+          description: Human-readable status message
+          example: "Provisioning complete. Service will terminate in 5 seconds."
+
+    # ========== Error Schemas ==========
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+          example: "authentication_failed"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "SRP proof verification failed"
+        details:
+          type: object
+          description: Additional error context (optional)
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Invalid request (malformed JSON, missing required fields, validation error)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "invalid_request"
+            message: "Missing required field: username"
+
+    Unauthorized:
+      description: Authentication required (missing or invalid session token)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "unauthorized"
+            message: "Invalid or expired session token"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "internal_server_error"
+            message: "An unexpected error occurred"

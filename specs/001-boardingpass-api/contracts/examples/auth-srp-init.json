@@ -1,0 +1,10 @@
+{
+  "request": {
+    "username": "boardingpass",
+    "A": "lQOV2OYqqlHVgwT5J2tGTMnHzqGgxaFqVr8ksZYLuPswqEPVQnLfJT0G0sZWyNxRqXvP8KbLx9Qz3rA4Yw2VmT1tHdF6Mn8uK5vRqLpN9XcY7Jh3sT2wQ0Zb1eV4"
+  },
+  "response": {
+    "salt": "8f3a2b1c9d4e5f6a7b8c9d0e1f2a3b4c",
+    "B": "mRPW3PZrrmIWh xU6K3uHUNnIz0rHhybGr2Ws9ltaMQtxrFQWoMgKU1H1tGaXzOySrYwQ9LcMy0Rl4sB5Zx3WnU2uIeG7No9vL6wSrMqO0YdZ8Ki4tU3xR1Ac2fW5"
+  }
+}
