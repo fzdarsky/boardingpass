@@ -1,0 +1,25 @@
+# Sudoers configuration for BoardingPass bootstrap service
+# This file should be installed to /etc/sudoers.d/boardingpass
+#
+# Allows the boardingpass user to execute specific system commands
+# required for device provisioning without password prompt.
+#
+# IMPORTANT: Commands are restricted to a specific allow-list
+# defined in /etc/boardingpass/config.yaml
+
+# Disable requiretty for boardingpass user
+Defaults:boardingpass !requiretty
+
+# Allow boardingpass user to execute allow-listed commands
+# These are example commands - actual commands are configured via config.yaml
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl reboot --force
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart NetworkManager
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart chronyd
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/chronyc makestep
+
+# Explicitly deny all other commands
+boardingpass ALL=(ALL) !/usr/bin/su
+boardingpass ALL=(ALL) !/usr/bin/sudo
+boardingpass ALL=(ALL) !/usr/sbin/visudo
+boardingpass ALL=(ALL) !/bin/sh
+boardingpass ALL=(ALL) !/bin/bash

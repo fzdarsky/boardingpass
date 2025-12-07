@@ -1,0 +1,50 @@
+[Unit]
+Description=BoardingPass Bootstrap Service
+Documentation=https://github.com/fzdarsky/boardingpass
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/boardingpass/issued
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/boardingpass
+Restart=no
+User=boardingpass
+Group=boardingpass
+
+# Working directory
+WorkingDirectory=/var/lib/boardingpass
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/boardingpass /etc/boardingpass
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+PrivateMounts=true
+
+# Capabilities
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+# Resource limits
+MemoryMax=150M
+TasksMax=10
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=boardingpass
+
+[Install]
+WantedBy=multi-user.target
