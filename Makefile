@@ -13,6 +13,7 @@ GOBUILD := $(GOCMD) build
 GOTEST := $(GOCMD) test
 GOMOD := $(GOCMD) mod
 GOVET := $(GOCMD) vet
+GOTESTSUM := gotestsum
 
 # Build flags
 LDFLAGS := -s -w
@@ -42,7 +43,7 @@ build:
 ## test: Run all tests
 test:
 	@echo "Running tests..."
-	@$(GOTEST) -v -race ./...
+	@$(GOTESTSUM) --format pkgname -- -race ./...
 
 ## lint: Run linters
 lint:
@@ -53,7 +54,7 @@ lint:
 coverage:
 	@echo "Generating coverage report..."
 	@mkdir -p $(COVERAGE_DIR)
-	@$(GOTEST) -v -race -coverprofile=$(COVERAGE_DIR)/coverage.out -covermode=atomic ./...
+	@$(GOTESTSUM) --format pkgname -- -race -coverprofile=$(COVERAGE_DIR)/coverage.out -covermode=atomic -coverpkg=./internal/...,./pkg/... ./...
 	@$(GOCMD) tool cover -html=$(COVERAGE_DIR)/coverage.out -o $(COVERAGE_DIR)/coverage.html
 	@$(GOCMD) tool cover -func=$(COVERAGE_DIR)/coverage.out | tee $(COVERAGE_DIR)/coverage.txt
 	@echo "Coverage report: $(COVERAGE_DIR)/coverage.html"
