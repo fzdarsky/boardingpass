@@ -92,10 +92,10 @@ func TestNetworkConfig_JSON(t *testing.T) {
 			input: protocol.NetworkConfig{
 				Interfaces: []protocol.NetworkInterface{
 					{
-						Name:      "eth0",
-						MAC:       "dc:a6:32:12:34:56",
-						LinkState: "up",
-						Addresses: []protocol.IPAddress{
+						Name:       "eth0",
+						MACAddress: "dc:a6:32:12:34:56",
+						LinkState:  "up",
+						IPAddresses: []protocol.IPAddress{
 							{
 								IP:     "192.168.1.100",
 								Prefix: 24,
@@ -109,14 +109,14 @@ func TestNetworkConfig_JSON(t *testing.T) {
 						},
 					},
 					{
-						Name:      "wlan0",
-						MAC:       "b8:27:eb:98:76:54",
-						LinkState: "down",
-						Addresses: []protocol.IPAddress{},
+						Name:        "wlan0",
+						MACAddress:  "b8:27:eb:98:76:54",
+						LinkState:   "down",
+						IPAddresses: []protocol.IPAddress{},
 					},
 				},
 			},
-			expected: `{"interfaces":[{"name":"eth0","mac":"dc:a6:32:12:34:56","link_state":"up","addresses":[{"ip":"192.168.1.100","prefix":24,"family":"ipv4"},{"ip":"fe80::dea6:32ff:fe12:3456","prefix":64,"family":"ipv6"}]},{"name":"wlan0","mac":"b8:27:eb:98:76:54","link_state":"down","addresses":[]}]}`,
+			expected: `{"interfaces":[{"name":"eth0","mac_address":"dc:a6:32:12:34:56","link_state":"up","ip_addresses":[{"ip":"192.168.1.100","prefix":24,"family":"ipv4"},{"ip":"fe80::dea6:32ff:fe12:3456","prefix":64,"family":"ipv6"}]},{"name":"wlan0","mac_address":"b8:27:eb:98:76:54","link_state":"down","ip_addresses":[]}]}`,
 		},
 	}
 

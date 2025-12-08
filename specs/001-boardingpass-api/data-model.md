@@ -316,7 +316,7 @@ This document defines the core entities, their relationships, and JSON schemas f
             "pattern": "^[a-zA-Z0-9]+$",
             "example": "eth0"
           },
-          "mac": {
+          "mac_address": {
             "type": "string",
             "description": "MAC address (colon-separated hex)",
             "pattern": "^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
@@ -328,7 +328,7 @@ This document defines the core entities, their relationships, and JSON schemas f
             "enum": ["up", "down"],
             "example": "up"
           },
-          "addresses": {
+          "ip_addresses": {
             "type": "array",
             "description": "Assigned IP addresses",
             "items": {

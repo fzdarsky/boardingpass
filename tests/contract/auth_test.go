@@ -36,42 +36,42 @@ func TestAuthEndpointsConformToOpenAPISpec(t *testing.T) {
 	})
 }
 
-func testSRPInitContract(t *testing.T, spec map[string]interface{}) {
+func testSRPInitContract(t *testing.T, spec map[string]any) {
 	// Verify endpoint exists in spec
-	paths, ok := spec["paths"].(map[string]interface{})
+	paths, ok := spec["paths"].(map[string]any)
 	if !ok {
 		t.Fatal("paths not found in OpenAPI spec")
 	}
 
-	initPath, ok := paths["/auth/srp/init"].(map[string]interface{})
+	initPath, ok := paths["/auth/srp/init"].(map[string]any)
 	if !ok {
 		t.Fatal("/auth/srp/init not found in OpenAPI spec")
 	}
 
-	post, ok := initPath["post"].(map[string]interface{})
+	post, ok := initPath["post"].(map[string]any)
 	if !ok {
 		t.Fatal("POST method not defined for /auth/srp/init")
 	}
 
 	// Verify request body schema exists
-	requestBody, ok := post["requestBody"].(map[string]interface{})
+	requestBody, ok := post["requestBody"].(map[string]any)
 	if !ok {
 		t.Error("requestBody not defined for POST /auth/srp/init")
 	} else {
-		content, ok := requestBody["content"].(map[string]interface{})
+		content, ok := requestBody["content"].(map[string]any)
 		if !ok {
 			t.Error("content not defined in requestBody")
 		} else {
-			appJSON, ok := content["application/json"].(map[string]interface{})
+			appJSON, ok := content["application/json"].(map[string]any)
 			if !ok {
 				t.Error("application/json not defined in content")
 			} else {
-				schema, ok := appJSON["schema"].(map[string]interface{})
+				schema, ok := appJSON["schema"].(map[string]any)
 				if !ok {
 					t.Error("schema not defined for application/json")
 				} else {
 					// Verify required fields
-					required, ok := schema["required"].([]interface{})
+					required, ok := schema["required"].([]any)
 					if ok {
 						hasUsername := false
 						hasA := false
@@ -96,13 +96,13 @@ func testSRPInitContract(t *testing.T, spec map[string]interface{}) {
 	}
 
 	// Verify response schemas exist
-	responses, ok := post["responses"].(map[string]interface{})
+	responses, ok := post["responses"].(map[string]any)
 	if !ok {
 		t.Fatal("responses not defined for POST /auth/srp/init")
 	}
 
 	// Check 200 response
-	resp200, ok := responses["200"].(map[string]interface{})
+	resp200, ok := responses["200"].(map[string]any)
 	if !ok {
 		t.Error("200 response not defined")
 	} else {
@@ -110,46 +110,46 @@ func testSRPInitContract(t *testing.T, spec map[string]interface{}) {
 	}
 
 	// Check 400 response
-	if _, ok := responses["400"].(map[string]interface{}); !ok {
+	if _, ok := responses["400"].(map[string]any); !ok {
 		t.Error("400 response not defined")
 	}
 
 	// Check 500 response
-	if _, ok := responses["500"].(map[string]interface{}); !ok {
+	if _, ok := responses["500"].(map[string]any); !ok {
 		t.Error("500 response not defined")
 	}
 }
 
-func testSRPVerifyContract(t *testing.T, spec map[string]interface{}) {
-	paths, ok := spec["paths"].(map[string]interface{})
+func testSRPVerifyContract(t *testing.T, spec map[string]any) {
+	paths, ok := spec["paths"].(map[string]any)
 	if !ok {
 		t.Fatal("paths not found in OpenAPI spec")
 	}
 
-	verifyPath, ok := paths["/auth/srp/verify"].(map[string]interface{})
+	verifyPath, ok := paths["/auth/srp/verify"].(map[string]any)
 	if !ok {
 		t.Fatal("/auth/srp/verify not found in OpenAPI spec")
 	}
 
-	post, ok := verifyPath["post"].(map[string]interface{})
+	post, ok := verifyPath["post"].(map[string]any)
 	if !ok {
 		t.Fatal("POST method not defined for /auth/srp/verify")
 	}
 
 	// Verify request body schema
-	_, ok = post["requestBody"].(map[string]interface{})
+	_, ok = post["requestBody"].(map[string]any)
 	if !ok {
 		t.Error("requestBody not defined for POST /auth/srp/verify")
 	}
 
 	// Verify response schemas
-	responses, ok := post["responses"].(map[string]interface{})
+	responses, ok := post["responses"].(map[string]any)
 	if !ok {
 		t.Fatal("responses not defined for POST /auth/srp/verify")
 	}
 
 	// Check 200 response
-	resp200, ok := responses["200"].(map[string]interface{})
+	resp200, ok := responses["200"].(map[string]any)
 	if !ok {
 		t.Error("200 response not defined")
 	} else {
@@ -157,17 +157,17 @@ func testSRPVerifyContract(t *testing.T, spec map[string]interface{}) {
 	}
 
 	// Check 400 response
-	if _, ok := responses["400"].(map[string]interface{}); !ok {
+	if _, ok := responses["400"].(map[string]any); !ok {
 		t.Error("400 response not defined")
 	}
 
 	// Check 401 response
-	if _, ok := responses["401"].(map[string]interface{}); !ok {
+	if _, ok := responses["401"].(map[string]any); !ok {
 		t.Error("401 response not defined")
 	}
 
 	// Check 500 response
-	if _, ok := responses["500"].(map[string]interface{}); !ok {
+	if _, ok := responses["500"].(map[string]any); !ok {
 		t.Error("500 response not defined")
 	}
 }
@@ -182,7 +182,7 @@ func TestAuthResponseFormat(t *testing.T) {
 
 	t.Run("SRP init response format", func(t *testing.T) {
 		// Mock response
-		resp := map[string]interface{}{
+		resp := map[string]any{
 			"salt": "dGVzdHNhbHQ=",
 			"B":    "dGVzdGI=",
 		}
@@ -198,7 +198,7 @@ func TestAuthResponseFormat(t *testing.T) {
 
 	t.Run("SRP verify response format", func(t *testing.T) {
 		// Mock response
-		resp := map[string]interface{}{
+		resp := map[string]any{
 			"M2":            "dGVzdG0y",
 			"session_token": "token.signature",
 		}
@@ -214,7 +214,7 @@ func TestAuthResponseFormat(t *testing.T) {
 
 	t.Run("Error response format", func(t *testing.T) {
 		// Mock error response
-		resp := map[string]interface{}{
+		resp := map[string]any{
 			"error":   "unauthorized",
 			"message": "Invalid session token",
 		}
@@ -231,13 +231,13 @@ func TestAuthResponseFormat(t *testing.T) {
 
 // Helper functions
 
-func loadOpenAPISpec(path string) (map[string]interface{}, error) {
+func loadOpenAPISpec(path string) (map[string]any, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var spec map[string]interface{}
+	var spec map[string]any
 	if err := yaml.Unmarshal(data, &spec); err != nil {
 		return nil, err
 	}
@@ -245,27 +245,27 @@ func loadOpenAPISpec(path string) (map[string]interface{}, error) {
 	return spec, nil
 }
 
-func validateResponseSchema(t *testing.T, response map[string]interface{}, requiredFields []string) {
-	content, ok := response["content"].(map[string]interface{})
+func validateResponseSchema(t *testing.T, response map[string]any, requiredFields []string) {
+	content, ok := response["content"].(map[string]any)
 	if !ok {
 		t.Error("content not defined in response")
 		return
 	}
 
-	appJSON, ok := content["application/json"].(map[string]interface{})
+	appJSON, ok := content["application/json"].(map[string]any)
 	if !ok {
 		t.Error("application/json not defined in content")
 		return
 	}
 
-	schema, ok := appJSON["schema"].(map[string]interface{})
+	schema, ok := appJSON["schema"].(map[string]any)
 	if !ok {
 		t.Error("schema not defined for application/json")
 		return
 	}
 
 	// Verify required fields in schema
-	required, ok := schema["required"].([]interface{})
+	required, ok := schema["required"].([]any)
 	if ok {
 		for _, expectedField := range requiredFields {
 			found := false
@@ -311,12 +311,12 @@ func (cts *ContractTestServer) makeRequest(method, path string, body io.Reader) 
 	return client.Do(req)
 }
 
-func validateJSONSchema(t *testing.T, data []byte, schema map[string]interface{}) {
+func validateJSONSchema(t *testing.T, data []byte, schema map[string]any) {
 	// This would use a JSON schema validator library to validate
 	// the response data against the schema from OpenAPI spec
 	// For now, it's a placeholder
 
-	var jsonData interface{}
+	var jsonData any
 	if err := json.Unmarshal(data, &jsonData); err != nil {
 		t.Errorf("invalid JSON: %v", err)
 	}

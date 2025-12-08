@@ -44,10 +44,10 @@ type NetworkConfig struct {
 
 // NetworkInterface represents a single network interface.
 type NetworkInterface struct {
-	Name      string      `json:"name"`
-	MAC       string      `json:"mac"`
-	LinkState string      `json:"link_state"`
-	Addresses []IPAddress `json:"addresses"`
+	Name        string      `json:"name"`
+	MACAddress  string      `json:"mac_address"`
+	LinkState   string      `json:"link_state"`
+	IPAddresses []IPAddress `json:"ip_addresses"`
 }
 
 // IPAddress represents an IP address assignment.

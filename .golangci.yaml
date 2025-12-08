@@ -43,6 +43,49 @@ linters:
     gosec:
       severity: medium
       confidence: medium
+  exclusions:
+    rules:
+      # Blanket ignores for test files
+      - path: '(.+)_test\.go'
+        linters:
+          - noctx
+          - unused
+          - usetesting
+      # Test files can have unchecked errors in non-critical test setup code
+      - path: '(.+)_test\.go'
+        linters:
+          - errcheck
+        text: "Error return value of `(rand\\.Read|os\\.Remove|.*\\.Write|.*\\.CreateSession|.*\\.InvalidateSession|.*\\.Decode)` is not checked"
+      # Test files can use traditional for loops
+      - path: '(.+)_test\.go'
+        linters:
+          - modernize
+        text: "for loop can be modernized using range over int"
+      # Allow unused parameters in test handlers
+      - path: '(.+)_test\.go'
+        linters:
+          - revive
+        text: "unused-parameter"
+      # Allow capitalized parameter names in SRP implementation (cryptographic convention)
+      - path: 'internal/auth/(srp|verifier)\.go'
+        linters:
+          - gocritic
+        text: "captLocal"
+      # Allow capitalized parameter names in test helper functions
+      - path: '(.+)_test\.go'
+        linters:
+          - gocritic
+        text: "captLocal"
+      # Allow else-if patterns in test code
+      - path: '(.+)_test\.go'
+        linters:
+          - gocritic
+        text: "elseif"
+      # G302 (file permissions) and G304 (file inclusion) warnings in test files are acceptable
+      - path: '(.+)_test\.go'
+        linters:
+          - gosec
+        text: "(G302|G304)"
 
 issues:
   max-issues-per-linter: 0

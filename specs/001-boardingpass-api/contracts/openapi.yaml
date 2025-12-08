@@ -518,16 +518,16 @@ components:
       type: object
       required:
         - name
-        - mac
+        - mac_address
         - link_state
-        - addresses
+        - ip_addresses
       properties:
         name:
           type: string
           description: Interface name
           pattern: '^[a-zA-Z0-9]+$'
           example: "eth0"
-        mac:
+        mac_address:
           type: string
           description: MAC address (colon-separated hex)
           pattern: '^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$'
@@ -539,7 +539,7 @@ components:
             - up
             - down
           example: "up"
-        addresses:
+        ip_addresses:
           type: array
           description: Assigned IP addresses
           items:

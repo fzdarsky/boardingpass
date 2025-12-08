@@ -225,7 +225,7 @@ func (s *SRPServer) computeM1() []byte {
 
 	// H(N) XOR H(g)
 	hashNXorG := make([]byte, len(hashN))
-	for i := 0; i < len(hashN); i++ {
+	for i := range len(hashN) {
 		hashNXorG[i] = hashN[i] ^ hashG[i]
 	}
 

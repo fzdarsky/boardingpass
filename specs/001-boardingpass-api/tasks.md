@@ -106,30 +106,30 @@
 
 ### Implementation for User Story 2
 
-- [ ] T049 [P] [US2] Create internal/inventory/tpm.go with TPM information extraction from /sys/class/tpm
-- [ ] T050 [P] [US2] Create internal/inventory/board.go with DMI board information extraction via dmidecode or /sys/class/dmi
-- [ ] T051 [P] [US2] Create internal/inventory/cpu.go with CPU architecture detection from runtime.GOARCH
-- [ ] T052 [P] [US2] Create internal/inventory/os.go with OS distribution and version detection from /etc/os-release
-- [ ] T053 [P] [US2] Create internal/inventory/fips.go with FIPS mode status check from /proc/sys/crypto/fips_enabled
-- [ ] T054 [P] [US2] Create tests/unit/inventory/tpm_test.go with unit tests for TPM extraction
-- [ ] T055 [P] [US2] Create tests/unit/inventory/board_test.go with unit tests for board info extraction
-- [ ] T056 [P] [US2] Create tests/unit/inventory/cpu_test.go with unit tests for CPU detection
-- [ ] T057 [P] [US2] Create tests/unit/inventory/os_test.go with unit tests for OS detection
-- [ ] T058 [P] [US2] Create tests/unit/inventory/fips_test.go with unit tests for FIPS mode check
-- [ ] T059 [P] [US2] Create internal/network/interfaces.go with network interface enumeration via D-Bus or netlink
-- [ ] T060 [P] [US2] Create internal/network/linkstate.go with link state detection (up/down)
-- [ ] T061 [P] [US2] Create internal/network/addresses.go with IP address extraction (IPv4 and IPv6)
-- [ ] T062 [P] [US2] Create tests/unit/network/interfaces_test.go with unit tests for interface enumeration
-- [ ] T063 [P] [US2] Create tests/unit/network/linkstate_test.go with unit tests for link state detection
-- [ ] T064 [P] [US2] Create tests/unit/network/addresses_test.go with unit tests for IP address extraction
-- [ ] T065 [US2] Create internal/api/handlers/info.go with GET /info endpoint assembling SystemInfo response
-- [ ] T066 [US2] Create internal/api/handlers/network.go with GET /network endpoint assembling NetworkConfig response
-- [ ] T067 [US2] Add 1-second response caching to GET /info handler to reduce syscall overhead
-- [ ] T068 [US2] Add authentication requirement to info and network handlers via middleware
-- [ ] T069 [P] [US2] Create tests/integration/info_test.go with integration tests for /info endpoint
-- [ ] T070 [P] [US2] Create tests/integration/network_test.go with integration tests for /network endpoint
-- [ ] T071 [P] [US2] Create tests/contract/info_test.go with OpenAPI contract validation for /info endpoint
-- [ ] T072 [P] [US2] Create tests/contract/network_test.go with OpenAPI contract validation for /network endpoint
+- [X] T049 [P] [US2] Create internal/inventory/tpm.go with TPM information extraction from /sys/class/tpm
+- [X] T050 [P] [US2] Create internal/inventory/board.go with DMI board information extraction via dmidecode or /sys/class/dmi
+- [X] T051 [P] [US2] Create internal/inventory/cpu.go with CPU architecture detection from runtime.GOARCH
+- [X] T052 [P] [US2] Create internal/inventory/os.go with OS distribution and version detection from /etc/os-release
+- [X] T053 [P] [US2] Create internal/inventory/fips.go with FIPS mode status check from /proc/sys/crypto/fips_enabled
+- [X] T054 [P] [US2] Create tests/unit/inventory/tpm_test.go with unit tests for TPM extraction
+- [X] T055 [P] [US2] Create tests/unit/inventory/board_test.go with unit tests for board info extraction
+- [X] T056 [P] [US2] Create tests/unit/inventory/cpu_test.go with unit tests for CPU detection
+- [X] T057 [P] [US2] Create tests/unit/inventory/os_test.go with unit tests for OS detection
+- [X] T058 [P] [US2] Create tests/unit/inventory/fips_test.go with unit tests for FIPS mode check
+- [X] T059 [P] [US2] Create internal/network/interfaces.go with network interface enumeration via D-Bus or netlink
+- [X] T060 [P] [US2] Create internal/network/linkstate.go with link state detection (up/down)
+- [X] T061 [P] [US2] Create internal/network/addresses.go with IP address extraction (IPv4 and IPv6)
+- [X] T062 [P] [US2] Create tests/unit/network/interfaces_test.go with unit tests for interface enumeration
+- [X] T063 [P] [US2] Create tests/unit/network/linkstate_test.go with unit tests for link state detection
+- [X] T064 [P] [US2] Create tests/unit/network/addresses_test.go with unit tests for IP address extraction
+- [X] T065 [US2] Create internal/api/handlers/info.go with GET /info endpoint assembling SystemInfo response
+- [X] T066 [US2] Create internal/api/handlers/network.go with GET /network endpoint assembling NetworkConfig response
+- [X] T067 [US2] Add 1-second response caching to GET /info handler to reduce syscall overhead
+- [X] T068 [US2] Add authentication requirement to info and network handlers via middleware
+- [X] T069 [P] [US2] Create tests/integration/info_test.go with integration tests for /info endpoint
+- [X] T070 [P] [US2] Create tests/integration/network_test.go with integration tests for /network endpoint
+- [X] T071 [P] [US2] Create tests/contract/info_test.go with OpenAPI contract validation for /info endpoint
+- [X] T072 [P] [US2] Create tests/contract/network_test.go with OpenAPI contract validation for /network endpoint
 
 **Checkpoint**: User Stories 1 AND 2 complete with full test coverage - can authenticate and query device information
 

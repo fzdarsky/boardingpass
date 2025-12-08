@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -8,6 +9,7 @@ import (
 	"math/big"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -23,7 +25,8 @@ type SRPVerifierConfig struct {
 // LoadVerifierConfig loads the SRP verifier configuration from the specified file path.
 // Returns the parsed configuration or an error if loading or parsing fails.
 func LoadVerifierConfig(path string) (*SRPVerifierConfig, error) {
-	data, err := os.ReadFile(path)
+	cleanPath := filepath.Clean(path)
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read verifier config: %w", err)
 	}
@@ -55,7 +58,8 @@ func LoadVerifierConfig(path string) (*SRPVerifierConfig, error) {
 // GeneratePassword executes the password generator script and returns the device-unique password.
 // The password is read from stdout and trimmed of whitespace.
 func GeneratePassword(generatorPath string) (string, error) {
-	cmd := exec.Command(generatorPath)
+	ctx := context.Background()
+	cmd := exec.CommandContext(ctx, generatorPath)
 	output, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -128,7 +132,9 @@ func ComputeVerifierFromConfig(config *SRPVerifierConfig, N, g *big.Int) (*big.I
 		return nil, fmt.Errorf("failed to compute verifier: %w", err)
 	}
 
-	// Clear password from memory immediately
+	// Clear password from memory immediately (best effort for security)
+	// Note: This is ineffective for Go strings due to immutability, but demonstrates intent
+	//nolint:ineffassign // Intentional security measure despite limited effectiveness
 	password = ""
 
 	return verifier, nil

@@ -117,7 +117,7 @@ func TestSessionManager_CreateSession_Limit(t *testing.T) {
 
 	// Create maximum allowed sessions (10)
 	tokens := make([]string, 10)
-	for i := 0; i < 10; i++ {
+	for i := range len(tokens) {
 		token, err := sm.CreateSession("user")
 		if err != nil {
 			t.Fatalf("unexpected error at session %d: %v", i, err)

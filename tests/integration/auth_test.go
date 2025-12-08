@@ -280,7 +280,7 @@ func setupTestAuth(t *testing.T) *testAuthSetup {
 	if err := tmpfile.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(tmpfile.Name(), 0700); err != nil {
+	if err := os.Chmod(tmpfile.Name(), 0o700); err != nil {
 		t.Fatal(err)
 	}
 

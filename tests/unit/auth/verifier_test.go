@@ -166,7 +166,7 @@ func TestGeneratePassword(t *testing.T) {
 			}
 
 			// Make executable
-			if err := os.Chmod(tmpfile.Name(), 0700); err != nil {
+			if err := os.Chmod(tmpfile.Name(), 0o700); err != nil {
 				t.Fatal(err)
 			}
 
@@ -291,7 +291,7 @@ func TestComputeVerifierFromConfig(t *testing.T) {
 	if err := tmpfile.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(tmpfile.Name(), 0700); err != nil {
+	if err := os.Chmod(tmpfile.Name(), 0o700); err != nil {
 		t.Fatal(err)
 	}
 
@@ -331,7 +331,7 @@ func TestComputeVerifierFromConfig_GeneratorFails(t *testing.T) {
 	if err := tmpfile.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(tmpfile.Name(), 0700); err != nil {
+	if err := os.Chmod(tmpfile.Name(), 0o700); err != nil {
 		t.Fatal(err)
 	}
 
