@@ -13,7 +13,7 @@ GOBUILD := $(GOCMD) build
 GOTEST := $(GOCMD) test
 GOMOD := $(GOCMD) mod
 GOVET := $(GOCMD) vet
-GOTESTSUM := gotestsum
+GOTESTSUM := go tool gotestsum
 
 # Build flags
 LDFLAGS := -s -w

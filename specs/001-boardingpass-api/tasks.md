@@ -45,22 +45,22 @@
 
 - [X] T012 Create pkg/protocol/types.go with shared data structures (SystemInfo, NetworkConfig, ConfigBundle)
 - [X] T013 [P] Create pkg/protocol/errors.go with standardized error codes and messages
-- [X] T014 [P] Create tests/unit/protocol/types_test.go with unit tests for protocol types
-- [X] T015 [P] Create tests/unit/protocol/errors_test.go with unit tests for error handling
+- [X] T014 [P] Create pkg/protocol/types_test.go with unit tests for protocol types
+- [X] T015 [P] Create pkg/protocol/errors_test.go with unit tests for error handling
 - [X] T016 Create internal/config/config.go with ServiceConfig struct and YAML loading
 - [X] T017 Create internal/config/validate.go with configuration validation logic
-- [X] T018 [P] Create tests/unit/config/config_test.go with unit tests for config loading and validation
+- [X] T018 [P] Create internal/config/config_test.go with unit tests for config loading and validation
 - [X] T019 Create internal/logging/logger.go with JSON logging to stdout/stderr and systemd integration
 - [X] T020 Create internal/logging/redactor.go with secret redaction logic for auth tokens and config payloads
-- [X] T021 [P] Create tests/unit/logging/logger_test.go with unit tests for logging and redaction
+- [X] T021 [P] Create internal/logging/logger_test.go with unit tests for logging and redaction
 - [X] T022 Create internal/tls/certgen.go with self-signed certificate generation logic
 - [X] T023 Create internal/tls/config.go with TLS 1.3+ configuration and FIPS cipher suites
-- [X] T024 [P] Create tests/unit/tls/certgen_test.go with unit tests for certificate generation
-- [X] T025 [P] Create tests/unit/tls/config_test.go with unit tests for TLS configuration
+- [X] T024 [P] Create internal/tls/certgen_test.go with unit tests for certificate generation
+- [X] T025 [P] Create internal/tls/config_test.go with unit tests for TLS configuration
 - [X] T026 Create internal/api/server.go with HTTP server setup, TLS configuration, and lifecycle management
 - [X] T027 Create internal/api/middleware/logging.go with request/response logging middleware
 - [X] T028 [P] Create internal/api/middleware/errors.go with error handling middleware
-- [X] T029 [P] Create tests/unit/api/middleware_test.go with unit tests for middleware
+- [X] T029 [P] Create internal/api/middleware_test.go with unit tests for middleware
 - [X] T030 [P] Create build/boardingpass.service systemd unit file with sentinel file check and security hardening
 - [X] T031 [P] Create build/boardingpass.sudoers configuration file for restricted command execution
 - [X] T032 [P] Create build/password-generator.example script demonstrating device-unique password generation
@@ -82,10 +82,10 @@
 - [X] T035 [P] [US1] Create internal/auth/srp.go with SRP-6a protocol implementation using Go stdlib crypto
 - [X] T036 [US1] Create internal/auth/session.go with session token generation, HMAC signing, and 30-minute TTL management
 - [X] T037 [P] [US1] Create internal/auth/ratelimit.go with progressive delay brute force protection (1s, 2s, 5s, 60s lockout)
-- [X] T038 [P] [US1] Create tests/unit/auth/verifier_test.go with unit tests for verifier loading and password generation
-- [X] T039 [P] [US1] Create tests/unit/auth/srp_test.go with unit tests for SRP-6a protocol implementation
-- [X] T040 [P] [US1] Create tests/unit/auth/session_test.go with unit tests for session token management and expiry
-- [X] T041 [P] [US1] Create tests/unit/auth/ratelimit_test.go with unit tests for rate limiting and progressive delays
+- [X] T038 [P] [US1] Create internal/auth/verifier_test.go with unit tests for verifier loading and password generation
+- [X] T039 [P] [US1] Create internal/auth/srp_test.go with unit tests for SRP-6a protocol implementation
+- [X] T040 [P] [US1] Create internal/auth/session_test.go with unit tests for session token management and expiry
+- [X] T041 [P] [US1] Create internal/auth/ratelimit_test.go with unit tests for rate limiting and progressive delays
 - [X] T042 [US1] Create internal/api/middleware/auth.go with session token validation middleware
 - [X] T043 [US1] Create internal/api/handlers/auth.go with POST /auth/srp/init handler
 - [X] T044 [US1] Create POST /auth/srp/verify handler in internal/api/handlers/auth.go
@@ -111,17 +111,17 @@
 - [X] T051 [P] [US2] Create internal/inventory/cpu.go with CPU architecture detection from runtime.GOARCH
 - [X] T052 [P] [US2] Create internal/inventory/os.go with OS distribution and version detection from /etc/os-release
 - [X] T053 [P] [US2] Create internal/inventory/fips.go with FIPS mode status check from /proc/sys/crypto/fips_enabled
-- [X] T054 [P] [US2] Create tests/unit/inventory/tpm_test.go with unit tests for TPM extraction
-- [X] T055 [P] [US2] Create tests/unit/inventory/board_test.go with unit tests for board info extraction
-- [X] T056 [P] [US2] Create tests/unit/inventory/cpu_test.go with unit tests for CPU detection
-- [X] T057 [P] [US2] Create tests/unit/inventory/os_test.go with unit tests for OS detection
-- [X] T058 [P] [US2] Create tests/unit/inventory/fips_test.go with unit tests for FIPS mode check
+- [X] T054 [P] [US2] Create internal/inventory/tpm_test.go with unit tests for TPM extraction
+- [X] T055 [P] [US2] Create internal/inventory/board_test.go with unit tests for board info extraction
+- [X] T056 [P] [US2] Create internal/inventory/cpu_test.go with unit tests for CPU detection
+- [X] T057 [P] [US2] Create internal/inventory/os_test.go with unit tests for OS detection
+- [X] T058 [P] [US2] Create internal/inventory/fips_test.go with unit tests for FIPS mode check
 - [X] T059 [P] [US2] Create internal/network/interfaces.go with network interface enumeration via D-Bus or netlink
 - [X] T060 [P] [US2] Create internal/network/linkstate.go with link state detection (up/down)
 - [X] T061 [P] [US2] Create internal/network/addresses.go with IP address extraction (IPv4 and IPv6)
-- [X] T062 [P] [US2] Create tests/unit/network/interfaces_test.go with unit tests for interface enumeration
-- [X] T063 [P] [US2] Create tests/unit/network/linkstate_test.go with unit tests for link state detection
-- [X] T064 [P] [US2] Create tests/unit/network/addresses_test.go with unit tests for IP address extraction
+- [X] T062 [P] [US2] Create internal/network/interfaces_test.go with unit tests for interface enumeration
+- [X] T063 [P] [US2] Create internal/network/linkstate_test.go with unit tests for link state detection
+- [X] T064 [P] [US2] Create internal/network/addresses_test.go with unit tests for IP address extraction
 - [X] T065 [US2] Create internal/api/handlers/info.go with GET /info endpoint assembling SystemInfo response
 - [X] T066 [US2] Create internal/api/handlers/network.go with GET /network endpoint assembling NetworkConfig response
 - [X] T067 [US2] Add 1-second response caching to GET /info handler to reduce syscall overhead
@@ -147,10 +147,10 @@
 - [ ] T074 [P] [US3] Create internal/provisioning/pathvalidator.go with path allow-list validation against config.yaml
 - [ ] T075 [US3] Create internal/provisioning/applier.go with atomic file application logic (temp → validate → rename)
 - [ ] T076 [P] [US3] Create internal/provisioning/rollback.go with rollback mechanism on failure
-- [ ] T077 [P] [US3] Create tests/unit/provisioning/bundle_test.go with unit tests for bundle parsing
-- [ ] T078 [P] [US3] Create tests/unit/provisioning/pathvalidator_test.go with unit tests for path validation
-- [ ] T079 [P] [US3] Create tests/unit/provisioning/applier_test.go with unit tests for atomic operations
-- [ ] T080 [P] [US3] Create tests/unit/provisioning/rollback_test.go with unit tests for rollback logic
+- [ ] T077 [P] [US3] Create internal/provisioning/bundle_test.go with unit tests for bundle parsing
+- [ ] T078 [P] [US3] Create internal/provisioning/pathvalidator_test.go with unit tests for path validation
+- [ ] T079 [P] [US3] Create internal/provisioning/applier_test.go with unit tests for atomic operations
+- [ ] T080 [P] [US3] Create internal/provisioning/rollback_test.go with unit tests for rollback logic
 - [ ] T081 [US3] Create internal/api/handlers/configure.go with POST /configure endpoint
 - [ ] T082 [US3] Add configuration bundle size validation (10MB max, 100 files max) to configure handler
 - [ ] T083 [US3] Add path allow-list validation before provisioning in configure handler
@@ -174,9 +174,9 @@
 - [ ] T088 [P] [US4] Create internal/command/allowlist.go with command allow-list loading from config.yaml
 - [ ] T089 [P] [US4] Create internal/command/executor.go with sudo command execution and output capture
 - [ ] T090 [P] [US4] Create internal/command/sudoers.go with sudoers file validation logic
-- [ ] T091 [P] [US4] Create tests/unit/command/allowlist_test.go with unit tests for allow-list validation
-- [ ] T092 [P] [US4] Create tests/unit/command/executor_test.go with unit tests for command execution
-- [ ] T093 [P] [US4] Create tests/unit/command/sudoers_test.go with unit tests for sudoers validation
+- [ ] T091 [P] [US4] Create internal/command/allowlist_test.go with unit tests for allow-list validation
+- [ ] T092 [P] [US4] Create internal/command/executor_test.go with unit tests for command execution
+- [ ] T093 [P] [US4] Create internal/command/sudoers_test.go with unit tests for sudoers validation
 - [ ] T094 [US4] Create internal/api/handlers/command.go with POST /command endpoint
 - [ ] T095 [US4] Add command ID validation against allow-list before execution
 - [ ] T096 [US4] Add stdout/stderr capture and return in JSON response
@@ -200,9 +200,9 @@
 - [ ] T101 [P] [US5] Create internal/lifecycle/sentinel.go with sentinel file checking and creation logic
 - [ ] T102 [P] [US5] Create internal/lifecycle/timeout.go with inactivity timeout tracking (10-minute default)
 - [ ] T103 [P] [US5] Create internal/lifecycle/shutdown.go with graceful shutdown handler and signal handling
-- [ ] T104 [P] [US5] Create tests/unit/lifecycle/sentinel_test.go with unit tests for sentinel file operations
-- [ ] T105 [P] [US5] Create tests/unit/lifecycle/timeout_test.go with unit tests for timeout tracking
-- [ ] T106 [P] [US5] Create tests/unit/lifecycle/shutdown_test.go with unit tests for shutdown logic
+- [ ] T104 [P] [US5] Create internal/lifecycle/sentinel_test.go with unit tests for sentinel file operations
+- [ ] T105 [P] [US5] Create internal/lifecycle/timeout_test.go with unit tests for timeout tracking
+- [ ] T106 [P] [US5] Create internal/lifecycle/shutdown_test.go with unit tests for shutdown logic
 - [ ] T107 [US5] Create internal/api/handlers/complete.go with POST /complete endpoint
 - [ ] T108 [US5] Integrate sentinel file check into cmd/boardingpass/main.go startup sequence
 - [ ] T109 [US5] Integrate inactivity timeout into HTTP server in internal/api/server.go
@@ -302,13 +302,13 @@
 Task T034: "Create internal/auth/verifier.go"
 Task T035: "Create internal/auth/srp.go"
 Task T037: "Create internal/auth/ratelimit.go"
-Task T038: "Create tests/unit/auth/verifier_test.go"
-Task T039: "Create tests/unit/auth/srp_test.go"
-Task T041: "Create tests/unit/auth/ratelimit_test.go"
+Task T038: "Create internal/auth/verifier_test.go"
+Task T039: "Create internal/auth/srp_test.go"
+Task T041: "Create internal/auth/ratelimit_test.go"
 
 # Then sequentially:
 Task T036: "Create internal/auth/session.go" (depends on T035)
-Task T040: "Create tests/unit/auth/session_test.go" (depends on T036)
+Task T040: "Create internal/auth/session_test.go" (depends on T036)
 Task T042: "Create internal/api/middleware/auth.go" (depends on T036)
 Task T043-T046: Auth handlers and integration (depends on T034-T042)
 Task T047-T048: Integration and contract tests (depends on handlers)

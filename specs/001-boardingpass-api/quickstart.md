@@ -291,7 +291,7 @@ make test
 
 ### Test Organization
 
-- **Unit Tests**: `tests/unit/` - Test individual packages in isolation
+- **Unit Tests**: Co-located with source files (e.g., `internal/auth/session_test.go`) - Test individual packages in isolation
 - **Integration Tests**: `tests/integration/` - Test API endpoints with httptest
 - **Contract Tests**: `tests/contract/` - Validate API responses against OpenAPI spec
 - **E2E Tests**: `tests/e2e/` - Full workflow tests in containerized systemd environment
