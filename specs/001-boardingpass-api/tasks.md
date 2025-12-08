@@ -78,21 +78,21 @@
 
 ### Implementation for User Story 1
 
-- [ ] T034 [P] [US1] Create internal/auth/verifier.go with SRP verifier file loading, password generator execution, and verifier computation
-- [ ] T035 [P] [US1] Create internal/auth/srp.go with SRP-6a protocol implementation using Go stdlib crypto
-- [ ] T036 [US1] Create internal/auth/session.go with session token generation, HMAC signing, and 30-minute TTL management
-- [ ] T037 [P] [US1] Create internal/auth/ratelimit.go with progressive delay brute force protection (1s, 2s, 5s, 60s lockout)
-- [ ] T038 [P] [US1] Create tests/unit/auth/verifier_test.go with unit tests for verifier loading and password generation
-- [ ] T039 [P] [US1] Create tests/unit/auth/srp_test.go with unit tests for SRP-6a protocol implementation
-- [ ] T040 [P] [US1] Create tests/unit/auth/session_test.go with unit tests for session token management and expiry
-- [ ] T041 [P] [US1] Create tests/unit/auth/ratelimit_test.go with unit tests for rate limiting and progressive delays
-- [ ] T042 [US1] Create internal/api/middleware/auth.go with session token validation middleware
-- [ ] T043 [US1] Create internal/api/handlers/auth.go with POST /auth/srp/init handler
-- [ ] T044 [US1] Create POST /auth/srp/verify handler in internal/api/handlers/auth.go
-- [ ] T045 [US1] Integrate rate limiting into auth handlers with Retry-After headers
-- [ ] T046 [US1] Add authentication logging with secret redaction in auth handlers
-- [ ] T047 [P] [US1] Create tests/integration/auth_test.go with integration tests for full SRP handshake flow
-- [ ] T048 [P] [US1] Create tests/contract/auth_test.go with OpenAPI contract validation for auth endpoints
+- [X] T034 [P] [US1] Create internal/auth/verifier.go with SRP verifier file loading, password generator execution, and verifier computation
+- [X] T035 [P] [US1] Create internal/auth/srp.go with SRP-6a protocol implementation using Go stdlib crypto
+- [X] T036 [US1] Create internal/auth/session.go with session token generation, HMAC signing, and 30-minute TTL management
+- [X] T037 [P] [US1] Create internal/auth/ratelimit.go with progressive delay brute force protection (1s, 2s, 5s, 60s lockout)
+- [X] T038 [P] [US1] Create tests/unit/auth/verifier_test.go with unit tests for verifier loading and password generation
+- [X] T039 [P] [US1] Create tests/unit/auth/srp_test.go with unit tests for SRP-6a protocol implementation
+- [X] T040 [P] [US1] Create tests/unit/auth/session_test.go with unit tests for session token management and expiry
+- [X] T041 [P] [US1] Create tests/unit/auth/ratelimit_test.go with unit tests for rate limiting and progressive delays
+- [X] T042 [US1] Create internal/api/middleware/auth.go with session token validation middleware
+- [X] T043 [US1] Create internal/api/handlers/auth.go with POST /auth/srp/init handler
+- [X] T044 [US1] Create POST /auth/srp/verify handler in internal/api/handlers/auth.go
+- [X] T045 [US1] Integrate rate limiting into auth handlers with Retry-After headers
+- [X] T046 [US1] Add authentication logging with secret redaction in auth handlers
+- [X] T047 [P] [US1] Create tests/integration/auth_test.go with integration tests for full SRP handshake flow
+- [X] T048 [P] [US1] Create tests/contract/auth_test.go with OpenAPI contract validation for auth endpoints
 
 **Checkpoint**: User Story 1 complete with full test coverage - SRP handshake works and returns valid session token
 

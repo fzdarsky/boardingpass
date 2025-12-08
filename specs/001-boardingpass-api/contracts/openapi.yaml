@@ -400,7 +400,7 @@ components:
           example: "dGhpc2lzYW5leGFtcGxlc2VydmVycHJvb2Y="
         session_token:
           type: string
-          description: Session token (format: token_id.signature)
+          description: "Session token (format: token_id.signature)"
           pattern: '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
           example: "dGhpc2lzYXRva2VuaWQ.c2lnbmF0dXJlaGVyZQ"
 
