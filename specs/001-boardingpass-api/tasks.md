@@ -226,7 +226,7 @@
 - [X] T118 Add startup logging with version, commit, and configuration summary
 - [X] T119 Add systemd notify integration for Type=notify in main.go
 - [X] T120 [P] Create tests/e2e/service_test.go with end-to-end tests in containerized systemd environment
-- [ ] T121 Verify test coverage meets 80% threshold across all packages
+- [X] T121 Verify test coverage meets 80% threshold across all packages
 
 **Checkpoint**: Full service integration complete with E2E test coverage
 
@@ -236,18 +236,18 @@
 
 **Purpose**: Improvements that affect multiple user stories and final validation
 
-- [ ] T122 [P] Create docs/development.md with local setup, build, test instructions
-- [ ] T123 [P] Create docs/deployment.md with package installation and configuration guide
-- [ ] T124 [P] Create docs/api.md with API documentation generated from OpenAPI spec
-- [ ] T125 [P] Create docs/security.md with security considerations and best practices
+- [X] T122 [P] Create docs/development.md with local setup, build, test instructions
+- [X] T123 [P] Create docs/deployment.md with package installation and configuration guide
+- [X] T124 [P] Create docs/api.md with API documentation generated from OpenAPI spec
+- [X] T125 [P] Create docs/security.md with security considerations and best practices
 - [ ] T126 Code cleanup and refactoring across all packages
 - [ ] T127 Add comprehensive error messages with context to all error returns
-- [ ] T128 Validate binary size < 10MB after build
+- [X] T128 Validate binary size < 10MB after build
 - [ ] T129 Validate memory consumption < 50MB idle via profiling
 - [ ] T130 Validate SRP handshake < 500ms on Raspberry Pi 4 equivalent
 - [ ] T131 Run quickstart.md validation end-to-end
 - [ ] T132 Verify OpenAPI contract compliance for all endpoints
-- [ ] T133 Run golangci-lint with zero warnings
+- [X] T133 Run golangci-lint with zero warnings
 - [ ] T134 Generate and review test coverage report
 
 ---
