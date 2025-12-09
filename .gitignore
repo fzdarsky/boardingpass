@@ -1,0 +1,43 @@
+# Build outputs
+_output/
+dist/
+*.exe
+*.test
+*.out
+
+# Binaries
+bin/
+/boardingpass
+
+# Go
+vendor/
+*.prof*
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env*
+!.env.example
+
+# Test coverage
+coverage.out
+*.coverprofile
+
+# Temporary files
+*.tmp
+*.bak
+.*.sw[a-z]
+
+# Coding agents
+.claude/
+.serena/

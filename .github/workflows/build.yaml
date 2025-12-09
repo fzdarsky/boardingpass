@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  push:
+    branches: [main, "**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - name: Build binary
+        run: make build
+
+      - name: Verify binary size
+        run: |
+          BINARY_SIZE=$(stat -c%s _output/bin/boardingpass)
+          MAX_SIZE=$((10 * 1024 * 1024))  # 10MB
+          if [ $BINARY_SIZE -gt $MAX_SIZE ]; then
+            echo "Binary size ($BINARY_SIZE bytes) exceeds maximum allowed ($MAX_SIZE bytes)"
+            exit 1
+          fi
+          echo "Binary size: $BINARY_SIZE bytes (limit: $MAX_SIZE bytes)"
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: boardingpass-binary
+          path: _output/bin/boardingpass

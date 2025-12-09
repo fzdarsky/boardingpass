@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "path": "systemd/network/10-eth0.network",
+      "content": "W01hdGNoXQpOYW1lPWV0aDAKCltOZXR3b3JrXQpBZGRyZXNzPTE5Mi4xNjguMS4xMDAvMjQKR2F0ZXdheT0xOTIuMTY4LjEuMQpETlM9OC44LjguOApETlM9OC44LjQuNAo=",
+      "mode": 420
+    },
+    {
+      "path": "chrony/chrony.conf",
+      "content": "c2VydmVyIHRpbWUuY2xvdWRmbGFyZS5jb20gaWJ1cnN0CnNlcnZlciB0aW1lLmdvb2dsZS5jb20gaWJ1cnN0CgpkcmlmdGZpbGUgL3Zhci9saWIvY2hyb255L2RyaWZ0Cm1ha2VzdGVwIDEuMCAzCnJ0Y3N5bmM=",
+      "mode": 420
+    },
+    {
+      "path": "hostname",
+      "content": "Ym9hcmRpbmdwYXNzLWRldmljZS0wMQo=",
+      "mode": 420
+    }
+  ]
+}

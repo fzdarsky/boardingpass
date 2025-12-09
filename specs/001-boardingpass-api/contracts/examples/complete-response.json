@@ -1,0 +1,5 @@
+{
+  "status": "shutting_down",
+  "sentinel_file": "/etc/boardingpass/issued",
+  "message": "Provisioning complete. Service will terminate in 5 seconds."
+}

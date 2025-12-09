@@ -1,0 +1,54 @@
+# Build environment using UBI9 Go toolset 1.25
+FROM registry.access.redhat.com/ubi9/go-toolset:1.25 AS builder
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-s -w" \
+    -trimpath \
+    -o /workspace/_output/bin/boardingpass \
+    ./cmd/boardingpass
+
+# Runtime image
+FROM registry.access.redhat.com/ubi9-minimal:latest
+
+# Install systemd and basic utilities
+RUN microdnf install -y systemd && \
+    microdnf clean all
+
+# Create directories
+RUN mkdir -p /etc/boardingpass /var/lib/boardingpass/staging /var/lib/boardingpass/tls
+
+# Copy binary from builder
+COPY --from=builder /workspace/_output/bin/boardingpass /usr/local/bin/boardingpass
+
+# Copy systemd unit file
+COPY build/boardingpass.service /usr/lib/systemd/system/boardingpass.service
+
+# Copy sudoers configuration
+COPY build/boardingpass.sudoers /etc/sudoers.d/boardingpass
+
+# Set proper permissions
+RUN chmod 755 /usr/local/bin/boardingpass && \
+    chmod 644 /usr/lib/systemd/system/boardingpass.service && \
+    chmod 440 /etc/sudoers.d/boardingpass
+
+# Enable the service
+RUN systemctl enable boardingpass.service
+
+# Expose HTTPS port (default: 8443)
+EXPOSE 8443
+
+# Use systemd as init
+CMD ["/usr/sbin/init"]
