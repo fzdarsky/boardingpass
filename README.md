@@ -4,7 +4,6 @@
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8.svg)](https://golang.org/)
 [![Build](https://github.com/fzdarsky/boardingpass/workflows/Build/badge.svg)](https://github.com/fzdarsky/boardingpass/actions)
 [![Coverage](https://img.shields.io/badge/coverage-72%25-yellow.svg)](https://github.com/fzdarsky/boardingpass)
-[![GoDoc](https://godoc.org/github.com/fzdarsky/boardingpass?status.svg)](https://godoc.org/github.com/fzdarsky/boardingpass)
 
 **BoardingPass** is a lightweight, ephemeral bootstrap service for headless Linux devices, exposing a RESTful API over HTTPS with SRP-6a authentication.
 
