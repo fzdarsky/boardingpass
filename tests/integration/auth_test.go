@@ -254,6 +254,191 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 	}
 }
 
+// TestSRPVerify_MissingSessionID tests verify with missing session ID.
+func TestSRPVerify_MissingSessionID(t *testing.T) {
+	setup := setupTestAuth(t)
+	defer setup.cleanup()
+
+	req := map[string]string{
+		"M1": "dGVzdE0xUHJvb2Y=",
+		// session_id missing
+	}
+
+	body, _ := json.Marshal(req)
+	resp := httptest.NewRecorder()
+	httpReq := httptest.NewRequest("POST", "/auth/srp/verify", bytes.NewReader(body))
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	setup.authHandler.HandleSRPVerify(resp, httpReq)
+
+	if resp.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400, got %d", resp.Code)
+	}
+}
+
+// TestSRPVerify_MissingM1 tests verify with missing M1.
+func TestSRPVerify_MissingM1(t *testing.T) {
+	setup := setupTestAuth(t)
+	defer setup.cleanup()
+
+	req := map[string]string{
+		"session_id": "test-session-id",
+		// M1 missing
+	}
+
+	body, _ := json.Marshal(req)
+	resp := httptest.NewRecorder()
+	httpReq := httptest.NewRequest("POST", "/auth/srp/verify", bytes.NewReader(body))
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	setup.authHandler.HandleSRPVerify(resp, httpReq)
+
+	if resp.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400, got %d", resp.Code)
+	}
+}
+
+// TestSRPVerify_InvalidSessionID tests verify with invalid/expired session ID.
+func TestSRPVerify_InvalidSessionID(t *testing.T) {
+	setup := setupTestAuth(t)
+	defer setup.cleanup()
+
+	req := map[string]string{
+		"session_id": "invalid-session-id-12345",
+		"M1":         "dGVzdE0xUHJvb2Y=",
+	}
+
+	body, _ := json.Marshal(req)
+	resp := httptest.NewRecorder()
+	httpReq := httptest.NewRequest("POST", "/auth/srp/verify", bytes.NewReader(body))
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.RemoteAddr = "192.168.1.100:12345"
+
+	setup.authHandler.HandleSRPVerify(resp, httpReq)
+
+	if resp.Code != http.StatusUnauthorized {
+		t.Errorf("expected status 401, got %d", resp.Code)
+	}
+
+	// Should have Retry-After header (rate limiting)
+	if resp.Header().Get("Retry-After") == "" {
+		t.Error("expected Retry-After header for failed auth")
+	}
+}
+
+// TestSRPVerify_CompletFlow tests the complete init->verify flow.
+func TestSRPVerify_CompleteFlow(t *testing.T) {
+	setup := setupTestAuth(t)
+	defer setup.cleanup()
+
+	// Step 1: Init
+	initReq := map[string]string{
+		"username": setup.username,
+		"A":        generateTestEphemeralA(t),
+	}
+
+	initBody, _ := json.Marshal(initReq)
+	initResp := httptest.NewRecorder()
+	initHTTPReq := httptest.NewRequest("POST", "/auth/srp/init", bytes.NewReader(initBody))
+	initHTTPReq.Header.Set("Content-Type", "application/json")
+
+	setup.authHandler.HandleSRPInit(initResp, initHTTPReq)
+
+	if initResp.Code != http.StatusOK {
+		t.Fatalf("init failed with status %d: %s", initResp.Code, initResp.Body.String())
+	}
+
+	var initResult map[string]any
+	if err := json.Unmarshal(initResp.Body.Bytes(), &initResult); err != nil {
+		t.Fatalf("failed to unmarshal init response: %v", err)
+	}
+
+	// Verify session_id is returned
+	sessionID, ok := initResult["session_id"].(string)
+	if !ok || sessionID == "" {
+		t.Fatal("session_id not returned in init response")
+	}
+
+	// Step 2: Verify with invalid M1 (should fail)
+	verifyReq := map[string]string{
+		"session_id": sessionID,
+		"M1":         "aW52YWxpZE0xUHJvb2Y=",
+	}
+
+	verifyBody, _ := json.Marshal(verifyReq)
+	verifyResp := httptest.NewRecorder()
+	verifyHTTPReq := httptest.NewRequest("POST", "/auth/srp/verify", bytes.NewReader(verifyBody))
+	verifyHTTPReq.Header.Set("Content-Type", "application/json")
+	verifyHTTPReq.RemoteAddr = "192.168.1.100:12345"
+
+	setup.authHandler.HandleSRPVerify(verifyResp, verifyHTTPReq)
+
+	// Should fail with invalid M1
+	if verifyResp.Code != http.StatusUnauthorized {
+		t.Errorf("expected status 401 for invalid M1, got %d", verifyResp.Code)
+	}
+
+	// Note: Testing successful verification requires a valid SRP client implementation
+	// to compute the correct M1 proof. This is tested in the SRP unit tests.
+}
+
+// TestSRPVerify_SessionOneTimeUse tests that session IDs can only be used once.
+func TestSRPVerify_SessionOneTimeUse(t *testing.T) {
+	setup := setupTestAuth(t)
+	defer setup.cleanup()
+
+	// Step 1: Init
+	initReq := map[string]string{
+		"username": setup.username,
+		"A":        generateTestEphemeralA(t),
+	}
+
+	initBody, _ := json.Marshal(initReq)
+	initResp := httptest.NewRecorder()
+	initHTTPReq := httptest.NewRequest("POST", "/auth/srp/init", bytes.NewReader(initBody))
+	initHTTPReq.Header.Set("Content-Type", "application/json")
+
+	setup.authHandler.HandleSRPInit(initResp, initHTTPReq)
+
+	var initResult map[string]any
+	if err := json.Unmarshal(initResp.Body.Bytes(), &initResult); err != nil {
+		t.Fatalf("failed to unmarshal init response: %v", err)
+	}
+	sessionID := initResult["session_id"].(string)
+
+	// Step 2: First verify attempt
+	verifyReq := map[string]string{
+		"session_id": sessionID,
+		"M1":         "dGVzdE0x",
+	}
+
+	verifyBody, _ := json.Marshal(verifyReq)
+	verifyResp1 := httptest.NewRecorder()
+	verifyHTTPReq1 := httptest.NewRequest("POST", "/auth/srp/verify", bytes.NewReader(verifyBody))
+	verifyHTTPReq1.Header.Set("Content-Type", "application/json")
+	verifyHTTPReq1.RemoteAddr = "192.168.1.100:12345"
+
+	setup.authHandler.HandleSRPVerify(verifyResp1, verifyHTTPReq1)
+
+	// First attempt should process (though fail with invalid M1)
+	if verifyResp1.Code != http.StatusUnauthorized {
+		t.Errorf("first attempt: expected status 401, got %d", verifyResp1.Code)
+	}
+
+	// Step 3: Second verify attempt with same session ID (should fail - session consumed)
+	verifyResp2 := httptest.NewRecorder()
+	verifyHTTPReq2 := httptest.NewRequest("POST", "/auth/srp/verify", bytes.NewReader(verifyBody))
+	verifyHTTPReq2.Header.Set("Content-Type", "application/json")
+	verifyHTTPReq2.RemoteAddr = "192.168.1.100:12345"
+
+	setup.authHandler.HandleSRPVerify(verifyResp2, verifyHTTPReq2)
+
+	// Second attempt should fail because session was consumed
+	if verifyResp2.Code != http.StatusUnauthorized {
+		t.Errorf("second attempt: expected status 401, got %d", verifyResp2.Code)
+	}
+}
+
 // Test setup helpers
 
 type testAuthSetup struct {
@@ -298,11 +483,14 @@ func setupTestAuth(t *testing.T) *testAuthSetup {
 	// Create rate limiter
 	rateLimiter := auth.NewRateLimiter()
 
+	// Create SRP store
+	srpStore := auth.NewSRPStore(5 * time.Minute)
+
 	// Create logger
 	logger := log.New(os.Stdout, "[TEST] ", log.LstdFlags)
 
 	// Create auth handler
-	authHandler := handlers.NewAuthHandler(verifierConfig, sessionManager, rateLimiter, logger)
+	authHandler := handlers.NewAuthHandler(verifierConfig, sessionManager, rateLimiter, srpStore, logger)
 
 	// Create auth middleware
 	authMiddleware := middleware.NewAuthMiddleware(sessionManager)

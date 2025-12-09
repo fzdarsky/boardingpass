@@ -16,6 +16,7 @@ type AuthHandler struct {
 	verifierConfig *auth.SRPVerifierConfig
 	sessionManager *auth.SessionManager
 	rateLimiter    *auth.RateLimiter
+	srpStore       *auth.SRPStore
 	logger         *log.Logger
 }
 
@@ -24,12 +25,14 @@ func NewAuthHandler(
 	verifierConfig *auth.SRPVerifierConfig,
 	sessionManager *auth.SessionManager,
 	rateLimiter *auth.RateLimiter,
+	srpStore *auth.SRPStore,
 	logger *log.Logger,
 ) *AuthHandler {
 	return &AuthHandler{
 		verifierConfig: verifierConfig,
 		sessionManager: sessionManager,
 		rateLimiter:    rateLimiter,
+		srpStore:       srpStore,
 		logger:         logger,
 	}
 }
@@ -42,13 +45,15 @@ type SRPInitRequest struct {
 
 // SRPInitResponse represents the POST /auth/srp/init response body.
 type SRPInitResponse struct {
-	Salt string `json:"salt"` // Base64-encoded salt
-	B    string `json:"B"`    // Server ephemeral public value (Base64)
+	Salt      string `json:"salt"`       // Base64-encoded salt
+	B         string `json:"B"`          // Server ephemeral public value (Base64)
+	SessionID string `json:"session_id"` // Session ID for verify step
 }
 
 // SRPVerifyRequest represents the POST /auth/srp/verify request body.
 type SRPVerifyRequest struct {
-	M1 string `json:"M1"` // Client proof (Base64)
+	SessionID string `json:"session_id"` // Session ID from init step
+	M1        string `json:"M1"`         // Client proof (Base64)
 }
 
 // SRPVerifyResponse represents the POST /auth/srp/verify response body.
@@ -131,14 +136,19 @@ func (ah *AuthHandler) HandleSRPInit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Store server instance in session for verify step
-	// TODO: Implement server instance storage (in-memory map with TTL)
-	// For now, we'll need to recompute in verify (stateless approach)
+	// Store server instance for verify step
+	sessionID, err := ah.srpStore.Store(server)
+	if err != nil {
+		ah.logAuthEvent("srp_init_storage_error", clientIP, req.Username, fmt.Sprintf("failed to store SRP session: %v", err))
+		writeJSONError(w, http.StatusInternalServerError, "internal_server_error", "Internal server error")
+		return
+	}
 
-	// Return salt and B
+	// Return salt, B, and session ID
 	resp := SRPInitResponse{
-		Salt: salt,
-		B:    B,
+		Salt:      salt,
+		B:         B,
+		SessionID: sessionID,
 	}
 
 	ah.logAuthEvent("srp_init_success", clientIP, req.Username, "SRP init successful")
@@ -170,60 +180,61 @@ func (ah *AuthHandler) HandleSRPVerify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate required fields
+	if req.SessionID == "" {
+		ah.logAuthEvent("srp_verify_missing_session_id", clientIP, "", "session ID missing")
+		writeJSONError(w, http.StatusBadRequest, "invalid_request", "Missing required field: session_id")
+		return
+	}
 	if req.M1 == "" {
 		ah.logAuthEvent("srp_verify_missing_M1", clientIP, "", "proof M1 missing")
 		writeJSONError(w, http.StatusBadRequest, "invalid_request", "Missing required field: M1")
 		return
 	}
 
-	// TODO: Retrieve server instance from storage
-	// For now, this is a placeholder showing the flow
-	// In a real implementation, we would need to:
-	// 1. Store the SRP server instance after Init (with TTL)
-	// 2. Retrieve it here using a session ID or similar
-	// 3. Verify M1 using the stored server instance
+	// Retrieve server instance from storage
+	server := ah.srpStore.Retrieve(req.SessionID)
+	if server == nil {
+		ah.logAuthEvent("srp_verify_invalid_session", clientIP, "", "session not found or expired")
+		// Invalid or expired session - treat as auth failure
+		delay := ah.rateLimiter.RecordFailure(clientIP)
+		w.Header().Set("Retry-After", fmt.Sprintf("%d", auth.FormatRetryAfter(delay)))
+		writeJSONError(w, http.StatusUnauthorized, "authentication_failed", "Invalid or expired session")
+		return
+	}
 
-	// Placeholder: This would fail in real use without server instance storage
-	ah.logAuthEvent("srp_verify_not_implemented", clientIP, "", "server instance storage not implemented")
-	writeJSONError(w, http.StatusNotImplemented, "not_implemented",
-		"SRP verify requires server instance storage (not yet implemented)")
+	// Get username from server instance
+	username := server.Username
 
-	// The following code shows the intended flow once storage is implemented:
-	/*
-		// Verify client proof M1
-		M2, err := server.Verify(req.M1)
-		if err != nil {
-			ah.logAuthEvent("srp_verify_failed", clientIP, username, fmt.Sprintf("verification failed: %v", err))
-			// Authentication failed
-			delay := ah.rateLimiter.RecordFailure(clientIP)
-			w.Header().Set("Retry-After", fmt.Sprintf("%d", auth.FormatRetryAfter(delay)))
-			writeJSONError(w, http.StatusUnauthorized, "authentication_failed", "Authentication failed")
-			return
-		}
+	// Verify client proof M1
+	M2, err := server.Verify(req.M1)
+	if err != nil {
+		ah.logAuthEvent("srp_verify_failed", clientIP, username, fmt.Sprintf("verification failed: %v", err))
+		// Authentication failed
+		delay := ah.rateLimiter.RecordFailure(clientIP)
+		w.Header().Set("Retry-After", fmt.Sprintf("%d", auth.FormatRetryAfter(delay)))
+		writeJSONError(w, http.StatusUnauthorized, "authentication_failed", "Authentication failed")
+		return
+	}
 
-		// Authentication successful - clear rate limit
-		ah.rateLimiter.RecordSuccess(clientIP)
+	// Authentication successful - clear rate limit
+	ah.rateLimiter.RecordSuccess(clientIP)
 
-		// Create session token
-		sessionToken, err := ah.sessionManager.CreateSession(username)
-		if err != nil {
-			ah.logAuthEvent("srp_verify_session_error", clientIP, username, fmt.Sprintf("session creation failed: %v", err))
-			writeJSONError(w, http.StatusInternalServerError, "internal_server_error", "Internal server error")
-			return
-		}
+	// Create session token
+	sessionToken, err := ah.sessionManager.CreateSession(username)
+	if err != nil {
+		ah.logAuthEvent("srp_verify_session_error", clientIP, username, fmt.Sprintf("session creation failed: %v", err))
+		writeJSONError(w, http.StatusInternalServerError, "internal_server_error", "Internal server error")
+		return
+	}
 
-		// Clear server secrets from memory
-		server.ClearSecrets()
+	// Return M2 and session token
+	resp := SRPVerifyResponse{
+		M2:           M2,
+		SessionToken: sessionToken,
+	}
 
-		// Return M2 and session token
-		resp := SRPVerifyResponse{
-			M2:           M2,
-			SessionToken: sessionToken,
-		}
-
-		ah.logAuthEvent("srp_verify_success", clientIP, username, "authentication successful")
-		writeJSONResponse(w, http.StatusOK, resp)
-	*/
+	ah.logAuthEvent("srp_verify_success", clientIP, username, "authentication successful")
+	writeJSONResponse(w, http.StatusOK, resp)
 }
 
 // logAuthEvent logs an authentication event with secret redaction.
