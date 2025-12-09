@@ -143,21 +143,21 @@
 
 ### Implementation for User Story 3
 
-- [ ] T073 [P] [US3] Create internal/provisioning/bundle.go with ConfigBundle parsing and Base64 decoding
-- [ ] T074 [P] [US3] Create internal/provisioning/pathvalidator.go with path allow-list validation against config.yaml
-- [ ] T075 [US3] Create internal/provisioning/applier.go with atomic file application logic (temp → validate → rename)
-- [ ] T076 [P] [US3] Create internal/provisioning/rollback.go with rollback mechanism on failure
-- [ ] T077 [P] [US3] Create internal/provisioning/bundle_test.go with unit tests for bundle parsing
-- [ ] T078 [P] [US3] Create internal/provisioning/pathvalidator_test.go with unit tests for path validation
-- [ ] T079 [P] [US3] Create internal/provisioning/applier_test.go with unit tests for atomic operations
-- [ ] T080 [P] [US3] Create internal/provisioning/rollback_test.go with unit tests for rollback logic
-- [ ] T081 [US3] Create internal/api/handlers/configure.go with POST /configure endpoint
-- [ ] T082 [US3] Add configuration bundle size validation (10MB max, 100 files max) to configure handler
-- [ ] T083 [US3] Add path allow-list validation before provisioning in configure handler
-- [ ] T084 [US3] Add authentication requirement to configure handler
-- [ ] T085 [US3] Add strict content redaction for configuration payloads in logs
-- [ ] T086 [P] [US3] Create tests/integration/configure_test.go with integration tests for configuration provisioning
-- [ ] T087 [P] [US3] Create tests/contract/configure_test.go with OpenAPI contract validation for /configure endpoint
+- [X] T073 [P] [US3] Create internal/provisioning/bundle.go with ConfigBundle parsing and Base64 decoding
+- [X] T074 [P] [US3] Create internal/provisioning/pathvalidator.go with path allow-list validation against config.yaml
+- [X] T075 [US3] Create internal/provisioning/applier.go with atomic file application logic (temp → validate → rename)
+- [X] T076 [P] [US3] Create internal/provisioning/rollback.go with rollback mechanism on failure
+- [X] T077 [P] [US3] Create internal/provisioning/bundle_test.go with unit tests for bundle parsing
+- [X] T078 [P] [US3] Create internal/provisioning/pathvalidator_test.go with unit tests for path validation
+- [X] T079 [P] [US3] Create internal/provisioning/applier_test.go with unit tests for atomic operations
+- [X] T080 [P] [US3] Create internal/provisioning/rollback_test.go with unit tests for rollback logic
+- [X] T081 [US3] Create internal/api/handlers/configure.go with POST /configure endpoint
+- [X] T082 [US3] Add configuration bundle size validation (10MB max, 100 files max) to configure handler
+- [X] T083 [US3] Add path allow-list validation before provisioning in configure handler
+- [X] T084 [US3] Add authentication requirement to configure handler
+- [X] T085 [US3] Add strict content redaction for configuration payloads in logs
+- [X] T086 [P] [US3] Create tests/integration/configure_test.go with integration tests for configuration provisioning
+- [X] T087 [P] [US3] Create tests/contract/configure_test.go with OpenAPI contract validation for /configure endpoint
 
 **Checkpoint**: User Stories 1, 2, AND 3 complete with full test coverage - can provision configuration bundles
 
