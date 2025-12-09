@@ -295,20 +295,46 @@ func TestSRPRequests_JSON(t *testing.T) {
 }
 
 func TestCompleteResponse_JSON(t *testing.T) {
-	input := protocol.CompleteResponse{
-		Status:  "success",
-		Message: "Device provisioning complete",
-	}
-	expected := `{"status":"success","message":"Device provisioning complete"}`
+	t.Run("with message", func(t *testing.T) {
+		input := protocol.CompleteResponse{
+			Status:       "shutting_down",
+			SentinelFile: "/etc/boardingpass/issued",
+			Message:      stringPtr("Device provisioning complete"),
+		}
+		expected := `{"status":"shutting_down","sentinel_file":"/etc/boardingpass/issued","message":"Device provisioning complete"}`
 
-	data, err := json.Marshal(input)
-	require.NoError(t, err)
-	assert.JSONEq(t, expected, string(data))
+		data, err := json.Marshal(input)
+		require.NoError(t, err)
+		assert.JSONEq(t, expected, string(data))
 
-	var decoded protocol.CompleteResponse
-	err = json.Unmarshal(data, &decoded)
-	require.NoError(t, err)
-	assert.Equal(t, input, decoded)
+		var decoded protocol.CompleteResponse
+		err = json.Unmarshal(data, &decoded)
+		require.NoError(t, err)
+		assert.Equal(t, input.Status, decoded.Status)
+		assert.Equal(t, input.SentinelFile, decoded.SentinelFile)
+		require.NotNil(t, decoded.Message)
+		assert.Equal(t, *input.Message, *decoded.Message)
+	})
+
+	t.Run("without message (omitempty)", func(t *testing.T) {
+		input := protocol.CompleteResponse{
+			Status:       "shutting_down",
+			SentinelFile: "/etc/boardingpass/issued",
+			Message:      nil,
+		}
+		expected := `{"status":"shutting_down","sentinel_file":"/etc/boardingpass/issued"}`
+
+		data, err := json.Marshal(input)
+		require.NoError(t, err)
+		assert.JSONEq(t, expected, string(data))
+
+		var decoded protocol.CompleteResponse
+		err = json.Unmarshal(data, &decoded)
+		require.NoError(t, err)
+		assert.Equal(t, input.Status, decoded.Status)
+		assert.Equal(t, input.SentinelFile, decoded.SentinelFile)
+		assert.Nil(t, decoded.Message)
+	})
 }
 
 func stringPtr(s string) *string {

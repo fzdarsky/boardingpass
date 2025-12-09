@@ -8,9 +8,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/fzdarsky/boardingpass/internal/api"
@@ -18,6 +17,7 @@ import (
 	"github.com/fzdarsky/boardingpass/internal/api/middleware"
 	"github.com/fzdarsky/boardingpass/internal/auth"
 	"github.com/fzdarsky/boardingpass/internal/config"
+	"github.com/fzdarsky/boardingpass/internal/lifecycle"
 	"github.com/fzdarsky/boardingpass/internal/logging"
 )
 
@@ -34,11 +34,10 @@ func main() {
 	verifierPath := flag.String("verifier", "/etc/boardingpass/verifier", "path to SRP verifier file")
 	flag.Parse()
 
-	// Initialize logger with default settings (will be updated from config)
-	logger := logging.New(logging.LevelInfo, logging.FormatJSON)
-
 	// Run the service
-	if err := run(*configPath, *verifierPath, logger); err != nil {
+	if err := run(*configPath, *verifierPath); err != nil {
+		// Log error with default logger since config may not be loaded
+		logger := logging.New(logging.LevelError, logging.FormatJSON)
 		logger.Error("service failed", map[string]any{
 			"error": err.Error(),
 		})
@@ -46,7 +45,7 @@ func main() {
 	}
 }
 
-func run(configPath, verifierPath string, logger *logging.Logger) error {
+func run(configPath, verifierPath string) error {
 	// Load configuration
 	cfg, err := config.Load(configPath)
 	if err != nil {
@@ -57,8 +56,8 @@ func run(configPath, verifierPath string, logger *logging.Logger) error {
 	logLevel := parseLogLevel(cfg.Logging.Level)
 	logFormat := parseLogFormat(cfg.Logging.Format)
 
-	// Recreate logger with config settings
-	logger = logging.New(logLevel, logFormat)
+	// Create logger with config settings
+	logger := logging.New(logLevel, logFormat)
 
 	// Log startup information
 	logger.Info("BoardingPass service starting", map[string]any{
@@ -73,7 +72,12 @@ func run(configPath, verifierPath string, logger *logging.Logger) error {
 	})
 
 	// Check sentinel file - if it exists, the device is already provisioned
-	if _, err := os.Stat(cfg.Service.SentinelFile); err == nil {
+	sentinel := lifecycle.NewSentinel(cfg.Service.SentinelFile)
+	exists, err := sentinel.Exists()
+	if err != nil {
+		return fmt.Errorf("failed to check sentinel file: %w", err)
+	}
+	if exists {
 		logger.Info("sentinel file exists - device already provisioned, exiting", map[string]any{
 			"sentinel_file": cfg.Service.SentinelFile,
 		})
@@ -113,6 +117,23 @@ func run(configPath, verifierPath string, logger *logging.Logger) error {
 	// Create auth handler
 	authHandler := handlers.NewAuthHandler(verifierCfg, sessionManager, rateLimiter, srpStore, stdLogger)
 
+	// Create shutdown manager for graceful termination
+	shutdownManager := lifecycle.NewShutdownManager()
+
+	// Parse inactivity timeout from config
+	inactivityTimeout, err := time.ParseDuration(cfg.Service.InactivityTimeout)
+	if err != nil {
+		return fmt.Errorf("failed to parse inactivity timeout: %w", err)
+	}
+
+	// Create inactivity tracker
+	inactivityTracker, err := lifecycle.NewInactivityTracker(inactivityTimeout, func() {
+		shutdownManager.Shutdown("inactivity timeout")
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create inactivity tracker: %w", err)
+	}
+
 	// Create API server
 	server, err := api.New(cfg, logger)
 	if err != nil {
@@ -128,39 +149,44 @@ func run(configPath, verifierPath string, logger *logging.Logger) error {
 	// Create authentication middleware
 	authMiddleware := middleware.NewAuthMiddleware(sessionManager)
 
-	// Register routes
+	// Create activity tracking middleware to reset inactivity timer
+	activityMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			inactivityTracker.RecordActivity()
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	// Register routes (all wrapped with activity tracking)
 	// Auth endpoints (no authentication required)
-	mux.HandleFunc("/auth/srp/init", authHandler.HandleSRPInit)
-	mux.HandleFunc("/auth/srp/verify", authHandler.HandleSRPVerify)
+	mux.Handle("/auth/srp/init", activityMiddleware(http.HandlerFunc(authHandler.HandleSRPInit)))
+	mux.Handle("/auth/srp/verify", activityMiddleware(http.HandlerFunc(authHandler.HandleSRPVerify)))
 
 	// Info endpoint (requires authentication)
 	infoHandler := handlers.NewInfoHandler()
-	mux.Handle("/info", authMiddleware.Require(infoHandler))
+	mux.Handle("/info", activityMiddleware(authMiddleware.Require(infoHandler)))
 
 	// Network endpoint (requires authentication)
 	networkHandler := handlers.NewNetworkHandler()
-	mux.Handle("/network", authMiddleware.Require(networkHandler))
+	mux.Handle("/network", activityMiddleware(authMiddleware.Require(networkHandler)))
+
+	// Complete endpoint (requires authentication)
+	completeHandler := handlers.NewCompleteHandler(cfg.Service.SentinelFile, func(reason string) {
+		shutdownManager.Shutdown(reason)
+	}, logger)
+	mux.Handle("/complete", activityMiddleware(authMiddleware.Require(completeHandler)))
 
 	// TODO: Add /configure endpoint (US3 - not yet implemented)
 	// TODO: Add /command endpoint (US4 - not yet implemented)
-	// TODO: Add /complete endpoint (US5 - not yet implemented)
 
 	// Set up signal handling for graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := context.Background()
 
-	// Create a channel to listen for interrupt signals
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
+	// Start shutdown manager (handles signals and shutdown triggers)
+	shutdownCtx := shutdownManager.Start(ctx)
 
-	// Handle signals in a goroutine
-	go func() {
-		sig := <-sigChan
-		logger.Info("received shutdown signal", map[string]any{
-			"signal": sig.String(),
-		})
-		cancel()
-	}()
+	// Start inactivity tracker
+	go inactivityTracker.Start(shutdownCtx)
 
 	// Start the server
 	logger.Info("HTTPS server ready to accept connections")
@@ -168,14 +194,20 @@ func run(configPath, verifierPath string, logger *logging.Logger) error {
 	// Notify systemd that the service is ready (Type=notify)
 	notifySystemd("READY=1")
 
-	if err := server.Start(ctx); err != nil {
+	if err := server.Start(shutdownCtx); err != nil {
 		return fmt.Errorf("server failed: %w", err)
 	}
 
-	logger.Info("BoardingPass service stopped")
+	logger.Info("BoardingPass service stopped", map[string]any{
+		"reason": shutdownManager.Reason(),
+	})
 
 	// Notify systemd that the service is stopping
 	notifySystemd("STOPPING=1")
+
+	// Clean up
+	shutdownManager.Stop()
+	inactivityTracker.Stop()
 
 	return nil
 }

@@ -12,6 +12,7 @@ BoardingPass is a lightweight, ephemeral bootstrap service for headless Linux de
 make build      # Build binary to _output/bin/boardingpass
 make test       # Run all tests with race detection
 make lint       # Run golangci-lint (v2 config, includes gosec)
+make generate   # Regenerate all generated code (mocks)
 make coverage   # Generate coverage report to _output/coverage/
 make clean      # Remove _output/ directory
 make deps       # Download and verify dependencies
@@ -95,6 +96,10 @@ This project uses the SpecKit workflow. Specifications live in `specs/001-boardi
 - `contracts/openapi.yaml` - OpenAPI 3.1 specification
 
 Available slash commands: `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`, `/speckit.implement`
+
+## Generating
+
+After changing mocked interfaces and before committing, run `make generate` to update mocks.
 
 ## Linting
 

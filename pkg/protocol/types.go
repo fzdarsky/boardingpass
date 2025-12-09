@@ -106,6 +106,7 @@ type SRPVerifyResponse struct {
 
 // CompleteResponse represents the response to POST /complete.
 type CompleteResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
+	Status       string  `json:"status"`
+	SentinelFile string  `json:"sentinel_file"`
+	Message      *string `json:"message,omitempty"`
 }

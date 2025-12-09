@@ -44,7 +44,7 @@ build:
 ## test: Run all tests
 test:
 	@echo "Running tests..."
-	@$(GOTESTSUM) --format pkgname -- -race ./...
+	@$(GOTESTSUM) --format pkgname -- -race -short ./...
 
 ## lint: Run linters
 lint:
@@ -61,7 +61,7 @@ generate:
 coverage:
 	@echo "Generating coverage report..."
 	@mkdir -p $(COVERAGE_DIR)
-	@$(GOTESTSUM) --format pkgname -- -race -coverprofile=$(COVERAGE_DIR)/coverage.out -covermode=atomic -coverpkg=./internal/...,./pkg/... ./...
+	@$(GOTESTSUM) --format pkgname -- -race -short -coverprofile=$(COVERAGE_DIR)/coverage.out -covermode=atomic -coverpkg=./internal/...,./pkg/... ./...
 	@$(GOCMD) tool cover -html=$(COVERAGE_DIR)/coverage.out -o $(COVERAGE_DIR)/coverage.html
 	@$(GOCMD) tool cover -func=$(COVERAGE_DIR)/coverage.out | tee $(COVERAGE_DIR)/coverage.txt
 	@echo "Coverage report: $(COVERAGE_DIR)/coverage.html"

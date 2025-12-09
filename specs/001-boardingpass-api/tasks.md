@@ -197,20 +197,20 @@
 
 ### Implementation for User Story 5
 
-- [ ] T101 [P] [US5] Create internal/lifecycle/sentinel.go with sentinel file checking and creation logic
-- [ ] T102 [P] [US5] Create internal/lifecycle/timeout.go with inactivity timeout tracking (10-minute default)
-- [ ] T103 [P] [US5] Create internal/lifecycle/shutdown.go with graceful shutdown handler and signal handling
-- [ ] T104 [P] [US5] Create internal/lifecycle/sentinel_test.go with unit tests for sentinel file operations
-- [ ] T105 [P] [US5] Create internal/lifecycle/timeout_test.go with unit tests for timeout tracking
-- [ ] T106 [P] [US5] Create internal/lifecycle/shutdown_test.go with unit tests for shutdown logic
-- [ ] T107 [US5] Create internal/api/handlers/complete.go with POST /complete endpoint
-- [ ] T108 [US5] Integrate sentinel file check into cmd/boardingpass/main.go startup sequence
-- [ ] T109 [US5] Integrate inactivity timeout into HTTP server in internal/api/server.go
-- [ ] T110 [US5] Add graceful shutdown trigger in POST /complete handler
-- [ ] T111 [US5] Add authentication requirement to complete handler
-- [ ] T112 [US5] Update systemd unit file with ConditionPathExists=!/etc/boardingpass/issued
-- [ ] T113 [P] [US5] Create tests/integration/lifecycle_test.go with integration tests for lifecycle management
-- [ ] T114 [P] [US5] Create tests/contract/complete_test.go with OpenAPI contract validation for /complete endpoint
+- [X] T101 [P] [US5] Create internal/lifecycle/sentinel.go with sentinel file checking and creation logic
+- [X] T102 [P] [US5] Create internal/lifecycle/timeout.go with inactivity timeout tracking (10-minute default)
+- [X] T103 [P] [US5] Create internal/lifecycle/shutdown.go with graceful shutdown handler and signal handling
+- [X] T104 [P] [US5] Create internal/lifecycle/sentinel_test.go with unit tests for sentinel file operations
+- [X] T105 [P] [US5] Create internal/lifecycle/timeout_test.go with unit tests for timeout tracking
+- [X] T106 [P] [US5] Create internal/lifecycle/shutdown_test.go with unit tests for shutdown logic
+- [X] T107 [US5] Create internal/api/handlers/complete.go with POST /complete endpoint
+- [X] T108 [US5] Integrate sentinel file check into cmd/boardingpass/main.go startup sequence
+- [X] T109 [US5] Integrate inactivity timeout into HTTP server in internal/api/server.go
+- [X] T110 [US5] Add graceful shutdown trigger in POST /complete handler
+- [X] T111 [US5] Add authentication requirement to complete handler
+- [X] T112 [US5] Update systemd unit file with ConditionPathExists=!/etc/boardingpass/issued
+- [X] T113 [P] [US5] Create tests/integration/lifecycle_test.go with integration tests for lifecycle management
+- [X] T114 [P] [US5] Create tests/contract/complete_test.go with OpenAPI contract validation for /complete endpoint
 
 **Checkpoint**: All user stories complete with full test coverage - service manages its own lifecycle
 
