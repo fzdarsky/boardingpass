@@ -220,12 +220,12 @@
 
 **Purpose**: Wire all components together into functional service binary
 
-- [ ] T115 Create cmd/boardingpass/main.go with configuration loading, server initialization, and lifecycle management
-- [ ] T116 Add signal handling (SIGTERM, SIGINT) for graceful shutdown in main.go
-- [ ] T117 Add API route registration for all endpoints in internal/api/server.go
-- [ ] T118 Add startup logging with version, commit, and configuration summary
-- [ ] T119 Add systemd notify integration for Type=notify in main.go
-- [ ] T120 [P] Create tests/e2e/service_test.go with end-to-end tests in containerized systemd environment
+- [X] T115 Create cmd/boardingpass/main.go with configuration loading, server initialization, and lifecycle management
+- [X] T116 Add signal handling (SIGTERM, SIGINT) for graceful shutdown in main.go
+- [X] T117 Add API route registration for all endpoints in internal/api/server.go
+- [X] T118 Add startup logging with version, commit, and configuration summary
+- [X] T119 Add systemd notify integration for Type=notify in main.go
+- [X] T120 [P] Create tests/e2e/service_test.go with end-to-end tests in containerized systemd environment
 - [ ] T121 Verify test coverage meets 80% threshold across all packages
 
 **Checkpoint**: Full service integration complete with E2E test coverage

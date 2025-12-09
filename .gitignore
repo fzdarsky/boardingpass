@@ -7,7 +7,7 @@ dist/
 
 # Binaries
 bin/
-boardingpass
+/boardingpass
 
 # Go
 vendor/

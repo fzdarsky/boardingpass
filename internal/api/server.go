@@ -107,3 +107,17 @@ func (s *Server) Handler() *http.ServeMux {
 	}
 	return nil
 }
+
+// RegisterRoute registers a handler for a specific HTTP path.
+func (s *Server) RegisterRoute(pattern string, handler http.Handler) {
+	if mux := s.Handler(); mux != nil {
+		mux.Handle(pattern, handler)
+	}
+}
+
+// RegisterRouteFunc registers a handler function for a specific HTTP path.
+func (s *Server) RegisterRouteFunc(pattern string, handler http.HandlerFunc) {
+	if mux := s.Handler(); mux != nil {
+		mux.HandleFunc(pattern, handler)
+	}
+}
