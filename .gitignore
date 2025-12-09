@@ -37,3 +37,7 @@ coverage.out
 *.tmp
 *.bak
 .*.sw[a-z]
+
+# Coding agents
+.claude/
+.serena/
