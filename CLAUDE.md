@@ -98,11 +98,7 @@ Available slash commands: `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`,
 
 ## Linting
 
-Always run linters and fix all issues before committing:
-
-```bash
-make lint
-```
+After completing work on a task or list of tasks, **always** run `make lint` and fix **all** errors.
 
 ## Testing
 
@@ -116,6 +112,8 @@ Run tests:
 - All tests: `make test`
 - Single package: `go test -v ./internal/auth`
 - Single test: `go test -v -run TestName ./internal/auth`
+
+After completing work on a task or list of tasks, **always** run `make test` and fix **all** errors.
 
 ## Configuration Files
 

@@ -1,4 +1,4 @@
-.PHONY: all build test lint coverage clean help
+.PHONY: all build test lint coverage clean generate help
 
 # Build variables
 BINARY_NAME := boardingpass
@@ -28,6 +28,7 @@ help:
 	@echo "  build       - Build the binary"
 	@echo "  test        - Run all tests"
 	@echo "  lint        - Run linters"
+	@echo "  generate    - Generate code (mocks, etc.)"
 	@echo "  coverage    - Generate test coverage report"
 	@echo "  clean       - Remove build artifacts"
 	@echo "  help        - Display this help message"
@@ -49,6 +50,12 @@ test:
 lint:
 	@echo "Running golangci-lint..."
 	@golangci-lint run
+
+## generate: Generate code (mocks, etc.)
+generate:
+	@echo "Generating code..."
+	@$(GOCMD) generate ./...
+	@echo "Code generation complete"
 
 ## coverage: Generate test coverage report
 coverage:

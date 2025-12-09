@@ -3,6 +3,7 @@ module github.com/fzdarsky/boardingpass
 go 1.25.3
 
 tool (
+	go.uber.org/mock/mockgen
 	gotest.tools/gotestsum
 )
 
@@ -21,6 +22,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	go.uber.org/mock v0.6.0 // indirect
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
