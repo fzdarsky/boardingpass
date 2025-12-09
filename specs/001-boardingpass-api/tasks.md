@@ -171,19 +171,19 @@
 
 ### Implementation for User Story 4
 
-- [ ] T088 [P] [US4] Create internal/command/allowlist.go with command allow-list loading from config.yaml
-- [ ] T089 [P] [US4] Create internal/command/executor.go with sudo command execution and output capture
-- [ ] T090 [P] [US4] Create internal/command/sudoers.go with sudoers file validation logic
-- [ ] T091 [P] [US4] Create internal/command/allowlist_test.go with unit tests for allow-list validation
-- [ ] T092 [P] [US4] Create internal/command/executor_test.go with unit tests for command execution
-- [ ] T093 [P] [US4] Create internal/command/sudoers_test.go with unit tests for sudoers validation
-- [ ] T094 [US4] Create internal/api/handlers/command.go with POST /command endpoint
-- [ ] T095 [US4] Add command ID validation against allow-list before execution
-- [ ] T096 [US4] Add stdout/stderr capture and return in JSON response
-- [ ] T097 [US4] Add authentication requirement to command handler
-- [ ] T098 [US4] Add command execution logging with exit codes
-- [ ] T099 [P] [US4] Create tests/integration/command_test.go with integration tests for command execution
-- [ ] T100 [P] [US4] Create tests/contract/command_test.go with OpenAPI contract validation for /command endpoint
+- [X] T088 [P] [US4] Create internal/command/allowlist.go with command allow-list loading from config.yaml
+- [X] T089 [P] [US4] Create internal/command/executor.go with sudo command execution and output capture
+- [X] T090 [P] [US4] Create internal/command/sudoers.go with sudoers file validation logic
+- [X] T091 [P] [US4] Create internal/command/allowlist_test.go with unit tests for allow-list validation
+- [X] T092 [P] [US4] Create internal/command/executor_test.go with unit tests for command execution
+- [X] T093 [P] [US4] Create internal/command/sudoers_test.go with unit tests for sudoers validation
+- [X] T094 [US4] Create internal/api/handlers/command.go with POST /command endpoint
+- [X] T095 [US4] Add command ID validation against allow-list before execution
+- [X] T096 [US4] Add stdout/stderr capture and return in JSON response
+- [X] T097 [US4] Add authentication requirement to command handler
+- [X] T098 [US4] Add command execution logging with exit codes
+- [X] T099 [P] [US4] Create tests/integration/command_test.go with integration tests for command execution
+- [X] T100 [P] [US4] Create tests/contract/command_test.go with OpenAPI contract validation for /command endpoint
 
 **Checkpoint**: User Stories 1-4 complete with full test coverage - can execute system commands
 
