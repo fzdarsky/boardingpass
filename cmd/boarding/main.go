@@ -37,20 +37,15 @@ func main() {
 	case "pass":
 		commands.NewPassCommand().Execute(os.Args[2:])
 	case "info":
-		fmt.Fprintf(os.Stderr, "Error: 'info' command not yet implemented\n")
-		os.Exit(1)
+		commands.NewInfoCommand().Execute(os.Args[2:])
 	case "connections":
-		fmt.Fprintf(os.Stderr, "Error: 'connections' command not yet implemented\n")
-		os.Exit(1)
+		commands.NewConnectionsCommand().Execute(os.Args[2:])
 	case "load":
-		fmt.Fprintf(os.Stderr, "Error: 'load' command not yet implemented\n")
-		os.Exit(1)
+		commands.NewLoadCommand().Execute(os.Args[2:])
 	case "command":
-		fmt.Fprintf(os.Stderr, "Error: 'command' command not yet implemented\n")
-		os.Exit(1)
+		commands.NewCommandCommand().Execute(os.Args[2:])
 	case "complete":
-		fmt.Fprintf(os.Stderr, "Error: 'complete' command not yet implemented\n")
-		os.Exit(1)
+		commands.NewCompleteCommand().Execute(os.Args[2:])
 	default:
 		fmt.Fprintf(os.Stderr, "Error: unknown command '%s'\n\n", command)
 		printUsage()

@@ -90,9 +90,9 @@ Project uses Go standard layout:
 
 ### Implementation for User Story 2
 
-- [ ] T029 [P] [US2] Implement GET /info API call in `internal/cli/client/client.go` (GetInfo method with session token auth)
-- [ ] T030 [US2] Implement `info` command in `internal/cli/commands/info.go` (flags for output format, call GetInfo, format output)
-- [ ] T031 [US2] Write integration test for info command in `tests/cli-integration/commands_test.go` (mock /info endpoint, test YAML and JSON output)
+- [x] T029 [P] [US2] Implement GET /info API call in `internal/cli/client/client.go` (GetInfo method with session token auth)
+- [x] T030 [US2] Implement `info` command in `internal/cli/commands/info.go` (flags for output format, call GetInfo, format output)
+- [x] T031 [US2] Write integration test for info command in `tests/cli-integration/commands_test.go` (mock /info endpoint, test YAML and JSON output)
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
@@ -106,9 +106,9 @@ Project uses Go standard layout:
 
 ### Implementation for User Story 3
 
-- [ ] T032 [P] [US3] Implement GET /network API call in `internal/cli/client/client.go` (GetNetwork method with session token auth)
-- [ ] T033 [US3] Implement `connections` command in `internal/cli/commands/connections.go` (flags for output format, call GetNetwork, format output)
-- [ ] T034 [US3] Write integration test for connections command in `tests/cli-integration/commands_test.go` (mock /network endpoint, test YAML and JSON output)
+- [x] T032 [P] [US3] Implement GET /network API call in `internal/cli/client/client.go` (GetNetwork method with session token auth)
+- [x] T033 [US3] Implement `connections` command in `internal/cli/commands/connections.go` (flags for output format, call GetNetwork, format output)
+- [x] T034 [US3] Write integration test for connections command in `tests/cli-integration/commands_test.go` (mock /network endpoint, test YAML and JSON output)
 
 **Checkpoint**: All read-only query operations (US1-US3) should now be independently functional
 
@@ -122,11 +122,11 @@ Project uses Go standard layout:
 
 ### Implementation for User Story 4
 
-- [ ] T035 [P] [US4] Implement directory scanning in `internal/cli/commands/load.go` (walk directory, collect files, validate size/count limits)
-- [ ] T036 [P] [US4] Implement progress tracking in `internal/cli/commands/load.go` (progress bar or status for file upload)
-- [ ] T037 [US4] Implement POST /configure API call in `internal/cli/client/client.go` (PostConfigure method with multipart form data, session token auth)
-- [ ] T038 [US4] Implement `load` command in `internal/cli/commands/load.go` (directory arg, scan files, call PostConfigure, display progress, handle errors)
-- [ ] T039 [US4] Write integration test for load command in `tests/cli-integration/commands_test.go` (mock /configure endpoint, test file upload, test error cases)
+- [x] T035 [P] [US4] Implement directory scanning in `internal/cli/commands/load.go` (walk directory, collect files, validate size/count limits)
+- [x] T036 [P] [US4] Implement progress tracking in `internal/cli/commands/load.go` (progress bar or status for file upload)
+- [x] T037 [US4] Implement POST /configure API call in `internal/cli/client/client.go` (PostConfigure method with multipart form data, session token auth)
+- [x] T038 [US4] Implement `load` command in `internal/cli/commands/load.go` (directory arg, scan files, call PostConfigure, display progress, handle errors)
+- [x] T039 [US4] Write integration test for load command in `tests/cli-integration/commands_test.go` (mock /configure endpoint, test file upload, test error cases)
 
 **Checkpoint**: Configuration provisioning (US4) should work independently
 
@@ -140,9 +140,9 @@ Project uses Go standard layout:
 
 ### Implementation for User Story 5
 
-- [ ] T040 [P] [US5] Implement POST /command API call in `internal/cli/client/client.go` (ExecuteCommand method with session token auth)
-- [ ] T041 [US5] Implement `command` command in `internal/cli/commands/command.go` (command string arg, call ExecuteCommand, display stdout/stderr, exit code handling)
-- [ ] T042 [US5] Write integration test for command execution in `tests/cli-integration/commands_test.go` (mock /command endpoint, test output display, test error handling for non-allowed commands)
+- [x] T040 [P] [US5] Implement POST /command API call in `internal/cli/client/client.go` (ExecuteCommand method with session token auth)
+- [x] T041 [US5] Implement `command` command in `internal/cli/commands/command.go` (command string arg, call ExecuteCommand, display stdout/stderr, exit code handling)
+- [x] T042 [US5] Write integration test for command execution in `tests/cli-integration/commands_test.go` (mock /command endpoint, test output display, test error handling for non-allowed commands)
 
 **Checkpoint**: Command execution (US5) should work independently
 
@@ -156,9 +156,9 @@ Project uses Go standard layout:
 
 ### Implementation for User Story 6
 
-- [ ] T043 [P] [US6] Implement POST /complete API call in `internal/cli/client/client.go` (Complete method with session token auth)
-- [ ] T044 [US6] Implement `complete` command in `internal/cli/commands/complete.go` (call Complete, delete session token, display success message)
-- [ ] T045 [US6] Write integration test for complete command in `tests/cli-integration/commands_test.go` (mock /complete endpoint, verify token deletion)
+- [x] T043 [P] [US6] Implement POST /complete API call in `internal/cli/client/client.go` (Complete method with session token auth)
+- [x] T044 [US6] Implement `complete` command in `internal/cli/commands/complete.go` (call Complete, delete session token, display success message)
+- [x] T045 [US6] Write integration test for complete command in `tests/cli-integration/commands_test.go` (mock /complete endpoint, verify token deletion)
 
 **Checkpoint**: All user stories (US1-US6) should now be independently functional
 

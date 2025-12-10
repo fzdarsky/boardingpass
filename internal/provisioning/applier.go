@@ -83,6 +83,7 @@ func (a *Applier) Apply(bundle *protocol.ConfigBundle) error {
 
 		// Write to temp directory
 		tempPath := filepath.Join(a.tempDir, filepath.Base(file.Path))
+		// #nosec G115 - file mode values are guaranteed to be within uint32 range
 		if err := os.WriteFile(tempPath, decoded, os.FileMode(file.Mode)); err != nil {
 			return fmt.Errorf("failed to write temp file %s: %w", file.Path, err)
 		}

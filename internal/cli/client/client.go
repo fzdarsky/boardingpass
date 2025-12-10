@@ -105,6 +105,24 @@ func (c *Client) GetNetwork() (*protocol.NetworkConfig, error) {
 	return &network, nil
 }
 
+// ExecuteCommand executes an allow-listed command on the device.
+func (c *Client) ExecuteCommand(commandID string) (*protocol.CommandResponse, error) {
+	req := protocol.CommandRequest{
+		ID: commandID,
+	}
+
+	var resp protocol.CommandResponse
+	if err := c.post("/command", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// PostConfigure uploads a configuration bundle to the device.
+func (c *Client) PostConfigure(bundle *protocol.ConfigBundle) error {
+	return c.post("/configure", bundle, nil)
+}
+
 // Complete signals provisioning completion to the device.
 func (c *Client) Complete() (*protocol.CompleteResponse, error) {
 	var resp protocol.CompleteResponse
