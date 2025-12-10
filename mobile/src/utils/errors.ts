@@ -139,7 +139,7 @@ export function getUserErrorMessage(error: unknown): string {
 /**
  * Format error for logging (excludes sensitive data)
  */
-export function formatErrorForLogging(error: unknown): Record<string, any> {
+export function formatErrorForLogging(error: unknown): Record<string, string | undefined> {
   if (error instanceof AppError) {
     return {
       name: error.name,
