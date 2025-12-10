@@ -83,6 +83,7 @@ func (a *Applier) Apply(bundle *protocol.ConfigBundle) error {
 
 		// Write to temp directory
 		tempPath := filepath.Join(a.tempDir, filepath.Base(file.Path))
+		//nolint:gosec // G115: file.Mode validated to be 0-0777 by ValidateBundle, conversion is safe
 		if err := os.WriteFile(tempPath, decoded, os.FileMode(file.Mode)); err != nil {
 			return fmt.Errorf("failed to write temp file %s: %w", file.Path, err)
 		}
