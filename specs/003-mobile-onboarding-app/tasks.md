@@ -27,24 +27,24 @@
 
 **Priority**: Complete this phase FIRST to enable test-driven development from the start
 
-- [ ] T001 Create mobile/ directory structure per plan.md (app/, src/, tests/, ios/, android/)
-- [ ] T002 Initialize React Native project with Expo SDK 51+ in mobile/package.json
-- [ ] T003 [P] Configure TypeScript 5.x with strict mode in mobile/tsconfig.json
-- [ ] T004 [P] Configure Expo app settings in mobile/app.json (bundle IDs, permissions, plugins)
-- [ ] T005 [P] Configure Metro bundler in mobile/metro.config.js
-- [ ] T006 [P] Configure Babel for React Native in mobile/babel.config.js
-- [ ] T007 Setup Jest test framework in mobile/jest.config.js
-- [ ] T008 [P] Setup React Native Testing Library in mobile/tests/setup.ts
-- [ ] T009 [P] Setup Detox E2E test framework in mobile/.detoxrc.json
-- [ ] T010 [P] Configure ESLint and Prettier in mobile/.eslintrc.js and mobile/.prettierrc
-- [ ] T011 Add npm scripts in mobile/package.json (start, test, lint, typecheck, generate:types)
-- [ ] T012 Create .env.example template in mobile/.env.example (default port, fallback IP, mDNS service name)
-- [ ] T013 Setup .gitignore for React Native (node_modules/, ios/, android/, .env)
-- [ ] T014 Run npx expo prebuild to generate ios/ and android/ directories
-- [ ] T015 Create GitHub Actions workflow for mobile CI in .github/workflows/mobile-ci.yml
-- [ ] T016 [P] Setup OpenAPI type generation script using openapi-typescript in mobile/package.json
-- [ ] T017 Run type generation to create mobile/src/types/api.ts from specs/001-boardingpass-api/contracts/openapi.yaml
-- [ ] T018 Verify build and test infrastructure: npm test, npm run lint, npm run typecheck all pass
+- [x] T001 Create mobile/ directory structure per plan.md (app/, src/, tests/, ios/, android/)
+- [x] T002 Initialize React Native project with Expo SDK 51+ in mobile/package.json
+- [x] T003 [P] Configure TypeScript 5.x with strict mode in mobile/tsconfig.json
+- [x] T004 [P] Configure Expo app settings in mobile/app.json (bundle IDs, permissions, plugins)
+- [x] T005 [P] Configure Metro bundler in mobile/metro.config.js
+- [x] T006 [P] Configure Babel for React Native in mobile/babel.config.js
+- [x] T007 Setup Jest test framework in mobile/jest.config.js
+- [x] T008 [P] Setup React Native Testing Library in mobile/tests/setup.ts
+- [x] T009 [P] Setup Detox E2E test framework in mobile/.detoxrc.json
+- [x] T010 [P] Configure ESLint and Prettier in mobile/.eslintrc.js and mobile/.prettierrc
+- [x] T011 Add npm scripts in mobile/package.json (start, test, lint, typecheck, generate:types)
+- [x] T012 Create .env.example template in mobile/.env.example (default port, fallback IP, mDNS service name)
+- [x] T013 Setup .gitignore for React Native (node_modules/, ios/, android/, .env)
+- [x] T014 Run npx expo prebuild to generate ios/ and android/ directories
+- [x] T015 Create GitHub Actions workflow for mobile CI in .github/workflows/mobile-ci.yml
+- [x] T016 [P] Setup OpenAPI type generation script using openapi-typescript in mobile/package.json
+- [x] T017 Run type generation to create mobile/src/types/api.ts from specs/001-boardingpass-api/contracts/openapi.yaml
+- [x] T018 Verify build and test infrastructure: npm test, npm run lint, npm run typecheck all pass
 
 **Checkpoint**: Build and test infrastructure is fully operational - all npm scripts work, CI pipeline configured
 
