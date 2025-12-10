@@ -1,0 +1,28 @@
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Generated files
+src/types/api.ts
+
+# Native directories
+ios/
+android/
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Test coverage
+coverage/
+.nyc_output/

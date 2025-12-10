@@ -104,7 +104,7 @@ export function isValidDeviceName(name: string): boolean {
  */
 export function isValidURL(url: string): boolean {
   try {
-    new URL(url);
+    const _ = new URL(url);
     return true;
   } catch {
     return false;
@@ -116,6 +116,7 @@ export function isValidURL(url: string): boolean {
  */
 export function sanitizeInput(input: string): string {
   // Remove control characters and trim
+  // eslint-disable-next-line no-control-regex
   return input.replace(/[\x00-\x1F\x7F]/g, '').trim();
 }
 

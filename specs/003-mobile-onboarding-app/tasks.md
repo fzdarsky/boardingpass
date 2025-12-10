@@ -89,26 +89,26 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T037 [P] [US1] Contract test for mDNS service discovery in mobile/tests/contract/mdns.test.ts
-- [ ] T038 [P] [US1] Integration test for device discovery flow in mobile/tests/integration/discovery.test.ts
-- [ ] T039 [P] [US1] Unit test for useDeviceDiscovery hook in mobile/tests/unit/hooks/useDeviceDiscovery.test.ts
+- [x] T037 [P] [US1] Contract test for mDNS service discovery in mobile/tests/contract/mdns.test.ts
+- [x] T038 [P] [US1] Integration test for device discovery flow in mobile/tests/integration/discovery.test.ts
+- [x] T039 [P] [US1] Unit test for useDeviceDiscovery hook in mobile/tests/unit/hooks/useDeviceDiscovery.test.ts
 
 ### Implementation for User Story 1
 
-- [ ] T040 [P] [US1] Install react-native-zeroconf and configure in mobile/app.json (Expo config plugin)
-- [ ] T041 [US1] Create mDNS discovery service in mobile/src/services/discovery/mdns.ts (scan for _boardingpass._tcp)
-- [ ] T042 [P] [US1] Create fallback IP service in mobile/src/services/discovery/fallback.ts (check 192.168.1.100:9443)
-- [ ] T043 [US1] Create useDeviceDiscovery hook in mobile/src/hooks/useDeviceDiscovery.ts (combines mDNS + fallback)
-- [ ] T044 [P] [US1] Create DeviceCard component in mobile/src/components/DeviceList/DeviceCard.tsx
-- [ ] T045 [US1] Create DeviceList component in mobile/src/components/DeviceList/index.tsx
-- [ ] T046 [US1] Implement device discovery screen in mobile/app/(tabs)/index.tsx
-- [ ] T047 [US1] Add device status indicators (online, offline, authenticating) to DeviceCard
-- [ ] T048 [US1] Add refresh functionality to device list (pull-to-refresh)
-- [ ] T049 [US1] Handle duplicate device names (display IP as secondary identifier per FR-006)
-- [ ] T050 [US1] Add empty state UI for "no devices found"
-- [ ] T051 [US1] Add scanning state UI with loading indicator
-- [ ] T052 [US1] Implement auto-refresh on device appear/disappear (FR-005)
-- [ ] T053 [US1] Add logging for device discovery events (no sensitive data per FR-029)
+- [x] T040 [P] [US1] Install react-native-zeroconf and configure in mobile/app.json (Expo config plugin)
+- [x] T041 [US1] Create mDNS discovery service in mobile/src/services/discovery/mdns.ts (scan for _boardingpass._tcp)
+- [x] T042 [P] [US1] Create fallback IP service in mobile/src/services/discovery/fallback.ts (check 192.168.1.100:9443)
+- [x] T043 [US1] Create useDeviceDiscovery hook in mobile/src/hooks/useDeviceDiscovery.ts (combines mDNS + fallback)
+- [x] T044 [P] [US1] Create DeviceCard component in mobile/src/components/DeviceList/DeviceCard.tsx
+- [x] T045 [US1] Create DeviceList component in mobile/src/components/DeviceList/index.tsx
+- [x] T046 [US1] Implement device discovery screen in mobile/app/index.tsx
+- [x] T047 [US1] Add device status indicators (online, offline, authenticating) to DeviceCard
+- [x] T048 [US1] Add refresh functionality to device list (pull-to-refresh)
+- [x] T049 [US1] Handle duplicate device names (display IP as secondary identifier per FR-006)
+- [x] T050 [US1] Add empty state UI for "no devices found"
+- [x] T051 [US1] Add scanning state UI with loading indicator
+- [x] T052 [US1] Implement auto-refresh on device appear/disappear (FR-005)
+- [x] T053 [US1] Add logging for device discovery events (no sensitive data per FR-029)
 
 **Checkpoint**: Device discovery should work independently - devices appear in list, refresh works, fallback IP detected
 

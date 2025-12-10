@@ -36,11 +36,11 @@ export class APIClient {
 
     // Request interceptor to add auth token
     this.client.interceptors.request.use(
-      config => {
+      requestConfig => {
         if (this.authToken) {
-          config.headers.Authorization = `Bearer ${this.authToken}`;
+          requestConfig.headers.Authorization = `Bearer ${this.authToken}`;
         }
-        return config;
+        return requestConfig;
       },
       error => Promise.reject(error)
     );
@@ -53,7 +53,7 @@ export class APIClient {
         if (error.response) {
           // Server responded with error status
           const status = error.response.status;
-          const data = error.response.data as any;
+          const data = error.response.data as { error?: string };
 
           if (status === 401) {
             throw new Error('Authentication required');
@@ -115,7 +115,7 @@ export class APIClient {
   /**
    * POST request
    */
-  async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.post<T>(url, data, config);
     return response.data;
   }
@@ -123,7 +123,7 @@ export class APIClient {
   /**
    * PUT request
    */
-  async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.put<T>(url, data, config);
     return response.data;
   }
