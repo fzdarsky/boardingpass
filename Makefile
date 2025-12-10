@@ -1,7 +1,8 @@
-.PHONY: all build test lint coverage clean generate help
+.PHONY: all build build-cli build-all test lint coverage clean generate help
 
 # Build variables
 BINARY_NAME := boardingpass
+CLI_BINARY_NAME := boarding
 OUTPUT_DIR := _output
 BIN_DIR := $(OUTPUT_DIR)/bin
 DIST_DIR := $(OUTPUT_DIR)/dist
@@ -25,7 +26,9 @@ all: lint test build
 ## help: Display this help message
 help:
 	@echo "Available targets:"
-	@echo "  build       - Build the binary"
+	@echo "  build       - Build the BoardingPass service binary"
+	@echo "  build-cli   - Build the boarding CLI tool"
+	@echo "  build-all   - Build both service and CLI binaries"
 	@echo "  test        - Run all tests"
 	@echo "  lint        - Run linters"
 	@echo "  generate    - Generate code (mocks, etc.)"
@@ -33,13 +36,25 @@ help:
 	@echo "  clean       - Remove build artifacts"
 	@echo "  help        - Display this help message"
 
-## build: Build the binary
+## build: Build the BoardingPass service binary
 build:
 	@echo "Building $(BINARY_NAME)..."
 	@mkdir -p $(BIN_DIR)
 	@CGO_ENABLED=0 $(GOBUILD) $(BUILD_FLAGS) -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/boardingpass
 	@echo "Binary built: $(BIN_DIR)/$(BINARY_NAME)"
 	@ls -lh $(BIN_DIR)/$(BINARY_NAME)
+
+## build-cli: Build the boarding CLI tool
+build-cli:
+	@echo "Building $(CLI_BINARY_NAME)..."
+	@mkdir -p $(BIN_DIR)
+	@CGO_ENABLED=0 $(GOBUILD) $(BUILD_FLAGS) -o $(BIN_DIR)/$(CLI_BINARY_NAME) ./cmd/boarding
+	@echo "Binary built: $(BIN_DIR)/$(CLI_BINARY_NAME)"
+	@ls -lh $(BIN_DIR)/$(CLI_BINARY_NAME)
+
+## build-all: Build both service and CLI binaries
+build-all: build build-cli
+	@echo "All binaries built successfully"
 
 ## test: Run all tests
 test:

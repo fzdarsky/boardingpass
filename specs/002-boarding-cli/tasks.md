@@ -27,10 +27,10 @@ Project uses Go standard layout:
 
 **Purpose**: Project initialization and basic CLI structure
 
-- [ ] T001 Create directory structure for CLI: `cmd/boarding/`, `internal/cli/{client,commands,config,session,tls,output}/`
-- [ ] T002 [P] Create `cmd/boarding/main.go` with command routing skeleton (switch statement for 6 commands)
-- [ ] T003 [P] Update `Makefile` with `build-cli` and `build-all` targets
-- [ ] T004 [P] Update `.goreleaser.yaml` with boarding binary build configuration
+- [x] T001 Create directory structure for CLI: `cmd/boarding/`, `internal/cli/{client,commands,config,session,tls,output}/`
+- [x] T002 [P] Create `cmd/boarding/main.go` with command routing skeleton (switch statement for 6 commands)
+- [x] T003 [P] Update `Makefile` with `build-cli` and `build-all` targets
+- [x] T004 [P] Update `.goreleaser.yaml` with boarding binary build configuration
 
 ---
 
@@ -40,18 +40,18 @@ Project uses Go standard layout:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Implement configuration loading in `internal/cli/config/config.go` with precedence (flags > env > file)
-- [ ] T006 [P] Implement OS-specific directory helpers in `internal/cli/config/dirs.go` (UserConfigDir, UserCacheDir)
-- [ ] T007 [P] Implement session token storage in `internal/cli/session/store.go` with 0600 permissions
-- [ ] T008 [P] Implement SHA-256 certificate fingerprint computation in `internal/cli/tls/fingerprint.go`
-- [ ] T009 [P] Implement certificate fingerprint storage (YAML) in `internal/cli/tls/store.go`
-- [ ] T010 [P] Implement interactive certificate prompt in `internal/cli/tls/prompt.go`
-- [ ] T011 [P] Implement custom HTTP RoundTripper in `internal/cli/client/transport.go` for TOFU cert verification
-- [ ] T012 [P] Implement YAML formatter in `internal/cli/output/formatter.go`
-- [ ] T013 [P] Implement JSON formatter in `internal/cli/output/formatter.go`
-- [ ] T014 Write unit tests for config precedence in `internal/cli/config/config_test.go`
-- [ ] T015 [P] Write unit tests for session store in `internal/cli/session/store_test.go`
-- [ ] T016 [P] Write unit tests for TLS fingerprinting in `internal/cli/tls/fingerprint_test.go`
+- [x] T005 Implement configuration loading in `internal/cli/config/config.go` with precedence (flags > env > file)
+- [x] T006 [P] Implement OS-specific directory helpers in `internal/cli/config/dirs.go` (UserConfigDir, UserCacheDir)
+- [x] T007 [P] Implement session token storage in `internal/cli/session/store.go` with 0600 permissions
+- [x] T008 [P] Implement SHA-256 certificate fingerprint computation in `internal/cli/tls/fingerprint.go`
+- [x] T009 [P] Implement certificate fingerprint storage (YAML) in `internal/cli/tls/store.go`
+- [x] T010 [P] Implement interactive certificate prompt in `internal/cli/tls/prompt.go`
+- [x] T011 [P] Implement custom HTTP RoundTripper in `internal/cli/client/transport.go` for TOFU cert verification
+- [x] T012 [P] Implement YAML formatter in `internal/cli/output/formatter.go`
+- [x] T013 [P] Implement JSON formatter in `internal/cli/output/formatter.go`
+- [x] T014 Write unit tests for config precedence in `internal/cli/config/config_test.go`
+- [x] T015 [P] Write unit tests for session store in `internal/cli/session/store_test.go`
+- [x] T016 [P] Write unit tests for TLS fingerprinting in `internal/cli/tls/fingerprint_test.go`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -65,18 +65,18 @@ Project uses Go standard layout:
 
 ### Implementation for User Story 1
 
-- [ ] T017 [P] [US1] Implement SRP-6a client ephemeral keypair generation in `internal/cli/client/srp.go` (GenerateEphemeralKeypair function)
-- [ ] T018 [P] [US1] Implement SRP-6a shared secret computation in `internal/cli/client/srp.go` (ComputeSharedSecret function)
-- [ ] T019 [P] [US1] Implement SRP-6a client proof M1 computation in `internal/cli/client/srp.go` (ComputeClientProof function)
-- [ ] T020 [P] [US1] Implement SRP-6a server proof M2 verification in `internal/cli/client/srp.go` (VerifyServerProof function)
-- [ ] T021 [P] [US1] Implement SRP-6a private key derivation in `internal/cli/client/srp.go` (DerivePrivateKey function)
-- [ ] T022 [US1] Implement HTTP client foundation in `internal/cli/client/client.go` (NewClient, with TLS config, custom transport, session token injection)
-- [ ] T023 [US1] Implement SRP Init API call in `internal/cli/client/client.go` (SRPInit method: POST /auth/srp/init)
-- [ ] T024 [US1] Implement SRP Verify API call in `internal/cli/client/client.go` (SRPVerify method: POST /auth/srp/verify)
-- [ ] T025 [US1] Implement common command infrastructure in `internal/cli/commands/root.go` (config loading, client creation, error handling)
-- [ ] T026 [US1] Implement `pass` command in `internal/cli/commands/pass.go` (flags, interactive password prompt, full SRP flow, token storage)
-- [ ] T027 [US1] Write unit tests for SRP client in `internal/cli/client/srp_test.go` (test all crypto functions with known test vectors)
-- [ ] T028 [US1] Create integration test for SRP authentication flow in `tests/cli-integration/auth_test.go` (mock server with SRP endpoints)
+- [x] T017 [P] [US1] Implement SRP-6a client ephemeral keypair generation in `internal/cli/client/srp.go` (GenerateEphemeralKeypair function)
+- [x] T018 [P] [US1] Implement SRP-6a shared secret computation in `internal/cli/client/srp.go` (ComputeSharedSecret function)
+- [x] T019 [P] [US1] Implement SRP-6a client proof M1 computation in `internal/cli/client/srp.go` (ComputeClientProof function)
+- [x] T020 [P] [US1] Implement SRP-6a server proof M2 verification in `internal/cli/client/srp.go` (VerifyServerProof function)
+- [x] T021 [P] [US1] Implement SRP-6a private key derivation in `internal/cli/client/srp.go` (DerivePrivateKey function)
+- [x] T022 [US1] Implement HTTP client foundation in `internal/cli/client/client.go` (NewClient, with TLS config, custom transport, session token injection)
+- [x] T023 [US1] Implement SRP Init API call in `internal/cli/client/client.go` (SRPInit method: POST /auth/srp/init)
+- [x] T024 [US1] Implement SRP Verify API call in `internal/cli/client/client.go` (SRPVerify method: POST /auth/srp/verify)
+- [x] T025 [US1] Implement common command infrastructure in `internal/cli/commands/common.go` (config loading, client creation, error handling)
+- [x] T026 [US1] Implement `pass` command in `internal/cli/commands/pass.go` (flags, interactive password prompt, full SRP flow, token storage)
+- [x] T027 [US1] Write unit tests for SRP client in `pkg/srp/client_test.go` (test all crypto functions with known test vectors)
+- [x] T028 [US1] Create integration test for SRP authentication flow in `tests/cli-integration/auth_test.go` (SRP protocol flow validation)
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - users can authenticate and session tokens are stored
 
