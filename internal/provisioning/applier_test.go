@@ -2,6 +2,7 @@ package provisioning
 
 import (
 	"encoding/base64"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,53 +12,104 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewApplier(t *testing.T) {
-	// Setup: Create staging directory
-	err := os.MkdirAll(StagingDirBase, 0o755) //nolint:gosec // G301: Test directory
+// findRepoRoot finds the repository root by looking for go.mod
+func findRepoRoot() (string, error) {
+	dir, err := os.Getwd()
 	if err != nil {
-		t.Skipf("Cannot create staging directory %s: %v (needs elevated permissions)", StagingDirBase, err)
+		return "", err
 	}
-	defer func() { _ = os.RemoveAll(StagingDirBase) }()
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("could not find repository root (no go.mod found)")
+		}
+		dir = parent
+	}
+}
+
+// testRootDir creates a test root directory under _output/tests/
+func testRootDir(t *testing.T) string {
+	t.Helper()
+	// Find repository root
+	repoRoot, err := findRepoRoot()
+	require.NoError(t, err)
+
+	// Create test directory under repo root's _output/tests/
+	rootDir := filepath.Join(repoRoot, "_output", "tests", t.Name())
+	//nolint:gosec // G301: Test directory, relaxed permissions acceptable
+	require.NoError(t, os.MkdirAll(rootDir, 0o755))
+	t.Cleanup(func() {
+		_ = os.RemoveAll(rootDir)
+	})
+	return rootDir
+}
+
+func TestNewApplier(t *testing.T) {
+	// Create temporary root directory for testing
+	rootDir := testRootDir(t)
 
 	validator := NewPathValidator([]string{"/etc/test/"})
-	applier, err := NewApplier(validator)
-	if err != nil {
-		t.Skipf("Cannot create staging directory %s: %v (needs elevated permissions)", StagingDirBase, err)
-	}
+	applier, err := NewApplier(validator, rootDir)
+	require.NoError(t, err)
 	require.NotNil(t, applier)
 	assert.NotEmpty(t, applier.tempDir)
+
+	// Verify staging directory was created under root
+	expectedStaging := filepath.Join(rootDir, "var/lib/boardingpass/staging")
+	_, err = os.Stat(expectedStaging)
+	require.NoError(t, err, "staging directory should be created")
 
 	// Cleanup
 	_ = applier.Cleanup() // nolint:errcheck
 }
 
 func TestNewApplier_NilValidator(t *testing.T) {
-	applier, err := NewApplier(nil)
+	applier, err := NewApplier(nil, "")
 	assert.Nil(t, applier)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "validator cannot be nil")
 }
 
 func TestApplier_Apply_ValidBundle(t *testing.T) {
-	// Note: This test requires /etc write access or filesystem mocking
-	// In a real test environment, this would need a test container
-	t.Skip("Skipping integration test that requires /etc write access - covered by integration tests")
+	// Create temporary root directory for testing
+	rootDir := testRootDir(t)
+
+	validator := NewPathValidator([]string{"/etc/test/"})
+	applier, err := NewApplier(validator, rootDir)
+	require.NoError(t, err)
+
+	bundle := &protocol.ConfigBundle{
+		Files: []protocol.ConfigFile{
+			{
+				Path:    "test/config.yaml", // Will be written to <rootDir>/etc/test/config.yaml
+				Content: base64.StdEncoding.EncodeToString([]byte("test: config")),
+				Mode:    0o644,
+			},
+		},
+	}
+
+	err = applier.Apply(bundle)
+	require.NoError(t, err)
+
+	// Verify file was written to correct location
+	expectedPath := filepath.Join(rootDir, "/etc/test/config.yaml")
+	content, err := os.ReadFile(expectedPath)
+	require.NoError(t, err)
+	assert.Equal(t, "test: config", string(content))
 }
 
 func TestApplier_Apply_InvalidBundle(t *testing.T) {
-	// Setup
-	err := os.MkdirAll(StagingDirBase, 0o755) //nolint:gosec // G301: Test directory
-	if err != nil {
-		t.Skipf("Cannot create staging directory %s: %v (needs elevated permissions)", StagingDirBase, err)
-	}
-
-	defer func() { _ = os.RemoveAll(StagingDirBase) }()
+	// Create temporary root directory for testing
+	rootDir := testRootDir(t)
 
 	validator := NewPathValidator([]string{"/etc/test/"})
-	applier, err := NewApplier(validator)
-	if err != nil {
-		t.Skipf("Cannot create staging directory %s: %v (needs elevated permissions)", StagingDirBase, err)
-	}
+	applier, err := NewApplier(validator, rootDir)
+	require.NoError(t, err)
 
 	defer applier.Cleanup() //nolint:errcheck
 
@@ -103,16 +155,12 @@ func TestApplier_Apply_InvalidBundle(t *testing.T) {
 }
 
 func TestApplier_Apply_PathValidationFailure(t *testing.T) {
-	// Setup
-	err := os.MkdirAll(StagingDirBase, 0o755) //nolint:gosec // G301: Test directory
-	if err != nil {
-		t.Skipf("Cannot create staging directory %s: %v (needs elevated permissions)", StagingDirBase, err)
-	}
-	defer func() { _ = os.RemoveAll(StagingDirBase) }()
+	// Create temporary root directory for testing
+	rootDir := testRootDir(t)
 
 	// Validator only allows /etc/test/
 	validator := NewPathValidator([]string{"/etc/test/"})
-	applier, err := NewApplier(validator)
+	applier, err := NewApplier(validator, rootDir)
 	require.NoError(t, err)
 	defer applier.Cleanup() //nolint:errcheck
 
@@ -133,15 +181,11 @@ func TestApplier_Apply_PathValidationFailure(t *testing.T) {
 }
 
 func TestApplier_Cleanup(t *testing.T) {
-	// Setup
-	err := os.MkdirAll(StagingDirBase, 0o755) //nolint:gosec // G301: Test directory
-	if err != nil {
-		t.Skipf("Cannot create staging directory %s: %v (needs elevated permissions)", StagingDirBase, err)
-	}
-	defer func() { _ = os.RemoveAll(StagingDirBase) }()
+	// Create temporary root directory for testing
+	rootDir := testRootDir(t)
 
 	validator := NewPathValidator([]string{"/etc/test/"})
-	applier, err := NewApplier(validator)
+	applier, err := NewApplier(validator, rootDir)
 	require.NoError(t, err)
 
 	// Temp directory should exist
@@ -159,16 +203,11 @@ func TestApplier_Cleanup(t *testing.T) {
 
 func TestApplier_MultipleFiles(t *testing.T) {
 	// This test validates the logic of handling multiple files
-	// Actual filesystem operations are tested in integration tests
-
-	err := os.MkdirAll(StagingDirBase, 0o755) //nolint:gosec // G301: Test directory
-	if err != nil {
-		t.Skipf("Cannot create staging directory %s: %v (needs elevated permissions)", StagingDirBase, err)
-	}
-	defer func() { _ = os.RemoveAll(StagingDirBase) }()
+	// Create temporary root directory for testing
+	rootDir := testRootDir(t)
 
 	validator := NewPathValidator([]string{"/etc/test/"})
-	applier, err := NewApplier(validator)
+	applier, err := NewApplier(validator, rootDir)
 	require.NoError(t, err)
 	defer applier.Cleanup() //nolint:errcheck
 
@@ -201,15 +240,12 @@ func TestApplier_MultipleFiles(t *testing.T) {
 }
 
 func TestApplier_DecodeAndStageFiles(t *testing.T) {
-	// Test the file staging logic without actual /etc writes
-	err := os.MkdirAll(StagingDirBase, 0o755) //nolint:gosec // G301: Test directory
-	if err != nil {
-		t.Skipf("Cannot create staging directory %s: %v (needs elevated permissions)", StagingDirBase, err)
-	}
-	defer func() { _ = os.RemoveAll(StagingDirBase) }()
+	// Test the file staging logic
+	// Create temporary root directory for testing
+	rootDir := testRootDir(t)
 
 	validator := NewPathValidator([]string{"/etc/test/"})
-	applier, err := NewApplier(validator)
+	applier, err := NewApplier(validator, rootDir)
 	require.NoError(t, err)
 	defer applier.Cleanup() //nolint:errcheck
 

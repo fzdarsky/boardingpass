@@ -19,17 +19,47 @@ type Applier struct {
 	validator *PathValidator
 	tempDir   string
 	rollback  *Rollback
+	rootDir   string // Optional root directory for all path operations
 }
 
-// NewApplier creates a new Applier with the given path validator.
+// NewApplier creates a new Applier with the given path validator and root directory.
 // It creates a temporary staging directory for atomic operations.
-func NewApplier(validator *PathValidator) (*Applier, error) {
+// If rootDir is empty or "/", it operates on the real filesystem root.
+func NewApplier(validator *PathValidator, rootDir string) (*Applier, error) {
 	if validator == nil {
 		return nil, fmt.Errorf("validator cannot be nil")
 	}
 
+	// Normalize root directory
+	if rootDir == "" || rootDir == "/" {
+		rootDir = "" // Empty means normal operation
+	} else {
+		// Ensure absolute path
+		if !filepath.IsAbs(rootDir) {
+			return nil, fmt.Errorf("root directory must be absolute path")
+		}
+		// Ensure trailing slash is removed for consistent joining
+		rootDir = filepath.Clean(rootDir)
+	}
+
+	// Determine staging directory base
+	var stagingBase string
+	if rootDir == "" {
+		// Normal operation: use absolute staging directory
+		stagingBase = StagingDirBase
+	} else {
+		// Chroot operation: staging directory relative to root
+		stagingBase = filepath.Join(rootDir, "var/lib/boardingpass/staging")
+	}
+
+	// Create staging base if it doesn't exist
+	//nolint:gosec // G301: 0755 is standard for directory permissions
+	if err := os.MkdirAll(stagingBase, 0o755); err != nil {
+		return nil, fmt.Errorf("failed to create staging directory: %w", err)
+	}
+
 	// Create unique temporary directory for this operation
-	tempDir, err := os.MkdirTemp(StagingDirBase, "apply-*")
+	tempDir, err := os.MkdirTemp(stagingBase, "apply-*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
@@ -45,7 +75,19 @@ func NewApplier(validator *PathValidator) (*Applier, error) {
 		validator: validator,
 		tempDir:   tempDir,
 		rollback:  rollback,
+		rootDir:   rootDir,
 	}, nil
+}
+
+// resolveTargetPath resolves a relative path to its absolute target path,
+// applying the root directory if configured.
+func (a *Applier) resolveTargetPath(relPath string) string {
+	// Join /etc with the relative path, then apply root directory
+	absPath := filepath.Join("/etc", relPath)
+	if a.rootDir != "" {
+		return filepath.Join(a.rootDir, absPath)
+	}
+	return absPath
 }
 
 // Apply applies a configuration bundle atomically.
@@ -93,7 +135,7 @@ func (a *Applier) Apply(bundle *protocol.ConfigBundle) error {
 
 	// Step 4: Backup existing files and Step 5: Atomic rename
 	for relPath, tempPath := range stagedFiles {
-		targetPath := filepath.Join("/etc", relPath)
+		targetPath := a.resolveTargetPath(relPath)
 
 		// Ensure target directory exists
 		targetDir := filepath.Dir(targetPath)
