@@ -26,8 +26,28 @@ builds:
     flags:
       - -trimpath
 
+  - id: boarding
+    main: ./cmd/boarding
+    binary: boarding
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+    flags:
+      - -trimpath
+
 archives:
   - id: boardingpass
+    builds:
+      - boardingpass
     format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
@@ -36,6 +56,18 @@ archives:
       - build/boardingpass.service
       - build/boardingpass.sudoers
       - build/password-generator.example
+
+  - id: boarding-cli
+    builds:
+      - boarding
+    format: tar.gz
+    name_template: "boarding-cli_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+      - README.md
 
 nfpms:
   - id: boardingpass

@@ -85,7 +85,7 @@ func (h *ConfigureHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Apply configuration bundle atomically
-	applier, err := provisioning.NewApplier(validator)
+	applier, err := provisioning.NewApplier(validator, h.config.Paths.RootDirectory)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Failed to create applier", map[string]any{
 			"error":     err.Error(),
