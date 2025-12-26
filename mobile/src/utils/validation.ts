@@ -104,7 +104,8 @@ export function isValidDeviceName(name: string): boolean {
  */
 export function isValidURL(url: string): boolean {
   try {
-    const _ = new URL(url);
+    // eslint-disable-next-line no-new
+    new URL(url);
     return true;
   } catch {
     return false;
