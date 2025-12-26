@@ -122,17 +122,17 @@
 
 ### Tests for User Story 2
 
-- [ ] T054 [P] [US2] Contract test for /auth/srp/init endpoint in mobile/tests/contract/auth-init.test.ts
-- [ ] T055 [P] [US2] Contract test for /auth/srp/verify endpoint in mobile/tests/contract/auth-verify.test.ts
-- [ ] T056 [P] [US2] Integration test for SRP-6a authentication flow in mobile/tests/integration/authentication.test.ts
-- [ ] T057 [P] [US2] Unit test for SRP service in mobile/tests/unit/services/auth/srp.test.ts
-- [ ] T058 [P] [US2] Unit test for session management in mobile/tests/unit/services/auth/session.test.ts
+- [x] T054 [P] [US2] Contract test for /auth/srp/init endpoint in mobile/tests/contract/auth-init.test.ts
+- [x] T055 [P] [US2] Contract test for /auth/srp/verify endpoint in mobile/tests/contract/auth-verify.test.ts
+- [x] T056 [P] [US2] Integration test for SRP-6a authentication flow in mobile/tests/integration/authentication.test.ts
+- [x] T057 [P] [US2] Unit test for SRP service in mobile/tests/unit/services/auth/srp.test.ts
+- [x] T058 [P] [US2] Unit test for session management in mobile/tests/unit/services/auth/session.test.ts
 
 ### Implementation for User Story 2
 
-- [ ] T059 [P] [US2] Install secure-remote-password library in mobile/package.json
-- [ ] T060 [P] [US2] Install expo-camera and expo-barcode-scanner in mobile/package.json
-- [ ] T061 [US2] **CRITICAL**: Configure SRP-6a client with FIPS parameters in mobile/src/services/auth/srp.ts (SHA-256, RFC 5054 2048-bit, g=2)
+- [x] T059 [P] [US2] Install secure-remote-password library in mobile/package.json
+- [x] T060 [P] [US2] Install expo-camera and expo-barcode-scanner in mobile/package.json
+- [x] T061 [US2] **CRITICAL**: Configure SRP-6a client with FIPS parameters in mobile/src/services/auth/srp.ts (SHA-256, RFC 5054 2048-bit, g=2)
 - [ ] T062 [US2] Implement SRP-6a init flow in mobile/src/services/auth/srp.ts (POST /auth/srp/init)
 - [ ] T063 [US2] Implement SRP-6a verify flow in mobile/src/services/auth/srp.ts (POST /auth/srp/verify)
 - [ ] T064 [US2] Create session management service in mobile/src/services/auth/session.ts (store token, check expiry)
@@ -385,10 +385,10 @@ With multiple developers:
 
 **CRITICAL for User Story 2 (Authentication)**:
 
-- [ ] T061: SRP-6a client MUST use SHA-256 hash (FIPS 180-4 approved)
-- [ ] T061: SRP-6a client MUST use RFC 5054 2048-bit group (FIPS 186-4 compliant)
-- [ ] T061: SRP-6a client MUST use generator g=2
-- [ ] T061: Add development logging to verify SRP configuration matches server
+- [x] T061: SRP-6a client MUST use SHA-256 hash (FIPS 180-4 approved)
+- [x] T061: SRP-6a client MUST use RFC 5054 2048-bit group (FIPS 186-4 compliant)
+- [x] T061: SRP-6a client MUST use generator g=2
+- [x] T061: Add development logging to verify SRP configuration matches server
 - [ ] T056: Integration test MUST authenticate against actual BoardingPass service (not mocks)
 - [ ] T077: Verify no SRP values logged (ephemeral keys, session keys, connection codes)
 

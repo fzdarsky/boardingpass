@@ -26,6 +26,11 @@ declare module 'react-native-zeroconf' {
     on(event: 'error', listener: (error: unknown) => void): void;
     on(event: 'start' | 'stop' | 'update', listener: () => void): void;
 
+    removeListener(event: 'found', listener: (service: Service) => void): void;
+    removeListener(event: 'resolved', listener: (service: Service) => void): void;
+    removeListener(event: 'remove', listener: (service: Service) => void): void;
+    removeListener(event: 'error', listener: (error: unknown) => void): void;
+    removeListener(event: 'start' | 'stop' | 'update', listener: () => void): void;
     removeListener(event: string, listener: (...args: unknown[]) => void): void;
   }
 }
