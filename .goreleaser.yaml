@@ -46,9 +46,10 @@ builds:
 
 archives:
   - id: boardingpass
-    builds:
+    ids:
       - boardingpass
-    format: tar.gz
+    formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - LICENSE
@@ -58,13 +59,15 @@ archives:
       - build/password-generator.example
 
   - id: boarding-cli
-    builds:
+    ids:
       - boarding
-    format: tar.gz
+    formats:
+      - tar.gz
     name_template: "boarding-cli_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
     files:
       - LICENSE
       - README.md
@@ -115,7 +118,7 @@ changelog:
       - Merge branch
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 dist: _output/dist
 
