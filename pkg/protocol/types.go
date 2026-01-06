@@ -89,13 +89,15 @@ type SRPInitRequest struct {
 
 // SRPInitResponse represents the response to SRP init request.
 type SRPInitResponse struct {
-	Salt string `json:"salt"` // Base64-encoded salt
-	B    string `json:"b"`    // Base64-encoded server ephemeral public key
+	Salt      string `json:"salt"`       // Base64-encoded salt
+	B         string `json:"B"`          // Base64-encoded server ephemeral public key
+	SessionID string `json:"session_id"` // Session ID for verify step
 }
 
 // SRPVerifyRequest represents the SRP verification request.
 type SRPVerifyRequest struct {
-	M1 string `json:"M1"` // Base64-encoded client proof
+	SessionID string `json:"session_id"` // Session ID from init step
+	M1        string `json:"M1"`         // Base64-encoded client proof
 }
 
 // SRPVerifyResponse represents the response to SRP verify request.

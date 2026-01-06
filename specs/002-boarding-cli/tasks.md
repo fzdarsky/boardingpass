@@ -168,16 +168,16 @@ Project uses Go standard layout:
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T046 [P] Create end-to-end test for full provisioning workflow in `tests/cli-e2e/workflow_test.go` (pass → info → load → command → complete)
-- [ ] T047 [P] Add error handling for network failures with retry logic in `internal/cli/client/client.go`
-- [ ] T048 [P] Add error handling for session expiry (401 responses) in `internal/cli/client/client.go`
-- [ ] T049 [P] Add validation for malformed API responses in `internal/cli/client/client.go`
-- [ ] T050 [P] Update README.md with CLI tool section (installation, quick start, command reference)
-- [ ] T051 [P] Add usage help text for each command (--help flag support)
-- [ ] T052 Run `make lint` and fix all linting errors
-- [ ] T053 Run `make test` and verify all tests pass
-- [ ] T054 Run quickstart.md validation (manually test all examples from quickstart.md)
-- [ ] T055 [P] Generate CLI usage documentation for README
+- [x] T046 [P] Create end-to-end test for full provisioning workflow in `tests/cli-e2e/workflow_test.go` (pass → info → load → command → complete)
+- [x] T047 [P] Add error handling for network failures with retry logic in `internal/cli/client/client.go`
+- [x] T048 [P] Add error handling for session expiry (401 responses) in `internal/cli/client/client.go`
+- [x] T049 [P] Add validation for malformed API responses in `internal/cli/client/client.go`
+- [x] T050 [P] Update README.md with CLI tool section (installation, quick start, command reference)
+- [x] T051 [P] Add usage help text for each command (--help flag support)
+- [x] T052 Run `make lint` and fix all linting errors
+- [x] T053 Run `make test` and verify all tests pass
+- [x] T054 Run quickstart.md validation (manually test all examples from quickstart.md)
+- [x] T055 [P] Generate CLI usage documentation for README
 
 ---
 

@@ -134,7 +134,7 @@ func (c *PassCommand) authenticate(cfg *config.Config, username, password string
 		return fmt.Errorf("failed to compute client proof: %w", err)
 	}
 
-	verifyResp, err := apiClient.SRPVerify(M1)
+	verifyResp, err := apiClient.SRPVerify(initResp.SessionID, M1)
 	if err != nil {
 		return fmt.Errorf("SRP verify failed: %w", err)
 	}

@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"time"
 
@@ -16,6 +18,9 @@ import (
 const (
 	defaultTimeout  = 30 * time.Second
 	contentTypeJSON = "application/json"
+	maxRetries      = 3
+	initialBackoff  = 500 * time.Millisecond
+	maxBackoff      = 5 * time.Second
 )
 
 // Client is an HTTP client for the BoardingPass API.
@@ -71,9 +76,10 @@ func (c *Client) SRPInit(username, A string) (*protocol.SRPInitResponse, error) 
 // SRPVerify completes SRP-6a authentication (Phase 2).
 //
 //nolint:gocritic // M1 is capitalized per RFC 5054 SRP-6a specification
-func (c *Client) SRPVerify(M1 string) (*protocol.SRPVerifyResponse, error) {
+func (c *Client) SRPVerify(sessionID, M1 string) (*protocol.SRPVerifyResponse, error) {
 	req := protocol.SRPVerifyRequest{
-		M1: M1,
+		SessionID: sessionID,
+		M1:        M1,
 	}
 
 	var resp protocol.SRPVerifyResponse
@@ -165,39 +171,98 @@ func (c *Client) post(path string, body any, response any) error {
 	return c.doRequest(req, response)
 }
 
-// doRequest executes an HTTP request with authentication and error handling.
+// doRequest executes an HTTP request with authentication, retry logic, and error handling.
 func (c *Client) doRequest(req *http.Request, response any) error {
-	// Add session token if available
-	if c.sessionToken != "" {
-		req.Header.Set("Authorization", "Bearer "+c.sessionToken)
-	}
+	var lastErr error
+	backoff := initialBackoff
 
-	// Execute request
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	// Read response body
-	bodyBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	// Handle error responses
-	if resp.StatusCode >= 400 {
-		return c.handleErrorResponse(resp.StatusCode, bodyBytes)
-	}
-
-	// Parse successful response
-	if response != nil {
-		if err := json.Unmarshal(bodyBytes, response); err != nil {
-			return fmt.Errorf("failed to parse response: %w", err)
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// Clone request body for retries (if present)
+		var bodyBytes []byte
+		if req.Body != nil {
+			bodyBytes, _ = io.ReadAll(req.Body)
+			_ = req.Body.Close()
 		}
+
+		// Add session token if available
+		if c.sessionToken != "" {
+			req.Header.Set("Authorization", "Bearer "+c.sessionToken)
+		}
+
+		// Restore body for this attempt
+		if bodyBytes != nil {
+			req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		}
+
+		// Execute request
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			// Check if error is retryable
+			if isRetryable(err) && attempt < maxRetries {
+				lastErr = fmt.Errorf("request failed (attempt %d/%d): %w", attempt+1, maxRetries+1, err)
+				time.Sleep(backoff)
+				backoff = min(backoff*2, maxBackoff)
+				continue
+			}
+			return fmt.Errorf("request failed: %w", err)
+		}
+
+		// Read response body
+		respBytes, err := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			return fmt.Errorf("failed to read response body: %w", err)
+		}
+
+		// Handle error responses
+		if resp.StatusCode >= 400 {
+			// Check if status code is retryable (5xx server errors)
+			if resp.StatusCode >= 500 && attempt < maxRetries {
+				lastErr = fmt.Errorf("server error (HTTP %d, attempt %d/%d)", resp.StatusCode, attempt+1, maxRetries+1)
+				time.Sleep(backoff)
+				backoff = min(backoff*2, maxBackoff)
+				continue
+			}
+			return c.handleErrorResponse(resp.StatusCode, respBytes)
+		}
+
+		// Parse successful response
+		if response != nil {
+			if err := json.Unmarshal(respBytes, response); err != nil {
+				// Provide helpful error for malformed JSON
+				if len(respBytes) > 100 {
+					return fmt.Errorf("failed to parse response (invalid JSON): %w", err)
+				}
+				return fmt.Errorf("failed to parse response (invalid JSON, body: %s): %w", string(respBytes), err)
+			}
+		}
+
+		return nil
 	}
 
-	return nil
+	return lastErr
+}
+
+// isRetryable checks if an error is transient and should be retried.
+func isRetryable(err error) bool {
+	// Network timeout errors
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return true
+	}
+
+	// DNS temporary errors
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) && dnsErr.IsTemporary {
+		return true
+	}
+
+	// Connection refused (server may be starting up)
+	if errors.Is(err, errors.New("connection refused")) {
+		return true
+	}
+
+	return false
 }
 
 // handleErrorResponse converts HTTP error responses to user-friendly errors.

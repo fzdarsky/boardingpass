@@ -263,17 +263,19 @@ func TestSRPRequests_JSON(t *testing.T) {
 		{
 			name: "SRP init response",
 			input: protocol.SRPInitResponse{
-				Salt: "c29tZXJhbmRvbXNhbHQ=",
-				B:    "dGVzdEJwaGVtZXJhbA==",
+				Salt:      "c29tZXJhbmRvbXNhbHQ=",
+				B:         "dGVzdEJwaGVtZXJhbA==",
+				SessionID: "test-session-123",
 			},
-			expected: `{"salt":"c29tZXJhbmRvbXNhbHQ=","b":"dGVzdEJwaGVtZXJhbA=="}`,
+			expected: `{"salt":"c29tZXJhbmRvbXNhbHQ=","B":"dGVzdEJwaGVtZXJhbA==","session_id":"test-session-123"}`,
 		},
 		{
 			name: "SRP verify request",
 			input: protocol.SRPVerifyRequest{
-				M1: "dGVzdE0xUHJvb2Y=",
+				SessionID: "test-session-123",
+				M1:        "dGVzdE0xUHJvb2Y=",
 			},
-			expected: `{"M1":"dGVzdE0xUHJvb2Y="}`,
+			expected: `{"session_id":"test-session-123","M1":"dGVzdE0xUHJvb2Y="}`,
 		},
 		{
 			name: "SRP verify response",
