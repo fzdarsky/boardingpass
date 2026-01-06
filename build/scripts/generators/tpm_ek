@@ -1,0 +1,39 @@
+#!/bin/sh
+# BoardingPass password generator: TPM Endorsement Key
+#
+# Generates a device-unique password based on the TPM 2.0 endorsement key.
+#
+# Security notes:
+#   - Recommended for devices with TPM 2.0
+#   - TPM EK is hardware-bound and cannot be changed
+#   - Requires tpm2-tools package to be installed
+#   - Password should be printed on device label for operator access
+#
+# Installation:
+#   Installed by boardingpass package to /usr/lib/boardingpass/generators/tpm-ek
+#   Referenced in /etc/boardingpass/verifier JSON file
+#
+# Dependencies:
+#   - tpm2-tools package (provides tpm2_readpublic)
+#
+# Returns: SHA256 hash of TPM endorsement key
+# Exit code: 0 on success, 1 on failure
+
+set -e
+
+# Check if tpm2-tools is available
+if ! command -v tpm2_readpublic >/dev/null 2>&1; then
+    echo "ERROR: tpm2_readpublic not found (install tpm2-tools package)" >&2
+    exit 1
+fi
+
+# Read TPM EK and hash it
+TPM_EK=$(tpm2_readpublic -c 0x81010001 2>/dev/null | sha256sum | cut -d' ' -f1)
+
+if [ -n "$TPM_EK" ]; then
+    echo "$TPM_EK"
+    exit 0
+fi
+
+echo "ERROR: Unable to read TPM endorsement key" >&2
+exit 1

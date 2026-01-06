@@ -12,7 +12,7 @@ echo "Creating directories..."
 mkdir -p /etc/boardingpass
 mkdir -p /var/lib/boardingpass/tls
 mkdir -p /var/lib/boardingpass/staging
-mkdir -p /usr/lib/boardingpass
+mkdir -p /usr/lib/boardingpass/generators
 
 # Set ownership
 chown root:root /etc/boardingpass

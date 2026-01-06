@@ -96,6 +96,18 @@ nfpms:
           mode: 0440
       - src: build/password-generator.example
         dst: /usr/share/doc/boardingpass/password-generator.example
+      - src: build/scripts/generators/board_serial
+        dst: /usr/lib/boardingpass/generators/board_serial
+        file_info:
+          mode: 0755
+      - src: build/scripts/generators/tpm_ek
+        dst: /usr/lib/boardingpass/generators/tpm_ek
+        file_info:
+          mode: 0755
+      - src: build/scripts/generators/primary_mac
+        dst: /usr/lib/boardingpass/generators/primary_mac
+        file_info:
+          mode: 0755
     scripts:
       preinstall: build/scripts/preinstall.sh
       postinstall: build/scripts/postinstall.sh

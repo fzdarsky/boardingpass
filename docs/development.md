@@ -162,10 +162,12 @@ make build      # Build the BoardingPass service binary
 make build-cli  # Build the boarding CLI tool
 make build-all  # Build both service and CLI binaries
 make release    # Build release packages (RPM, DEB, archives)
+make deploy     # Build RPM and deploy to local RHEL bootc container
+make undeploy   # Stop and remove the bootc container
 make test       # Run unit tests
 make lint       # Run linters
 make coverage   # Generate test coverage report
-make clean      # Clean build artifacts
+make clean      # Clean build artifacts (includes undeploy)
 make generate   # Generate mocks (uses go tool mockgen)
 ```
 
@@ -208,6 +210,36 @@ podman run --rm -v $(pwd):/workspace:Z boardingpass-builder \
 podman run --rm -v $(pwd):/workspace:Z boardingpass-builder \
   goreleaser release --snapshot --clean --skip=publish
 ```
+
+---
+
+## Local Deployment Testing
+
+### Using `make deploy`
+
+The `make deploy` target provides a complete end-user testing experience by building the RPM and deploying it in a local RHEL bootc container:
+
+```bash
+# Build RPM and deploy to local container
+make deploy
+
+# Container will be running with systemd
+# Access at https://localhost:8443
+# View logs: podman exec -it boardingpass-bootc journalctl -u boardingpass
+
+# Stop and remove container
+make undeploy
+```
+
+This deployment includes:
+- Full RPM installation (binary, systemd unit, sudoers config, password generators)
+- Pre-configured verifier using `primary_mac` generator
+- Systemd service management
+- Port 8443 exposed to localhost
+
+**Architecture Detection**: The deploy target automatically detects your system architecture (`x86_64` → `amd64`, `aarch64` → `arm64`) and builds the appropriate RPM.
+
+**Container Requirements**: Requires Podman installed and RHEL subscription (for pulling `registry.redhat.io/rhel9/rhel-bootc:9.7` base image).
 
 ---
 

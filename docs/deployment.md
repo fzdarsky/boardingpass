@@ -26,19 +26,9 @@ sudo apt install ./boardingpass_0.1.0_amd64.deb
 
 ### Configure Authentication
 
-Create a password generator script at `/usr/lib/boardingpass/password-generator`:
+Use one of the pre-packaged password generators or create a custom one.
 
-```bash
-cat <<'EOF' | sudo tee /usr/lib/boardingpass/password-generator
-#!/bin/bash
-# Output device-unique password from board serial number
-dmidecode -s system-serial-number | tr -d '[:space:]'
-EOF
-
-sudo chmod 500 /usr/lib/boardingpass/password-generator
-```
-
-Create the SRP verifier configuration at `/etc/boardingpass/verifier`:
+**Option 1: Use a pre-packaged generator** (recommended):
 
 ```bash
 # Generate a unique salt
@@ -48,7 +38,33 @@ cat <<EOF | sudo tee /etc/boardingpass/verifier
 {
   "username": "boardingpass",
   "salt": "${SALT}",
-  "password_generator": "/usr/lib/boardingpass/password-generator"
+  "password_generator": "/usr/lib/boardingpass/generators/board_serial"
+}
+EOF
+
+sudo chmod 400 /etc/boardingpass/verifier
+```
+
+**Option 2: Create a custom generator**:
+
+```bash
+# Create custom generator in generators directory
+cat <<'EOF' | sudo tee /usr/lib/boardingpass/generators/custom
+#!/bin/bash
+# Output device-unique password from your custom logic
+dmidecode -s system-serial-number | tr -d '[:space:]'
+EOF
+
+sudo chmod 755 /usr/lib/boardingpass/generators/custom
+
+# Reference it in verifier config
+SALT=$(openssl rand -base64 32)
+
+cat <<EOF | sudo tee /etc/boardingpass/verifier
+{
+  "username": "boardingpass",
+  "salt": "${SALT}",
+  "password_generator": "/usr/lib/boardingpass/generators/custom"
 }
 EOF
 
@@ -128,32 +144,54 @@ logging:
 
 ## Password Generation
 
-BoardingPass uses device-unique passwords generated from hardware identifiers. The password generator script at `/usr/lib/boardingpass/password-generator` outputs the device password.
+BoardingPass uses device-unique passwords generated from hardware identifiers.
 
-### Common Password Sources
+### Pre-Packaged Password Generators
 
-**Board serial number** (most common):
+The BoardingPass RPM/DEB packages include three pre-packaged password generators in `/usr/lib/boardingpass/generators/`:
+
+**1. `board_serial`** - Board serial number from DMI (recommended):
+- Uses: `/sys/class/dmi/id/board_serial`
+- Best for enterprise hardware with unique serial numbers
+- Most secure option (hardware-bound, unchangeable)
+
+**2. `tpm_ek`** - TPM 2.0 endorsement key hash:
+- Requires: `tpm2-tools` package
+- Best for devices with TPM 2.0
+- Hardware-bound and cannot be changed
+
+**3. `primary_mac`** - Primary network interface MAC address:
+- Uses: Primary ethernet interface MAC
+- Fallback when DMI/TPM unavailable
+- Less secure (MAC addresses can be changed)
+
+To use a pre-packaged generator, reference it in your verifier configuration:
+
 ```bash
-#!/bin/bash
-dmidecode -s system-serial-number | tr -d '[:space:]'
+cat <<EOF | sudo tee /etc/boardingpass/verifier
+{
+  "username": "boardingpass",
+  "salt": "$(openssl rand -base64 32)",
+  "password_generator": "/usr/lib/boardingpass/generators/board_serial"
+}
+EOF
 ```
 
-**Network MAC address**:
+### Custom Password Generators
+
+You can create custom password generators in `/usr/lib/boardingpass/generators/`:
+
 ```bash
+sudo tee /usr/lib/boardingpass/generators/product_uuid <<'EOF'
 #!/bin/bash
-cat /sys/class/net/eth0/address | tr -d ':'
+cat /sys/class/dmi/id/product_uuid
+EOF
+sudo chmod 755 /usr/lib/boardingpass/generators/product_uuid
 ```
 
-**Combined sources** (stronger):
+Then reference it in your verifier configuration:
 ```bash
-#!/bin/bash
-echo "$(dmidecode -s system-serial-number | tr -d '[:space:]')-$(cat /sys/class/net/eth0/address | tr -d ':')"
-```
-
-**TPM endorsement key** (requires tpm2-tools):
-```bash
-#!/bin/bash
-tpm2_getcap handles-endorsement | grep -A1 "persistent-handle" | tail -1 | tr -d '[:space:]'
+"password_generator": "/usr/lib/boardingpass/generators/product_uuid"
 ```
 
 The password should be printed on the device label during manufacturing for the bootstrap operator.
@@ -178,18 +216,31 @@ After provisioning is complete, the service will not start again (sentinel file 
 For bootc-based immutable systems, include BoardingPass in your Containerfile:
 
 ```dockerfile
-FROM registry.redhat.io/rhel9/rhel-bootc:9.4
+FROM registry.redhat.io/rhel9/rhel-bootc:9.7
 
-# Install BoardingPass
-ADD https://github.com/fzdarsky/boardingpass/releases/download/v0.1.0/boardingpass-0.1.0-1.x86_64.rpm /tmp/
-RUN rpm -ivh /tmp/boardingpass-0.1.0-1.x86_64.rpm && rm /tmp/boardingpass-0.1.0-1.x86_64.rpm
+# Copy and install BoardingPass RPM
+COPY boardingpass_*_linux_amd64.rpm /tmp/boardingpass.rpm
+RUN dnf install -y /tmp/boardingpass.rpm && \
+    dnf clean all && \
+    rm -f /tmp/boardingpass.rpm
 
-# Configure authentication
-COPY verifier.json /etc/boardingpass/verifier
-COPY password-generator.sh /usr/lib/boardingpass/password-generator
-RUN chmod 400 /etc/boardingpass/verifier && chmod 500 /usr/lib/boardingpass/password-generator
+# Configure authentication using pre-packaged generator
+RUN cat > /etc/boardingpass/verifier <<EOF
+{
+  "username": "boardingpass",
+  "salt": "$(echo -n "your-salt-here" | base64)",
+  "password_generator": "/usr/lib/boardingpass/generators/board_serial"
+}
+EOF
 
-# Configure service
+# (Optional) Or create a custom generator
+RUN cat > /usr/lib/boardingpass/generators/custom <<'EOF'
+#!/bin/bash
+cat /sys/class/dmi/id/product_uuid
+EOF
+RUN chmod 755 /usr/lib/boardingpass/generators/custom
+
+# Configure service (optional - RPM includes default config)
 COPY config.yaml /etc/boardingpass/config.yaml
 
 # Enable service

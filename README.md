@@ -77,7 +77,7 @@ tls:
 
 auth:
   verifier_file: "/etc/boardingpass/verifier.json"
-  password_generator: "/usr/lib/boardingpass/password-generator"
+  password_generator: "/usr/lib/boardingpass/generators/board_serial"
 
 provisioning:
   allowed_paths:
