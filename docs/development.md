@@ -158,13 +158,40 @@ boardingpass/
 ### Using Makefile
 
 ```bash
-make build      # Build binaries for all targets
-make test       # Run all tests
+make build      # Build the BoardingPass service binary
+make build-cli  # Build the boarding CLI tool
+make build-all  # Build both service and CLI binaries
+make release    # Build release packages (RPM, DEB, archives)
+make test       # Run unit tests
 make lint       # Run linters
-make coverage   # Generate coverage report
+make coverage   # Generate test coverage report
 make clean      # Clean build artifacts
 make generate   # Generate mocks (uses go tool mockgen)
 ```
+
+### Native Build with GoReleaser
+
+```bash
+# Build for current architecture only (fastest for local development)
+goreleaser build --snapshot --clean --single-target
+
+# Build for all targets (linux/amd64, linux/arm64)
+goreleaser build --snapshot --clean
+
+# Build release packages (RPM, DEB, archives) without publishing
+goreleaser release --snapshot --clean --skip=publish
+
+# Or use the Makefile target
+make release
+```
+
+**Output location**: `_output/dist/`
+
+**What gets built:**
+- Binaries for Linux (amd64/arm64), Darwin (amd64/arm64), Windows (amd64/arm64)
+- RPM packages: `boardingpass_*_linux_{amd64,arm64}.rpm`
+- DEB packages: `boardingpass_*_linux_{amd64,arm64}.deb`
+- Archives: `*.tar.gz` (Linux/Darwin), `*.zip` (Windows)
 
 ### Container Build
 
@@ -177,9 +204,9 @@ podman run --rm -v $(pwd):/workspace:Z boardingpass-builder \
 podman run --rm -v $(pwd):/workspace:Z boardingpass-builder \
   goreleaser build --snapshot --clean
 
-# Generate RPM and DEB packages
+# Build release packages (RPM, DEB, archives)
 podman run --rm -v $(pwd):/workspace:Z boardingpass-builder \
-  goreleaser release --snapshot --clean
+  goreleaser release --snapshot --clean --skip=publish
 ```
 
 ---

@@ -1,4 +1,4 @@
-.PHONY: all build build-cli build-all test test-unit test-integration test-e2e test-all lint coverage clean generate help
+.PHONY: all build build-cli build-all release test test-unit test-integration test-e2e test-all lint coverage clean generate help
 
 # Build variables
 BINARY_NAME := boardingpass
@@ -29,6 +29,7 @@ help:
 	@echo "  build         - Build the BoardingPass service binary"
 	@echo "  build-cli     - Build the boarding CLI tool"
 	@echo "  build-all     - Build both service and CLI binaries"
+	@echo "  release       - Build release packages (RPM, DEB, archives)"
 	@echo "  test          - Run unit tests (short mode)"
 	@echo "  test-unit     - Run unit tests only"
 	@echo "  test-integration - Run integration tests"
@@ -59,6 +60,13 @@ build-cli:
 ## build-all: Build both service and CLI binaries
 build-all: build build-cli
 	@echo "All binaries built successfully"
+
+## release: Build release packages (RPM, DEB, archives)
+release:
+	@echo "Building release packages..."
+	@goreleaser release --snapshot --clean --skip=publish
+	@echo "Packages built in $(DIST_DIR)/"
+	@ls -lh $(DIST_DIR)/*.rpm $(DIST_DIR)/*.deb 2>/dev/null || true
 
 ## test: Run unit tests (short mode)
 test:
