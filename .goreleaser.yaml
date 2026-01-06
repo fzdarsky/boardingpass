@@ -46,9 +46,10 @@ builds:
 
 archives:
   - id: boardingpass
-    builds:
+    ids:
       - boardingpass
-    format: tar.gz
+    formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - LICENSE
@@ -58,13 +59,15 @@ archives:
       - build/password-generator.example
 
   - id: boarding-cli
-    builds:
+    ids:
       - boarding
-    format: tar.gz
+    formats:
+      - tar.gz
     name_template: "boarding-cli_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
     files:
       - LICENSE
       - README.md
@@ -93,8 +96,21 @@ nfpms:
           mode: 0440
       - src: build/password-generator.example
         dst: /usr/share/doc/boardingpass/password-generator.example
+      - src: build/scripts/generators/board_serial
+        dst: /usr/lib/boardingpass/generators/board_serial
+        file_info:
+          mode: 0755
+      - src: build/scripts/generators/tpm_ek
+        dst: /usr/lib/boardingpass/generators/tpm_ek
+        file_info:
+          mode: 0755
+      - src: build/scripts/generators/primary_mac
+        dst: /usr/lib/boardingpass/generators/primary_mac
+        file_info:
+          mode: 0755
     scripts:
-      preinstall: build/scripts/install-hooks.sh
+      preinstall: build/scripts/preinstall.sh
+      postinstall: build/scripts/postinstall.sh
     rpm:
       group: System Environment/Daemons
       compression: xz
@@ -115,7 +131,7 @@ changelog:
       - Merge branch
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 dist: _output/dist
 

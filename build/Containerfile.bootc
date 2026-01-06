@@ -1,0 +1,41 @@
+# Containerfile for RHEL bootc deployment testing
+# This installs the boardingpass RPM package on a RHEL bootc base image
+# for local end-user testing of the service.
+
+FROM registry.redhat.io/rhel9/rhel-bootc:9.7
+
+# Build argument for architecture (amd64 or arm64, defaults to amd64)
+ARG ARCH=amd64
+
+# Copy the RPM package from the local build
+# Filename format: boardingpass_VERSION_linux_ARCH.rpm
+COPY _output/dist/boardingpass_*_linux_${ARCH}.rpm /tmp/boardingpass.rpm
+
+# Install the RPM package
+# The RPM already contains:
+# - The binary at /usr/bin/boardingpass
+# - systemd unit at /usr/lib/systemd/system/boardingpass.service
+# - sudoers config at /etc/sudoers.d/boardingpass
+# The postinstall script creates directories and default config
+RUN dnf install -y /tmp/boardingpass.rpm && \
+    dnf clean all && \
+    rm -f /tmp/boardingpass.rpm
+
+# Enable the boardingpass service
+RUN systemctl enable boardingpass.service
+
+# Create verifier configuration for SRP-6a authentication
+# User: boardingpass, Salt: koshersalt (base64 encoded), Generator: primary_mac
+RUN cat > /etc/boardingpass/verifier <<EOF
+{
+  "username": "boardingpass",
+  "salt": "$(echo -n "koshersalt" | base64)",
+  "password_generator": "/usr/lib/boardingpass/generators/primary_mac"
+}
+EOF
+
+# Expose HTTPS port (default: 8443)
+EXPOSE 8443
+
+# bootc images use systemd as init by default
+CMD ["/sbin/init"]

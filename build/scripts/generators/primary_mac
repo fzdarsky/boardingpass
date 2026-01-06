@@ -1,0 +1,29 @@
+#!/bin/sh
+# BoardingPass password generator: Primary MAC address
+#
+# Generates a device-unique password based on the primary network interface MAC address.
+#
+# Security notes:
+#   - MAC addresses can be changed in software (less secure than serial/TPM)
+#   - Use only when DMI serial or TPM are not available
+#   - Password should be printed on device label for operator access
+#
+# Installation:
+#   Installed by boardingpass package to /usr/lib/boardingpass/generators/primary_mac
+#   Referenced in /etc/boardingpass/verifier JSON file
+#
+# Returns: MAC address of primary network interface
+# Exit code: 0 on success, 1 on failure
+
+set -e
+
+# Get primary MAC address (first ethernet interface)
+PRIMARY_MAC=$(ip link show | grep -A1 '^2:' | grep 'link/ether' | awk '{print $2}' | head -n1)
+
+if [ -n "$PRIMARY_MAC" ]; then
+    echo "$PRIMARY_MAC"
+    exit 0
+fi
+
+echo "ERROR: Unable to determine primary MAC address" >&2
+exit 1

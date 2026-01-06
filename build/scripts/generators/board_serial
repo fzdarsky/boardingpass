@@ -1,0 +1,37 @@
+#!/bin/sh
+# BoardingPass password generator: Board serial number
+#
+# Generates a device-unique password based on the motherboard serial number from DMI.
+#
+# Security notes:
+#   - Recommended for enterprise hardware with unique serial numbers
+#   - Serial number is hardware-bound and cannot be changed
+#   - Not all systems populate this field correctly
+#   - Password should be printed on device label for operator access
+#
+# Installation:
+#   Installed by boardingpass package to /usr/lib/boardingpass/generators/board_serial
+#   Referenced in /etc/boardingpass/verifier JSON file
+#
+# Returns: Board serial number from DMI
+# Exit code: 0 on success, 1 on failure
+
+set -e
+
+# Check if DMI board serial is available
+if [ ! -f /sys/class/dmi/id/board_serial ]; then
+    echo "ERROR: /sys/class/dmi/id/board_serial not found (DMI not available)" >&2
+    exit 1
+fi
+
+# Read board serial
+SERIAL=$(cat /sys/class/dmi/id/board_serial)
+
+# Validate serial is not empty or placeholder
+if [ -n "$SERIAL" ] && [ "$SERIAL" != "Not Specified" ]; then
+    echo "$SERIAL"
+    exit 0
+fi
+
+echo "ERROR: Board serial is not set or is placeholder value" >&2
+exit 1

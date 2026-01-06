@@ -158,13 +158,42 @@ boardingpass/
 ### Using Makefile
 
 ```bash
-make build      # Build binaries for all targets
-make test       # Run all tests
+make build      # Build the BoardingPass service binary
+make build-cli  # Build the boarding CLI tool
+make build-all  # Build both service and CLI binaries
+make release    # Build release packages (RPM, DEB, archives)
+make deploy     # Build RPM and deploy to local RHEL bootc container
+make undeploy   # Stop and remove the bootc container
+make test       # Run unit tests
 make lint       # Run linters
-make coverage   # Generate coverage report
-make clean      # Clean build artifacts
+make coverage   # Generate test coverage report
+make clean      # Clean build artifacts (includes undeploy)
 make generate   # Generate mocks (uses go tool mockgen)
 ```
+
+### Native Build with GoReleaser
+
+```bash
+# Build for current architecture only (fastest for local development)
+goreleaser build --snapshot --clean --single-target
+
+# Build for all targets (linux/amd64, linux/arm64)
+goreleaser build --snapshot --clean
+
+# Build release packages (RPM, DEB, archives) without publishing
+goreleaser release --snapshot --clean --skip=publish
+
+# Or use the Makefile target
+make release
+```
+
+**Output location**: `_output/dist/`
+
+**What gets built:**
+- Binaries for Linux (amd64/arm64), Darwin (amd64/arm64), Windows (amd64/arm64)
+- RPM packages: `boardingpass_*_linux_{amd64,arm64}.rpm`
+- DEB packages: `boardingpass_*_linux_{amd64,arm64}.deb`
+- Archives: `*.tar.gz` (Linux/Darwin), `*.zip` (Windows)
 
 ### Container Build
 
@@ -177,10 +206,40 @@ podman run --rm -v $(pwd):/workspace:Z boardingpass-builder \
 podman run --rm -v $(pwd):/workspace:Z boardingpass-builder \
   goreleaser build --snapshot --clean
 
-# Generate RPM and DEB packages
+# Build release packages (RPM, DEB, archives)
 podman run --rm -v $(pwd):/workspace:Z boardingpass-builder \
-  goreleaser release --snapshot --clean
+  goreleaser release --snapshot --clean --skip=publish
 ```
+
+---
+
+## Local Deployment Testing
+
+### Using `make deploy`
+
+The `make deploy` target provides a complete end-user testing experience by building the RPM and deploying it in a local RHEL bootc container:
+
+```bash
+# Build RPM and deploy to local container
+make deploy
+
+# Container will be running with systemd
+# Access at https://localhost:8443
+# View logs: podman exec -it boardingpass-bootc journalctl -u boardingpass
+
+# Stop and remove container
+make undeploy
+```
+
+This deployment includes:
+- Full RPM installation (binary, systemd unit, sudoers config, password generators)
+- Pre-configured verifier using `primary_mac` generator
+- Systemd service management
+- Port 8443 exposed to localhost
+
+**Architecture Detection**: The deploy target automatically detects your system architecture (`x86_64` → `amd64`, `aarch64` → `arm64`) and builds the appropriate RPM.
+
+**Container Requirements**: Requires Podman installed and RHEL subscription (for pulling `registry.redhat.io/rhel9/rhel-bootc:9.7` base image).
 
 ---
 
