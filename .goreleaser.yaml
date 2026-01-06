@@ -97,7 +97,8 @@ nfpms:
       - src: build/password-generator.example
         dst: /usr/share/doc/boardingpass/password-generator.example
     scripts:
-      preinstall: build/scripts/install-hooks.sh
+      preinstall: build/scripts/preinstall.sh
+      postinstall: build/scripts/postinstall.sh
     rpm:
       group: System Environment/Daemons
       compression: xz

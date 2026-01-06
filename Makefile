@@ -1,4 +1,4 @@
-.PHONY: all build build-cli build-all release test test-unit test-integration test-e2e test-all lint coverage clean generate help
+.PHONY: all build build-cli build-all release deploy undeploy test test-unit test-integration test-e2e test-all lint coverage clean generate help
 
 # Build variables
 BINARY_NAME := boardingpass
@@ -7,6 +7,11 @@ OUTPUT_DIR := _output
 BIN_DIR := $(OUTPUT_DIR)/bin
 DIST_DIR := $(OUTPUT_DIR)/dist
 COVERAGE_DIR := $(OUTPUT_DIR)/coverage
+
+# Architecture detection for RPM deployment
+# Map uname -m output (x86_64, aarch64) to goreleaser naming (amd64, arm64)
+UNAME_ARCH := $(shell uname -m)
+RPM_ARCH := $(shell echo $(UNAME_ARCH) | sed 's/x86_64/amd64/g' | sed 's/aarch64/arm64/g')
 
 # Go variables
 GOCMD := go
@@ -30,6 +35,8 @@ help:
 	@echo "  build-cli     - Build the boarding CLI tool"
 	@echo "  build-all     - Build both service and CLI binaries"
 	@echo "  release       - Build release packages (RPM, DEB, archives)"
+	@echo "  deploy        - Build RPM and deploy to local RHEL bootc container"
+	@echo "  undeploy      - Stop and remove the bootc container"
 	@echo "  test          - Run unit tests (short mode)"
 	@echo "  test-unit     - Run unit tests only"
 	@echo "  test-integration - Run integration tests"
@@ -67,6 +74,32 @@ release:
 	@goreleaser release --snapshot --clean --skip=publish
 	@echo "Packages built in $(DIST_DIR)/"
 	@ls -lh $(DIST_DIR)/*.rpm $(DIST_DIR)/*.deb 2>/dev/null || true
+
+## deploy: Build RPM and deploy to local RHEL bootc container
+deploy: release
+	@echo "Detected architecture: $(UNAME_ARCH) -> $(RPM_ARCH)"
+	@echo "Building bootc container image for $(RPM_ARCH)..."
+	@podman build -f build/Containerfile.bootc --build-arg ARCH=$(RPM_ARCH) -t boardingpass-bootc:latest .
+	@echo "Running bootc container..."
+	@echo "Container will run with systemd. Use 'podman ps' to see running containers."
+	@echo "Use 'podman exec -it <container-id> journalctl -u boardingpass' to view logs."
+	@podman run -d --name boardingpass-bootc --rm \
+		-p 8443:8443 \
+		--tmpfs /tmp \
+		--tmpfs /run \
+		-v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+		--cgroupns=host \
+		boardingpass-bootc:latest
+	@echo "Bootc container started. Container name: boardingpass-bootc"
+	@echo "Access the service at https://localhost:8443"
+	@echo "Stop with: podman stop boardingpass-bootc"
+
+## undeploy: Stop and remove the bootc container
+undeploy:
+	@echo "Stopping and removing boardingpass-bootc container..."
+	@podman stop boardingpass-bootc 2>/dev/null || true
+	@podman rm boardingpass-bootc 2>/dev/null || true
+	@echo "Container removed"
 
 ## test: Run unit tests (short mode)
 test:
@@ -116,10 +149,12 @@ coverage:
 	@$(GOCMD) tool cover -func=$(COVERAGE_DIR)/coverage.out | tee $(COVERAGE_DIR)/coverage.txt
 	@echo "Coverage report: $(COVERAGE_DIR)/coverage.html"
 
-## clean: Remove build artifacts
-clean:
+## clean: Remove build artifacts, container, and images
+clean: undeploy
 	@echo "Cleaning build artifacts..."
 	@rm -rf $(OUTPUT_DIR)
+	@echo "Removing boardingpass-bootc image..."
+	@podman rmi boardingpass-bootc:latest 2>/dev/null || true
 	@echo "Clean complete"
 
 # Development helpers
