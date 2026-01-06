@@ -146,6 +146,384 @@ lifecycle:
      -H "Authorization: Bearer <session_token>"
    ```
 
+## CLI Tool
+
+BoardingPass provides the `boarding` CLI tool for easy device provisioning without manual API calls. The CLI handles authentication, TLS certificate validation, session management, and provides a simple interface for all provisioning operations.
+
+### Installation
+
+#### From Binary Release (Recommended)
+
+Download the latest release for your platform:
+
+```bash
+# Linux (amd64)
+curl -LO https://github.com/fzdarsky/boardingpass/releases/latest/download/boarding-cli_linux_amd64.tar.gz
+tar -xzf boarding-cli_linux_amd64.tar.gz
+sudo mv boarding /usr/local/bin/
+
+# macOS (arm64/Apple Silicon)
+curl -LO https://github.com/fzdarsky/boardingpass/releases/latest/download/boarding-cli_darwin_arm64.tar.gz
+tar -xzf boarding-cli_darwin_arm64.tar.gz
+sudo mv boarding /usr/local/bin/
+```
+
+#### From Source
+
+Requires Go 1.25+ installed:
+
+```bash
+# Build CLI from source
+make build-cli
+
+# Install to system
+sudo cp _output/bin/boarding /usr/local/bin/
+```
+
+#### Verify Installation
+
+```bash
+boarding --help
+```
+
+### Configuration
+
+The CLI supports three configuration methods with clear precedence:
+
+**1. Command-Line Flags (Highest Priority)**
+```bash
+boarding pass --host 192.168.1.100 --port 8443 --username admin
+```
+
+**2. Environment Variables (Medium Priority)**
+```bash
+export BOARDING_HOST=192.168.1.100
+export BOARDING_PORT=8443
+boarding pass --username admin
+```
+
+**3. Config File (Lowest Priority)**
+
+Create `~/.config/boardingpass/config.yaml` (Linux/Unix):
+```yaml
+host: 192.168.1.100
+port: 8443
+```
+
+Then run commands without flags:
+```bash
+boarding pass --username admin
+```
+
+### Quick Start
+
+#### Basic Provisioning Workflow
+
+```bash
+# 1. Authenticate
+boarding pass --host 192.168.1.100 --username admin
+# Prompts for password, stores session token
+
+# 2. Query device information
+boarding info
+# Displays CPU, board, TPM, OS, FIPS status in YAML
+
+# 3. Check network interfaces
+boarding connections
+# Displays network interface details
+
+# 4. Upload configuration files
+boarding load /path/to/config-directory
+# Uploads all files in directory to device
+
+# 5. Execute allow-listed commands
+boarding command echo-test
+# Executes command on device, shows output
+
+# 6. Complete provisioning
+boarding complete
+# Triggers device to finalize and logout
+```
+
+#### CI/CD Pipeline (Non-Interactive)
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+# Use environment variables for connection
+export BOARDING_HOST=${DEVICE_IP}
+export BOARDING_PORT=8443
+
+# Authenticate (non-interactive)
+boarding pass --username admin --password "${DEVICE_PASSWORD}"
+
+# Query device info and save as artifact
+boarding info -o json > device-info.json
+
+# Upload configuration
+boarding load ./device-configs/edge-node/
+
+# Run post-provision script
+boarding command post-provision-script
+
+# Complete provisioning
+boarding complete
+
+echo "Provisioning completed successfully"
+```
+
+### Commands
+
+#### `boarding pass` - Authenticate
+
+Authenticate with the BoardingPass service using SRP-6a protocol.
+
+```bash
+boarding pass --host 192.168.1.100 --username admin [--password SECRET]
+```
+
+**Flags:**
+- `--host` - BoardingPass service hostname or IP (can use `BOARDING_HOST` env var)
+- `--port` - BoardingPass service port (default: 8443, can use `BOARDING_PORT` env var)
+- `--username` - Username for authentication (prompts if not provided)
+- `--password` - Password for authentication (prompts securely if not provided)
+- `--ca-cert` - Path to custom CA certificate bundle (can use `BOARDING_CA_CERT` env var)
+
+**Example:**
+```bash
+# Interactive (prompts for credentials)
+boarding pass --host 192.168.1.100
+
+# Non-interactive (for scripts)
+boarding pass --host 192.168.1.100 --username admin --password secret123
+
+# With custom CA certificate
+boarding pass --host internal.corp --ca-cert /etc/ssl/ca.pem --username admin
+```
+
+#### `boarding info` - Query System Information
+
+Retrieve hardware and software information from the device.
+
+```bash
+boarding info [--output yaml|json]
+```
+
+**Flags:**
+- `--output` - Output format: `yaml` (default) or `json`
+
+**Example:**
+```bash
+# YAML output (default)
+boarding info
+
+# JSON output
+boarding info --output json
+```
+
+#### `boarding connections` - Query Network Interfaces
+
+List network interfaces and their configuration.
+
+```bash
+boarding connections [--output yaml|json]
+```
+
+**Flags:**
+- `--output` - Output format: `yaml` (default) or `json`
+
+**Example:**
+```bash
+# View network interfaces
+boarding connections
+
+# JSON output for scripting
+boarding connections --output json
+```
+
+#### `boarding load` - Upload Configuration
+
+Upload configuration files from a local directory to the device.
+
+```bash
+boarding load <directory>
+```
+
+**Limits:**
+- Maximum 100 files
+- Maximum 10 MB total size
+
+**Example:**
+```bash
+# Upload all files from a directory
+boarding load /path/to/config
+
+# Files are uploaded recursively maintaining directory structure
+```
+
+#### `boarding command` - Execute Command
+
+Execute an allow-listed command on the device.
+
+```bash
+boarding command <command-id>
+```
+
+**Example:**
+```bash
+# Execute system command
+boarding command systemctl-status
+
+# Command output (stdout/stderr) is displayed
+# Exit code is preserved
+```
+
+#### `boarding complete` - Complete Provisioning
+
+Signal provisioning completion and terminate the session.
+
+```bash
+boarding complete
+```
+
+This triggers the BoardingPass service to finalize provisioning and shut down. The session token is deleted locally.
+
+**Example:**
+```bash
+# Complete the provisioning session
+boarding complete
+```
+
+### Environment Variables
+
+The CLI supports configuration via environment variables with the following precedence:
+**Flags > Environment Variables > Config File**
+
+Available environment variables:
+- `BOARDING_HOST` - Default hostname or IP address
+- `BOARDING_PORT` - Default port (default: 8443)
+- `BOARDING_CA_CERT` - Path to custom CA certificate bundle
+
+**Example:**
+```bash
+# Set default connection parameters
+export BOARDING_HOST=192.168.1.100
+export BOARDING_PORT=8443
+
+# Commands will use these defaults
+boarding pass --username admin
+boarding info
+boarding complete
+```
+
+### Session Management
+
+The CLI automatically manages session tokens:
+
+- **Storage Location**: `~/.cache/boardingpass/session-<host>-<port>.token`
+- **Permissions**: Tokens are saved with restrictive 0600 permissions for security
+- **Auto-Loading**: Tokens are automatically loaded for subsequent commands
+- **Cleanup**: Tokens are deleted when running `boarding complete`
+- **Multiple Devices**: Different tokens are maintained for each host:port combination
+
+View active sessions:
+```bash
+ls -la ~/.cache/boardingpass/
+```
+
+Clear all sessions:
+```bash
+rm -f ~/.cache/boardingpass/session-*.token
+```
+
+### TLS Certificate Handling
+
+The CLI uses **Trust-On-First-Use (TOFU)** for self-signed certificates:
+
+```bash
+# First connection prompts for certificate acceptance
+boarding pass --host 192.168.1.100 --username admin
+
+# Output:
+# WARNING: Unknown TLS certificate fingerprint
+#   Host: 192.168.1.100:8443
+#   Fingerprint: SHA256:a1b2c3d4...
+#
+# Do you want to accept this certificate? (yes/no): yes
+```
+
+The fingerprint is saved to `~/.config/boardingpass/known_certs.yaml` and future connections validate against it.
+
+**Custom CA Certificates:**
+```bash
+# Use custom CA bundle
+boarding pass --host internal.corp --ca-cert /etc/ssl/ca-bundle.pem --username admin
+
+# Or via environment variable
+export BOARDING_CA_CERT=/etc/ssl/ca-bundle.pem
+boarding pass --host internal.corp --username admin
+```
+
+### Security Best Practices
+
+1. **Avoid saving passwords in config files**:
+   ```bash
+   # Good: Pass password via flag or let it prompt
+   boarding pass --username admin --password "${DEVICE_PASSWORD}"
+
+   # Bad: Don't put passwords in config.yaml
+   ```
+
+2. **Use environment variables in CI/CD**:
+   ```bash
+   export BOARDING_HOST=${DEVICE_IP}
+   boarding pass --username admin --password "${DEVICE_SECRET}"
+   ```
+
+3. **Verify certificate fingerprints** on first connection in production environments
+
+4. **Use custom CA certificates** for production (avoid TOFU when possible)
+
+5. **Rotate sessions** by running `boarding complete` after provisioning
+
+### Troubleshooting
+
+**Error: "not authenticated" or "no active session"**
+
+*Cause*: No valid session token found or session expired (30-minute TTL)
+
+*Solution*:
+```bash
+boarding pass --username admin
+```
+
+**Error: "connection refused"**
+
+*Cause*: BoardingPass service not running or not reachable
+
+*Solution*:
+- Verify service is running: `systemctl status boardingpass`
+- Check network connectivity: `ping <host>`
+- Verify firewall allows port 8443
+
+**Error: "certificate fingerprint mismatch"**
+
+*Cause*: Server certificate changed (cert rotation or potential MITM attack)
+
+*Solution*:
+- If expected, remove old entry from `~/.config/boardingpass/known_certs.yaml`
+- Re-run command to accept new certificate
+- If unexpected, investigate for security incident
+
+**Error: "command not permitted" or "not in allow-list"**
+
+*Cause*: Command ID not in server-side allow-list
+
+*Solution*:
+- Check server configuration for allowed command IDs
+- Contact administrator to add command to allow-list
+
 ## Development
 
 ### Building
@@ -228,6 +606,7 @@ See [specs/001-boardingpass-api/plan.md](specs/001-boardingpass-api/plan.md) for
 ## Roadmap
 
 - [x] Core service implementation (SRP auth, configuration provisioning, command execution)
+- [x] CLI tool for device provisioning (`boarding` command)
 - [ ] Mobile app for iOS/Android (React Native)
 - [ ] Additional transport support (WiFi AP mode, BLE, USB gadget)
 - [ ] Enhanced monitoring and observability

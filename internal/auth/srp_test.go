@@ -4,10 +4,12 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"math/big"
 	"testing"
 
 	"github.com/fzdarsky/boardingpass/internal/auth"
+	"github.com/fzdarsky/boardingpass/pkg/srp"
 )
 
 func TestGetGroupParameters(t *testing.T) {
@@ -179,10 +181,6 @@ func TestSRPServer_Init_InvalidBase64(t *testing.T) {
 }
 
 func TestSRPServer_Verify(t *testing.T) {
-	// TODO: Implement computeClientProof before running this test
-	// This test requires a full SRP client-side implementation to compute a valid M1 proof
-	t.Skip("Skipping: requires full SRP client implementation in computeClientProof (currently stub)")
-
 	N, g, _ := auth.GetGroupParameters()
 
 	// Client generates ephemeral keypair
@@ -214,7 +212,7 @@ func TestSRPServer_Verify(t *testing.T) {
 	B := new(big.Int).SetBytes(BBytes)
 
 	// Client computes shared secret
-	M1 := computeClientProof(username, salt, password, A, B, N, g)
+	M1 := computeClientProof(username, salt, password, a, A, B)
 	M1Base64 := base64.StdEncoding.EncodeToString(M1)
 
 	// Server verify
@@ -292,10 +290,6 @@ func TestSRPServer_Verify_BeforeInit(t *testing.T) {
 }
 
 func TestSRPServer_ClearSecrets(t *testing.T) {
-	// TODO: Implement computeClientProof before running this test
-	// This test requires a full SRP client-side implementation to compute a valid M1 proof
-	t.Skip("Skipping: requires full SRP client implementation in computeClientProof (currently stub)")
-
 	N, g, _ := auth.GetGroupParameters()
 
 	a := generateRandomBigInt(256)
@@ -322,7 +316,7 @@ func TestSRPServer_ClearSecrets(t *testing.T) {
 	BBytes, _ := base64.StdEncoding.DecodeString(BBase64)
 	B := new(big.Int).SetBytes(BBytes)
 
-	M1 := computeClientProof("testuser", salt, password, A, B, N, g)
+	M1 := computeClientProof("testuser", salt, password, a, A, B)
 	M1Base64 := base64.StdEncoding.EncodeToString(M1)
 
 	_, err = server.Verify(M1Base64)
@@ -356,54 +350,15 @@ func TestSRPServer_ClearSecrets(t *testing.T) {
 }
 
 // Helper function: compute client-side M1 proof for testing
-func computeClientProof(username, saltBase64, password string, A, B, N, g *big.Int) []byte {
-	// Decode salt
-	salt, _ := base64.StdEncoding.DecodeString(saltBase64)
-
-	// Compute x = H(salt | H(username | ":" | password))
-	identityHash := sha256.New()
-	identityHash.Write([]byte(username))
-	identityHash.Write([]byte(":"))
-	identityHash.Write([]byte(password))
-	identityDigest := identityHash.Sum(nil)
-
-	xHash := sha256.New()
-	xHash.Write(salt)
-	xHash.Write(identityDigest)
-	_ = new(big.Int).SetBytes(xHash.Sum(nil)) // x (unused in stub)
-
-	// Compute k = H(N | g)
-	kHash := sha256.New()
-	nBytes := N.Bytes()
-	gBytes := make([]byte, len(nBytes))
-	copy(gBytes[len(gBytes)-1:], g.Bytes())
-	kHash.Write(nBytes)
-	kHash.Write(gBytes)
-	_ = new(big.Int).SetBytes(kHash.Sum(nil)) // k (unused in stub)
-
-	// Compute u = H(A | B)
-	uHash := sha256.New()
-	maxLen := len(nBytes)
-	ABytes := make([]byte, maxLen)
-	BBytes := make([]byte, maxLen)
-	ACopy := A.Bytes()
-	BCopy := B.Bytes()
-	copy(ABytes[maxLen-len(ACopy):], ACopy)
-	copy(BBytes[maxLen-len(BCopy):], BCopy)
-	uHash.Write(ABytes)
-	uHash.Write(BBytes)
-	_ = new(big.Int).SetBytes(uHash.Sum(nil)) // u (unused in stub)
-
-	// This is a simplified client-side computation for testing
-	// In real implementation, client would use their own 'a' value
-	// For testing, we compute a valid M1 that the server can verify
-
-	// Note: This is a stub - in real test we'd need to properly implement
-	// the full SRP client logic. For now, we return a placeholder.
-	// A full implementation would require exposing more of the server's
-	// internal state for testing, which we avoid.
-
-	return []byte{} // Placeholder
+//
+//nolint:gocritic // a, A, B are capitalized per RFC 5054 SRP-6a specification
+func computeClientProof(username, saltBase64, password string, a, A, B *big.Int) []byte {
+	// Use the shared SRP client implementation
+	M1, err := srp.ComputeClientProofWithEphemeral(username, password, saltBase64, a, A, B)
+	if err != nil {
+		panic(fmt.Sprintf("failed to compute client proof: %v", err))
+	}
+	return M1
 }
 
 // Helper: generate random big int with specified bit length

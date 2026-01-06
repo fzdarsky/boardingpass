@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -53,9 +54,10 @@ type LoggingSettings struct {
 	Format string `yaml:"format"`
 }
 
-// PathSettings contains path allow-list configuration.
+// PathSettings contains path allow-list configuration and optional root directory.
 type PathSettings struct {
-	AllowList []string `yaml:"allow_list"`
+	AllowList     []string `yaml:"allow_list"`
+	RootDirectory string   `yaml:"root_directory,omitempty"` // Optional chroot-like root for testing
 }
 
 // Load reads and parses the configuration file.
@@ -70,6 +72,11 @@ func Load(path string) (*Config, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	// Allow environment variable override for root directory (useful for tests)
+	if rootDir := os.Getenv("BOARDINGPASS_ROOT_DIR"); rootDir != "" {
+		cfg.Paths.RootDirectory = rootDir
 	}
 
 	if err := cfg.validate(); err != nil {
@@ -105,6 +112,20 @@ func (c *Config) validate() error {
 
 		if c.Transports.Ethernet.TLSKey == "" {
 			return fmt.Errorf("transports.ethernet.tls_key is required when ethernet is enabled")
+		}
+	}
+
+	// Validate root directory (if specified)
+	if c.Paths.RootDirectory != "" {
+		// Ensure it's an absolute path
+		if !filepath.IsAbs(c.Paths.RootDirectory) {
+			return fmt.Errorf("paths.root_directory must be an absolute path")
+		}
+
+		// Create if it doesn't exist (useful for tests)
+		//nolint:gosec // G301: 0755 is standard for directory permissions
+		if err := os.MkdirAll(c.Paths.RootDirectory, 0o755); err != nil {
+			return fmt.Errorf("failed to create root directory: %w", err)
 		}
 	}
 

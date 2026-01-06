@@ -176,8 +176,16 @@ func run(configPath, verifierPath string) error {
 	}, logger)
 	mux.Handle("/complete", activityMiddleware(authMiddleware.Require(completeHandler)))
 
-	// TODO: Add /configure endpoint (US3 - not yet implemented)
-	// TODO: Add /command endpoint (US4 - not yet implemented)
+	// Configure endpoint (requires authentication)
+	configureHandler := handlers.NewConfigureHandler(cfg, logger)
+	mux.Handle("/configure", activityMiddleware(authMiddleware.Require(configureHandler)))
+
+	// Command endpoint (requires authentication)
+	commandHandler, err := handlers.NewCommandHandler(cfg, logger)
+	if err != nil {
+		return fmt.Errorf("failed to create command handler: %w", err)
+	}
+	mux.Handle("/command", activityMiddleware(authMiddleware.Require(commandHandler)))
 
 	// Set up signal handling for graceful shutdown
 	ctx := context.Background()

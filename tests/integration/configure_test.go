@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,26 +20,55 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfigureHandler_POST_Success(t *testing.T) {
-	// Setup: Create temporary directory for staging
-	err := os.MkdirAll(provisioning.StagingDirBase, 0o755) //nolint:gosec // G301: Test directory
+// findRepoRoot finds the repository root by looking for go.mod
+func findRepoRoot() (string, error) {
+	dir, err := os.Getwd()
 	if err != nil {
-		t.Skipf("Cannot create staging directory %s: %v (needs elevated permissions)", provisioning.StagingDirBase, err)
+		return "", err
 	}
-	defer func() { _ = os.RemoveAll(provisioning.StagingDirBase) }()
 
-	// Create test configuration
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", fmt.Errorf("could not find repository root (no go.mod found)")
+		}
+		dir = parent
+	}
+}
+
+// testRootDir creates a test root directory under _output/tests/
+func testRootDir(t *testing.T) string {
+	t.Helper()
+	// Find repository root
+	repoRoot, err := findRepoRoot()
+	require.NoError(t, err)
+
+	// Create test directory under repo root's _output/tests/
+	rootDir := filepath.Join(repoRoot, "_output", "tests", t.Name())
+	//nolint:gosec // G301: Test directory, relaxed permissions acceptable
+	require.NoError(t, os.MkdirAll(rootDir, 0o755))
+	t.Cleanup(func() {
+		_ = os.RemoveAll(rootDir)
+	})
+	return rootDir
+}
+
+func TestConfigureHandler_POST_Success(t *testing.T) {
+	// Create temporary root directory
+	rootDir := testRootDir(t)
+
+	// Create test configuration with root directory
 	testConfig := &config.Config{
 		Paths: config.PathSettings{
-			AllowList: []string{"/etc/test/"},
+			AllowList:     []string{"/etc/test/"},
+			RootDirectory: rootDir,
 		},
 	}
 
-	// Note: This test requires /etc write access or filesystem mocking
-	// Skipping actual provisioning test in unit test environment
-	t.Skip("Skipping integration test that requires /etc write access - run in container environment")
-
-	// Code below is not reached due to Skip above, but kept for documentation
 	logger := logging.New(logging.LevelInfo, logging.FormatJSON)
 	handler := handlers.NewConfigureHandler(testConfig, logger)
 
@@ -72,6 +102,17 @@ func TestConfigureHandler_POST_Success(t *testing.T) {
 	err = json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(t, err)
 	assert.Equal(t, "success", response["status"])
+
+	// Verify files were written
+	expectedPath1 := filepath.Join(rootDir, "/etc/test/file1.conf")
+	content1, err := os.ReadFile(expectedPath1)
+	require.NoError(t, err)
+	assert.Equal(t, "config content 1", string(content1))
+
+	expectedPath2 := filepath.Join(rootDir, "/etc/test/file2.conf")
+	content2, err := os.ReadFile(expectedPath2)
+	require.NoError(t, err)
+	assert.Equal(t, "config content 2", string(content2))
 }
 
 func TestConfigureHandler_POST_InvalidJSON(t *testing.T) {
@@ -287,22 +328,15 @@ func TestConfigureHandler_ContentRedaction(t *testing.T) {
 
 func TestConfigureHandler_E2E_WithFileSystem(t *testing.T) {
 	// This test performs end-to-end testing with actual filesystem operations
-	// It requires a test container or temporary /etc directory
+	// using a temporary root directory
 
-	t.Skip("Skipping E2E test - run in containerized test environment with isolated /etc")
-
-	// Setup test environment
-	testEtc := t.TempDir()
-	testStagingDir := filepath.Join(t.TempDir(), "staging")
-	err := os.MkdirAll(testStagingDir, 0o755) //nolint:gosec // G301: Test directory
-	require.NoError(t, err)
-
-	// Override staging directory for testing
-	// (In real implementation, this would use dependency injection)
+	// Create temporary root directory
+	rootDir := testRootDir(t)
 
 	testConfig := &config.Config{
 		Paths: config.PathSettings{
-			AllowList: []string{filepath.Join(testEtc, "test/")},
+			AllowList:     []string{"/etc/test/"},
+			RootDirectory: rootDir,
 		},
 	}
 
@@ -333,7 +367,7 @@ func TestConfigureHandler_E2E_WithFileSystem(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	// Verify file was created
-	targetFile := filepath.Join(testEtc, "test/config.yaml")
+	targetFile := filepath.Join(rootDir, "/etc/test/config.yaml")
 	content, err := os.ReadFile(targetFile)
 	require.NoError(t, err)
 	assert.Equal(t, "key: value\n", string(content))
