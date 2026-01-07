@@ -126,3 +126,9 @@ After completing work on a task or list of tasks, **always** run `make test` and
 - `.goreleaser.yaml` - Build orchestration for Linux amd64/arm64, RPM/DEB packaging
 - `build/boardingpass.service` - systemd unit with sentinel file check
 - `build/boardingpass.sudoers` - Restricted sudo permissions for commands
+
+## Active Technologies
+- TypeScript 5.x with React Native 0.74+, targeting ES2022 (003-mobile-onboarding-app)
+
+## Recent Changes
+- 003-mobile-onboarding-app: Added TypeScript 5.x with React Native 0.74+, targeting ES2022
