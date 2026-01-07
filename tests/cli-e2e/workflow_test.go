@@ -1,7 +1,7 @@
 // Package clie2e provides end-to-end tests for the boarding CLI tool.
 //
 // These tests verify the complete CLI workflow in a containerized environment,
-// testing against a real BoardingPass service running in a UBI9 init container.
+// testing against a real BoardingPass service deployed via make deploy.
 package clie2e
 
 import (
@@ -23,23 +23,11 @@ import (
 const (
 	// testTimeout is the maximum time to wait for container startup
 	testTimeout = 60 * time.Second
-	// containerImage is the UBI9 init container image
-	containerImage = "registry.redhat.io/ubi9/ubi-init:latest"
 	// servicePort is the port exposed by the BoardingPass service
 	servicePort = 8443
+	// containerRuntime is the container runtime to use (podman or docker)
+	containerRuntime = "podman"
 )
-
-// containerRuntime holds the detected container runtime (podman or docker)
-var containerRuntime string
-
-func init() {
-	// Detect container runtime
-	if _, err := exec.LookPath("podman"); err == nil {
-		containerRuntime = "podman"
-	} else if _, err := exec.LookPath("docker"); err == nil {
-		containerRuntime = "docker"
-	}
-}
 
 // TestCLIWorkflow tests the complete CLI provisioning workflow.
 //
@@ -55,8 +43,9 @@ func TestCLIWorkflow(t *testing.T) {
 		t.Skip("Skipping E2E test in short mode")
 	}
 
-	if containerRuntime == "" {
-		t.Skip("No container runtime (podman/docker) available")
+	// Check if container runtime is available
+	if _, err := exec.LookPath(containerRuntime); err != nil {
+		t.Skipf("Container runtime %s not available", containerRuntime)
 	}
 
 	// Check if running in CI without container support
@@ -70,14 +59,20 @@ func TestCLIWorkflow(t *testing.T) {
 	env := newTestEnvironment(ctx, t)
 	defer env.cleanup()
 
-	// Build binaries
-	env.buildBinaries(t)
+	// Build CLI binary
+	env.buildCLI(t)
 
-	// Start containerized BoardingPass service
-	env.startService(t)
+	// Deploy service using make deploy
+	env.deployService(t)
 
 	// Wait for service to be ready
 	env.waitForService(t)
+
+	// Extract TLS certificate
+	env.extractTLSCertificate(t)
+
+	// Get the password from the container
+	env.getPassword(t)
 
 	// Run the full CLI workflow
 	t.Run("AuthenticateWithPass", func(t *testing.T) {
@@ -110,14 +105,13 @@ type testEnvironment struct {
 	ctx           context.Context
 	t             *testing.T
 	tmpDir        string
-	containerID   string
 	containerName string
 	serviceHost   string
 	cliPath       string
-	servicePath   string
 	configDir     string
 	cacheDir      string
 	tlsCertPath   string // Path to TLS certificate for CLI to trust
+	password      string // Password retrieved from the container
 }
 
 // newTestEnvironment creates a new test environment.
@@ -125,11 +119,12 @@ func newTestEnvironment(ctx context.Context, t *testing.T) *testEnvironment {
 	tmpDir, err := os.MkdirTemp("", "cli-e2e-*")
 	require.NoError(t, err)
 
-	containerName := fmt.Sprintf("boardingpass-e2e-%d", time.Now().Unix())
+	// Use timestamp for unique container name
+	containerName := fmt.Sprintf("boardingpass-cli-e2e-%d", time.Now().Unix())
 
 	// Create config and cache directories
-	configDir := filepath.Join(tmpDir, "config")
-	cacheDir := filepath.Join(tmpDir, "cache")
+	configDir := filepath.Join(tmpDir, ".config", "boardingpass")
+	cacheDir := filepath.Join(tmpDir, ".cache", "boardingpass")
 	require.NoError(t, os.MkdirAll(configDir, 0o750))
 	require.NoError(t, os.MkdirAll(cacheDir, 0o750))
 
@@ -146,40 +141,26 @@ func newTestEnvironment(ctx context.Context, t *testing.T) *testEnvironment {
 
 // cleanup removes all test resources.
 func (e *testEnvironment) cleanup() {
-	// Stop and remove container
-	if e.containerID != "" {
-		//nolint:gosec // Test command with variable container ID is required
-		stopCmd := exec.Command(containerRuntime, "stop", e.containerID)
-		_ = stopCmd.Run()
+	// Stop and remove container using make undeploy
+	t := e.t
+	t.Logf("Cleaning up test environment...")
 
-		//nolint:gosec // Test command with variable container ID is required
-		rmCmd := exec.Command(containerRuntime, "rm", "-f", e.containerID)
-		_ = rmCmd.Run()
-	}
+	//nolint:gosec // Test command with controlled environment
+	undeployCmd := exec.Command("make", "undeploy")
+	undeployCmd.Env = append(os.Environ(), fmt.Sprintf("CONTAINER_NAME=%s", e.containerName))
+	undeployCmd.Dir = "../.." // Run from repository root
+	_ = undeployCmd.Run()
 
 	// Remove temporary directory
 	_ = os.RemoveAll(e.tmpDir)
 }
 
-// buildBinaries builds the BoardingPass service and CLI binaries.
-func (e *testEnvironment) buildBinaries(t *testing.T) {
+// buildCLI builds the boarding CLI binary.
+func (e *testEnvironment) buildCLI(t *testing.T) {
 	t.Helper()
 
 	binDir := filepath.Join(e.tmpDir, "bin")
 	require.NoError(t, os.MkdirAll(binDir, 0o750))
-
-	// Build service binary
-	e.servicePath = filepath.Join(binDir, "boardingpass")
-	t.Logf("Building service binary: %s", e.servicePath)
-	//nolint:gosec // Build command with variable path is required for testing
-	buildCmd := exec.Command("go", "build",
-		"-o", e.servicePath,
-		"../../cmd/boardingpass")
-	buildOutput, err := buildCmd.CombinedOutput()
-	if err != nil {
-		t.Logf("Build output: %s", string(buildOutput))
-		require.NoError(t, err, "Failed to build service binary")
-	}
 
 	// Build CLI binary
 	e.cliPath = filepath.Join(binDir, "boarding")
@@ -188,233 +169,38 @@ func (e *testEnvironment) buildBinaries(t *testing.T) {
 	buildCLICmd := exec.Command("go", "build",
 		"-o", e.cliPath,
 		"../../cmd/boarding")
+	// buildCLICmd.Dir is not set, so it runs from the test directory (tests/cli-e2e)
+	// From there, ../../cmd/boarding correctly points to the cmd/boarding package
 	buildCLIOutput, err := buildCLICmd.CombinedOutput()
 	if err != nil {
 		t.Logf("Build output: %s", string(buildCLIOutput))
 		require.NoError(t, err, "Failed to build CLI binary")
 	}
 
-	t.Logf("Binaries built successfully")
+	t.Logf("CLI binary built successfully")
 }
 
-// startService starts the BoardingPass service in a UBI9 init container.
-func (e *testEnvironment) startService(t *testing.T) {
+// deployService deploys the BoardingPass service using make deploy.
+func (e *testEnvironment) deployService(t *testing.T) {
 	t.Helper()
+	t.Logf("Deploying service using make deploy...")
 
-	// Create container configuration
-	serviceDir := filepath.Join(e.tmpDir, "service")
-	require.NoError(t, os.MkdirAll(serviceDir, 0o750))
+	// Use make deploy with test-specific containerfile and container name
+	//nolint:gosec // Test command with controlled environment
+	deployCmd := exec.Command("make", "deploy")
+	deployCmd.Env = append(os.Environ(),
+		fmt.Sprintf("CONTAINER_NAME=%s", e.containerName),
+		fmt.Sprintf("IMAGE_NAME=%s:latest", e.containerName),
+		"CONTAINERFILE=build/Containerfile.bootc.test",
+	)
+	deployCmd.Dir = "../.." // Run from repository root
+	deployCmd.Stdout = os.Stdout
+	deployCmd.Stderr = os.Stderr
 
-	// Generate TLS certificates for the service
-	tlsDir := filepath.Join(serviceDir, "tls")
-	require.NoError(t, os.MkdirAll(tlsDir, 0o750))
-	tlsCertPath := filepath.Join(tlsDir, "server.crt")
-	tlsKeyPath := filepath.Join(tlsDir, "server.key")
+	err := deployCmd.Run()
+	require.NoError(t, err, "Failed to deploy service")
 
-	t.Logf("Generating TLS certificates...")
-	err := e.generateTestCertificate(tlsCertPath, tlsKeyPath)
-	require.NoError(t, err, "Failed to generate TLS certificates")
-
-	// Store cert path for CLI to use
-	e.tlsCertPath = tlsCertPath
-
-	// Create test configuration with TLS paths for container
-	configContent := fmt.Sprintf(`service:
-  inactivity_timeout: "10m"
-  session_ttl: "30m"
-  sentinel_file: "/tmp/boardingpass-issued"
-
-transports:
-  ethernet:
-    enabled: true
-    interfaces: []
-    address: "0.0.0.0"
-    port: %d
-    tls_cert: "/opt/boardingpass/tls/server.crt"
-    tls_key: "/opt/boardingpass/tls/server.key"
-
-commands:
-  - id: "echo-test"
-    path: "/bin/echo"
-    args: ["success"]
-  - id: "systemctl-status"
-    path: "/bin/systemctl"
-    args: ["status", "sshd"]
-
-logging:
-  level: "info"
-  format: "json"
-
-paths:
-  allow_list:
-    - "/etc/boardingpass/"
-`, servicePort)
-
-	configPath := filepath.Join(serviceDir, "config.yaml")
-	//nolint:gosec // Test config file permissions are acceptable
-	require.NoError(t, os.WriteFile(configPath, []byte(configContent), 0o600))
-
-	// Create password generator script
-	passwordGenPath := filepath.Join(serviceDir, "password-gen.sh")
-	passwordGenScript := "#!/bin/bash\necho 'test-password-123'"
-	//nolint:gosec // Test script file permissions are acceptable
-	require.NoError(t, os.WriteFile(passwordGenPath, []byte(passwordGenScript), 0o755))
-
-	// Create verifier configuration
-	verifierPath := filepath.Join(serviceDir, "verifier")
-	verifierContent := `{
-  "username": "admin",
-  "salt": "dGVzdHNhbHQ=",
-  "password_generator": "/opt/boardingpass/config/password-gen.sh"
-}`
-	require.NoError(t, os.WriteFile(verifierPath, []byte(verifierContent), 0o600))
-
-	// Pull UBI9 init image if not already present
-	t.Logf("Pulling container image: %s", containerImage)
-	//nolint:gosec // Container image is a const
-	pullCmd := exec.Command(containerRuntime, "pull", containerImage)
-	pullOutput, err := pullCmd.CombinedOutput()
-	if err != nil {
-		t.Logf("Pull output: %s", string(pullOutput))
-		// Don't fail if image already exists
-		if !strings.Contains(string(pullOutput), "already present") {
-			t.Logf("Warning: Failed to pull image (may already exist): %v", err)
-		}
-	}
-
-	// Start container with systemd
-	t.Logf("Starting container: %s", e.containerName)
-	//nolint:gosec // Container name and paths are controlled by test
-	runArgs := []string{
-		"run",
-		"-d",
-		"--name", e.containerName,
-		"-p", fmt.Sprintf("%d:%d", servicePort, servicePort),
-		"--tmpfs", "/run",
-		"--tmpfs", "/tmp",
-		containerImage,
-	}
-
-	//nolint:gosec // Container runtime is validated at init time
-	runCmd := exec.Command(containerRuntime, runArgs...)
-	runOutput, err := runCmd.CombinedOutput()
-	if err != nil {
-		t.Logf("Run output: %s", string(runOutput))
-		require.NoError(t, err, "Failed to start container")
-	}
-
-	e.containerID = strings.TrimSpace(string(runOutput))
-	t.Logf("Container started: %s", e.containerID)
-
-	// Wait a moment for container to initialize
-	time.Sleep(2 * time.Second)
-
-	// Install sudo (required by command executor)
-	t.Logf("Installing sudo in container")
-	e.execInContainer(t, "dnf", "install", "-y", "sudo")
-
-	// Create directories in container
-	t.Logf("Setting up container directories")
-	e.execInContainer(t, "mkdir", "-p", "/opt/boardingpass/bin")
-	e.execInContainer(t, "mkdir", "-p", "/opt/boardingpass/config")
-	e.execInContainer(t, "mkdir", "-p", "/opt/boardingpass/tls")
-
-	// Copy service binary to container
-	t.Logf("Copying service binary to container")
-	e.copyToContainer(t, e.servicePath, "/opt/boardingpass/bin/boardingpass")
-	e.execInContainer(t, "chmod", "+x", "/opt/boardingpass/bin/boardingpass")
-
-	// Copy configuration files to container
-	t.Logf("Copying configuration files to container")
-	e.copyToContainer(t, configPath, "/opt/boardingpass/config/config.yaml")
-	e.copyToContainer(t, verifierPath, "/opt/boardingpass/config/verifier")
-	e.copyToContainer(t, passwordGenPath, "/opt/boardingpass/config/password-gen.sh")
-	e.execInContainer(t, "chmod", "+x", "/opt/boardingpass/config/password-gen.sh")
-
-	// Copy TLS certificates to container
-	t.Logf("Copying TLS certificates to container")
-	e.copyToContainer(t, tlsCertPath, "/opt/boardingpass/tls/server.crt")
-	e.copyToContainer(t, tlsKeyPath, "/opt/boardingpass/tls/server.key")
-
-	// Start service in background
-	t.Logf("Starting BoardingPass service in container")
-	startCmd := "/opt/boardingpass/bin/boardingpass -config /opt/boardingpass/config/config.yaml -verifier /opt/boardingpass/config/verifier > /var/log/boardingpass.log 2>&1 &"
-	e.execInContainer(t, "bash", "-c", startCmd)
-
-	t.Logf("Service started in container")
-}
-
-// execInContainer executes a command inside the container.
-func (e *testEnvironment) execInContainer(t *testing.T, args ...string) string {
-	t.Helper()
-
-	cmdArgs := append([]string{"exec", e.containerID}, args...)
-	//nolint:gosec // Test command with controlled arguments
-	cmd := exec.Command(containerRuntime, cmdArgs...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Logf("Command output: %s", string(output))
-		t.Logf("Command failed: %v", err)
-	}
-	return string(output)
-}
-
-// copyToContainer copies a file from the host to the container.
-func (e *testEnvironment) copyToContainer(t *testing.T, srcPath, dstPath string) {
-	t.Helper()
-
-	//nolint:gosec // Test command with controlled paths
-	cpCmd := exec.Command(containerRuntime, "cp", srcPath, e.containerID+":"+dstPath)
-	output, err := cpCmd.CombinedOutput()
-	if err != nil {
-		t.Logf("Copy output: %s", string(output))
-		require.NoError(t, err, "Failed to copy %s to container", srcPath)
-	}
-}
-
-// generateTestCertificate generates a self-signed TLS certificate for testing.
-func (e *testEnvironment) generateTestCertificate(certPath, keyPath string) error {
-	// Create a temporary config file for openssl with SAN extension
-	configContent := `[req]
-distinguished_name = req_distinguished_name
-x509_extensions = v3_req
-prompt = no
-
-[req_distinguished_name]
-CN = localhost
-
-[v3_req]
-keyUsage = keyEncipherment, dataEncipherment
-extendedKeyUsage = serverAuth
-subjectAltName = @alt_names
-
-[alt_names]
-DNS.1 = localhost
-IP.1 = 127.0.0.1
-`
-
-	configPath := filepath.Join(filepath.Dir(certPath), "openssl.cnf")
-	//nolint:gosec // Test config file
-	if err := os.WriteFile(configPath, []byte(configContent), 0o600); err != nil {
-		return fmt.Errorf("failed to create openssl config: %w", err)
-	}
-	defer func() { _ = os.Remove(configPath) }()
-
-	// Generate self-signed certificate with SAN
-	//nolint:gosec // Test certificate generation with controlled paths
-	cmd := exec.Command("openssl", "req", "-x509", "-newkey", "rsa:2048",
-		"-keyout", keyPath,
-		"-out", certPath,
-		"-days", "1",
-		"-nodes",
-		"-config", configPath)
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to generate certificate: %w (output: %s)", err, string(output))
-	}
-
-	return nil
+	t.Logf("Service deployed successfully in container %s", e.containerName)
 }
 
 // waitForService waits for the BoardingPass service to be ready.
@@ -437,7 +223,7 @@ func (e *testEnvironment) waitForService(t *testing.T) {
 		}
 
 		// Check service logs for errors
-		logs := e.execInContainer(t, "tail", "-20", "/var/log/boardingpass.log")
+		logs := e.execInContainer(t, "journalctl", "-u", "boardingpass", "--no-pager", "-n", "20")
 		if strings.Contains(logs, "panic") || strings.Contains(logs, "fatal") {
 			t.Fatalf("Service failed to start. Logs:\n%s", logs)
 		}
@@ -446,8 +232,59 @@ func (e *testEnvironment) waitForService(t *testing.T) {
 	}
 
 	// Dump logs for debugging
-	logs := e.execInContainer(t, "cat", "/var/log/boardingpass.log")
+	logs := e.execInContainer(t, "journalctl", "-u", "boardingpass", "--no-pager")
 	t.Fatalf("Service did not start within timeout. Logs:\n%s", logs)
+}
+
+// extractTLSCertificate extracts the TLS certificate from the container.
+func (e *testEnvironment) extractTLSCertificate(t *testing.T) {
+	t.Helper()
+	t.Logf("Extracting TLS certificate from container...")
+
+	certPath := filepath.Join(e.tmpDir, "server.crt")
+
+	// Copy certificate from container
+	//nolint:gosec // Test command with controlled paths
+	cpCmd := exec.Command(containerRuntime, "cp",
+		fmt.Sprintf("%s:/var/lib/boardingpass/tls/server.crt", e.containerName),
+		certPath)
+	output, err := cpCmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Copy output: %s", string(output))
+		require.NoError(t, err, "Failed to extract TLS certificate")
+	}
+
+	e.tlsCertPath = certPath
+	t.Logf("TLS certificate extracted to %s", certPath)
+}
+
+// getPassword retrieves the password from the container by running the password generator.
+func (e *testEnvironment) getPassword(t *testing.T) {
+	t.Helper()
+	t.Logf("Retrieving password from container...")
+
+	// Run the password generator script in the container
+	output := e.execInContainer(t, "/usr/lib/boardingpass/generators/primary_mac")
+	e.password = strings.TrimSpace(output)
+
+	require.NotEmpty(t, e.password, "Password should not be empty")
+	t.Logf("Retrieved password from container (length: %d)", len(e.password))
+}
+
+// execInContainer executes a command inside the container.
+func (e *testEnvironment) execInContainer(t *testing.T, args ...string) string {
+	t.Helper()
+
+	cmdArgs := append([]string{"exec", e.containerName}, args...)
+	//nolint:gosec // Test command with controlled arguments
+	cmd := exec.Command(containerRuntime, cmdArgs...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Logf("Command: %s %v", containerRuntime, cmdArgs)
+		t.Logf("Output: %s", string(output))
+		t.Logf("Error: %v", err)
+	}
+	return string(output)
 }
 
 // runCLI runs the boarding CLI with the given arguments.
@@ -462,12 +299,6 @@ func (e *testEnvironment) runCLI(t *testing.T, args ...string) (stdout, stderr s
 		fmt.Sprintf("BOARDING_CA_CERT=%s", e.tlsCertPath), // Trust our test certificate
 		fmt.Sprintf("HOME=%s", e.tmpDir),                  // Use tmp dir for config/cache
 	)
-
-	// Also create config directories in the expected locations
-	userConfigDir := filepath.Join(e.tmpDir, ".config", "boardingpass")
-	userCacheDir := filepath.Join(e.tmpDir, ".cache", "boardingpass")
-	require.NoError(t, os.MkdirAll(userConfigDir, 0o750))
-	require.NoError(t, os.MkdirAll(userCacheDir, 0o750))
 
 	var stdoutBuf, stderrBuf bytes.Buffer
 
@@ -506,13 +337,11 @@ func (e *testEnvironment) runCLI(t *testing.T, args ...string) (stdout, stderr s
 func (e *testEnvironment) testPassCommand(t *testing.T) {
 	t.Helper()
 
-	// Run authentication command
-	// Note: The password should match what the password generator script returns
-	// Note: CA cert is passed via BOARDING_CA_CERT environment variable
+	// Run authentication command with the password from the container
 	_, stderr, exitCode := e.runCLI(t,
 		"pass",
-		"--username", "admin",
-		"--password", "test-password-123",
+		"--username", "boardingpass",
+		"--password", e.password,
 	)
 
 	// Check that authentication succeeded
@@ -521,8 +350,7 @@ func (e *testEnvironment) testPassCommand(t *testing.T) {
 	assert.Contains(t, stderr, "Session token saved", "Should confirm token saved")
 
 	// Verify session token was created
-	sessionTokenPath := filepath.Join(e.tmpDir, ".cache", "boardingpass")
-	files, err := os.ReadDir(sessionTokenPath)
+	files, err := os.ReadDir(e.cacheDir)
 	require.NoError(t, err)
 
 	found := false
@@ -636,16 +464,13 @@ func (e *testEnvironment) testCommandCommand(t *testing.T) {
 func (e *testEnvironment) testCompleteCommand(t *testing.T) {
 	t.Helper()
 
-	// Get session token path before completing
-	sessionTokenPath := filepath.Join(e.tmpDir, ".cache", "boardingpass")
-
 	// Run complete command
 	_, stderr, exitCode := e.runCLI(t, "complete")
 	assert.Equal(t, 0, exitCode, "Complete command should succeed")
 	assert.Contains(t, stderr, "Provisioning completed successfully", "Should show success message")
 
 	// Verify session token was deleted
-	files, err := os.ReadDir(sessionTokenPath)
+	files, err := os.ReadDir(e.cacheDir)
 	require.NoError(t, err)
 
 	for _, f := range files {

@@ -13,6 +13,11 @@ COVERAGE_DIR := $(OUTPUT_DIR)/coverage
 UNAME_ARCH := $(shell uname -m)
 RPM_ARCH := $(shell echo $(UNAME_ARCH) | sed 's/x86_64/amd64/g' | sed 's/aarch64/arm64/g')
 
+# Container name for deployment (can be overridden for tests)
+CONTAINER_NAME ?= boardingpass-bootc
+IMAGE_NAME ?= boardingpass-bootc:latest
+CONTAINERFILE ?= build/Containerfile.bootc
+
 # Go variables
 GOCMD := go
 GOBUILD := $(GOCMD) build
@@ -79,26 +84,27 @@ release:
 deploy: release
 	@echo "Detected architecture: $(UNAME_ARCH) -> $(RPM_ARCH)"
 	@echo "Building bootc container image for $(RPM_ARCH)..."
-	@podman build -f build/Containerfile.bootc --build-arg ARCH=$(RPM_ARCH) -t boardingpass-bootc:latest .
+	@podman build -f $(CONTAINERFILE) --build-arg ARCH=$(RPM_ARCH) -t $(IMAGE_NAME) .
 	@echo "Running bootc container..."
 	@echo "Container will run with systemd. Use 'podman ps' to see running containers."
-	@echo "Use 'podman exec -it <container-id> journalctl -u boardingpass' to view logs."
-	@podman run -d --name boardingpass-bootc --rm \
+	@echo "Use 'podman exec -it $(CONTAINER_NAME) journalctl -u boardingpass' to view logs."
+	@podman run -d --name $(CONTAINER_NAME) --rm \
 		-p 8443:8443 \
 		--tmpfs /tmp \
 		--tmpfs /run \
 		-v /sys/fs/cgroup:/sys/fs/cgroup:rw \
 		--cgroupns=host \
-		boardingpass-bootc:latest
-	@echo "Bootc container started. Container name: boardingpass-bootc"
+		--privileged \
+		$(IMAGE_NAME)
+	@echo "Bootc container started. Container name: $(CONTAINER_NAME)"
 	@echo "Access the service at https://localhost:8443"
-	@echo "Stop with: podman stop boardingpass-bootc"
+	@echo "Stop with: podman stop $(CONTAINER_NAME)"
 
 ## undeploy: Stop and remove the bootc container
 undeploy:
-	@echo "Stopping and removing boardingpass-bootc container..."
-	@podman stop boardingpass-bootc 2>/dev/null || true
-	@podman rm boardingpass-bootc 2>/dev/null || true
+	@echo "Stopping and removing $(CONTAINER_NAME) container..."
+	@podman stop $(CONTAINER_NAME) 2>/dev/null || true
+	@podman rm $(CONTAINER_NAME) 2>/dev/null || true
 	@echo "Container removed"
 
 ## test: Run unit tests (short mode)
@@ -150,7 +156,10 @@ coverage:
 	@echo "Coverage report: $(COVERAGE_DIR)/coverage.html"
 
 ## clean: Remove build artifacts, container, and images
-clean: undeploy
+clean:
+	@echo "Stopping and removing boardingpass-bootc container (if exists)..."
+	@podman stop boardingpass-bootc 2>/dev/null || true
+	@podman rm boardingpass-bootc 2>/dev/null || true
 	@echo "Cleaning build artifacts..."
 	@rm -rf $(OUTPUT_DIR)
 	@echo "Removing boardingpass-bootc image..."
