@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -138,4 +139,58 @@ func ComputeVerifierFromConfig(config *SRPVerifierConfig, N, g *big.Int) (*big.I
 	password = ""
 
 	return verifier, nil
+}
+
+// GenerateVerifierFile creates a new SRP verifier configuration file with a random salt.
+// The file is written to the specified path with restricted permissions (0600).
+//
+// Parameters:
+//   - verifierPath: Path where the verifier file will be written
+//   - username: SRP username (typically "boardingpass")
+//   - passwordGenerator: Path to the password generator script
+//
+// Returns an error if file creation, salt generation, or writing fails.
+func GenerateVerifierFile(verifierPath, username, passwordGenerator string) error {
+	// Generate random 32-byte salt
+	saltBytes := make([]byte, 32)
+	if _, err := rand.Read(saltBytes); err != nil {
+		return fmt.Errorf("failed to generate random salt: %w", err)
+	}
+
+	// Encode salt as base64
+	saltBase64 := base64.StdEncoding.EncodeToString(saltBytes)
+
+	// Create verifier config
+	config := SRPVerifierConfig{
+		Username:          username,
+		Salt:              saltBase64,
+		PasswordGenerator: passwordGenerator,
+	}
+
+	// Marshal to JSON
+	jsonData, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal verifier config: %w", err)
+	}
+
+	// Ensure parent directory exists
+	dir := filepath.Dir(verifierPath)
+	//nolint:gosec // G301: 0755 is acceptable for /etc/boardingpass (verifier file has 0600)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("failed to create verifier directory: %w", err)
+	}
+
+	// Write file with restricted permissions (owner read/write only)
+	cleanPath := filepath.Clean(verifierPath)
+	if err := os.WriteFile(cleanPath, jsonData, 0o600); err != nil {
+		return fmt.Errorf("failed to write verifier file: %w", err)
+	}
+
+	return nil
+}
+
+// VerifierExists checks if the verifier file exists at the specified path.
+func VerifierExists(verifierPath string) bool {
+	_, err := os.Stat(verifierPath)
+	return err == nil
 }

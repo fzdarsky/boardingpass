@@ -10,6 +10,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	// DefaultTLSCertPath is the default path for the TLS certificate
+	DefaultTLSCertPath = "/var/lib/boardingpass/tls/server.crt"
+	// DefaultTLSKeyPath is the default path for the TLS private key
+	DefaultTLSKeyPath = "/var/lib/boardingpass/tls/server.key"
+)
+
 // Config represents the BoardingPass service configuration.
 type Config struct {
 	Service    ServiceSettings     `yaml:"service"`
@@ -77,6 +84,16 @@ func Load(path string) (*Config, error) {
 	// Allow environment variable override for root directory (useful for tests)
 	if rootDir := os.Getenv("BOARDINGPASS_ROOT_DIR"); rootDir != "" {
 		cfg.Paths.RootDirectory = rootDir
+	}
+
+	// Apply defaults for TLS paths if not specified
+	if cfg.Transports.Ethernet.Enabled {
+		if cfg.Transports.Ethernet.TLSCert == "" {
+			cfg.Transports.Ethernet.TLSCert = DefaultTLSCertPath
+		}
+		if cfg.Transports.Ethernet.TLSKey == "" {
+			cfg.Transports.Ethernet.TLSKey = DefaultTLSKeyPath
+		}
 	}
 
 	if err := cfg.validate(); err != nil {

@@ -15,9 +15,10 @@ mkdir -p /var/lib/boardingpass/staging
 mkdir -p /usr/lib/boardingpass/generators
 
 # Set ownership
-chown root:root /etc/boardingpass
+# /etc/boardingpass must be owned by boardingpass user so init can create verifier file
 # Only set ownership if user exists (might not be fully available in some contexts)
 if getent passwd "$BOARDINGPASS_USER" >/dev/null 2>&1; then
+    chown "$BOARDINGPASS_USER:$BOARDINGPASS_GROUP" /etc/boardingpass
     chown -R "$BOARDINGPASS_USER:$BOARDINGPASS_GROUP" /var/lib/boardingpass
 else
     echo "Warning: $BOARDINGPASS_USER user not yet available, skipping ownership change"
