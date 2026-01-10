@@ -160,3 +160,32 @@ func (c *Config) RequireHost() error {
 func (c *Config) Address() string {
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
+
+// Save persists the current configuration to the config file.
+// This allows the CLI to remember the last successfully used connection.
+func (c *Config) Save() error {
+	configDir, err := UserConfigDir()
+	if err != nil {
+		return fmt.Errorf("failed to get config directory: %w", err)
+	}
+
+	// Ensure config directory exists
+	if err := EnsureDir(configDir); err != nil {
+		return fmt.Errorf("failed to create config directory: %w", err)
+	}
+
+	configPath := filepath.Join(configDir, configFileName)
+
+	// Marshal config to YAML
+	data, err := yaml.Marshal(c)
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	// Write config file with secure permissions (owner read/write only)
+	if err := os.WriteFile(configPath, data, 0o600); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return nil
+}

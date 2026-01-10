@@ -154,6 +154,12 @@ func (c *PassCommand) authenticate(cfg *config.Config, username, password string
 		return fmt.Errorf("failed to save session token: %w", err)
 	}
 
+	// Save connection config for future commands (so --host isn't required next time)
+	if err := cfg.Save(); err != nil {
+		// Log warning but don't fail - authentication already succeeded
+		fmt.Fprintf(os.Stderr, "Warning: failed to save connection config: %v\n", err)
+	}
+
 	fmt.Fprintf(os.Stderr, "Authentication successful. Session token saved.\n")
 	return nil
 }

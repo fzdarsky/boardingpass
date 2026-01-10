@@ -204,15 +204,23 @@ boarding pass --username admin
 
 **3. Config File (Lowest Priority)**
 
-Create `~/.config/boardingpass/config.yaml` (Linux/Unix):
+The config file is automatically created and updated after successful authentication, remembering your last connection:
+
+```bash
+# First time: specify host
+boarding pass --host 192.168.1.100 --username admin
+
+# Subsequent commands: host is remembered
+boarding info
+boarding connections
+boarding complete
+```
+
+You can also manually create/edit `~/.config/boardingpass/config.yaml` (Linux/Unix):
 ```yaml
 host: 192.168.1.100
 port: 8443
-```
-
-Then run commands without flags:
-```bash
-boarding pass --username admin
+ca_cert: /path/to/ca.pem  # optional
 ```
 
 ### Quick Start
@@ -220,11 +228,11 @@ boarding pass --username admin
 #### Basic Provisioning Workflow
 
 ```bash
-# 1. Authenticate
+# 1. Authenticate (connection is saved for subsequent commands)
 boarding pass --host 192.168.1.100 --username admin
-# Prompts for password, stores session token
+# Prompts for password, stores session token and connection details
 
-# 2. Query device information
+# 2. Query device information (no --host needed)
 boarding info
 # Displays CPU, board, TPM, OS, FIPS status in YAML
 
