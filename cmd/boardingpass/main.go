@@ -29,19 +29,37 @@ var (
 )
 
 func main() {
-	// Parse command-line flags
-	configPath := flag.String("config", "/etc/boardingpass/config.yaml", "path to configuration file")
-	verifierPath := flag.String("verifier", "/etc/boardingpass/verifier", "path to SRP verifier file")
-	flag.Parse()
+	// Check for subcommand
+	var subcommand string
+	if len(os.Args) > 1 {
+		subcommand = os.Args[1]
+	}
 
-	// Run the service
-	if err := run(*configPath, *verifierPath); err != nil {
-		// Log error with default logger since config may not be loaded
-		logger := logging.New(logging.LevelError, logging.FormatJSON)
-		logger.Error("service failed", map[string]any{
-			"error": err.Error(),
-		})
-		os.Exit(1)
+	switch subcommand {
+	case "init":
+		// Run initialization
+		if err := runInit(); err != nil {
+			fmt.Fprintf(os.Stderr, "Initialization failed: %v\n", err)
+			os.Exit(1)
+		}
+		return
+
+	default:
+		// Default: run the service
+		// Parse command-line flags for service mode
+		configPath := flag.String("config", "/etc/boardingpass/config.yaml", "path to configuration file")
+		verifierPath := flag.String("verifier", "/etc/boardingpass/verifier", "path to SRP verifier file")
+		flag.Parse()
+
+		// Run the service
+		if err := run(*configPath, *verifierPath); err != nil {
+			// Log error with default logger since config may not be loaded
+			logger := logging.New(logging.LevelError, logging.FormatJSON)
+			logger.Error("service failed", map[string]any{
+				"error": err.Error(),
+			})
+			os.Exit(1)
+		}
 	}
 }
 

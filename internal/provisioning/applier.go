@@ -1,9 +1,12 @@
 package provisioning
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/fzdarsky/boardingpass/pkg/protocol"
 )
@@ -90,6 +93,74 @@ func (a *Applier) resolveTargetPath(relPath string) string {
 	return absPath
 }
 
+// atomicMove attempts to move a file atomically from src to dst.
+// It first tries os.Rename (atomic on same filesystem).
+// If that fails with EXDEV (cross-device link), it falls back to copy+delete.
+func atomicMove(src, dst string) error {
+	// Try atomic rename first
+	err := os.Rename(src, dst)
+	if err == nil {
+		return nil
+	}
+
+	// Check if error is cross-device link
+	var linkErr *os.LinkError
+	if errors.As(err, &linkErr) && errors.Is(linkErr.Err, syscall.EXDEV) {
+		// Fall back to copy+delete for cross-device moves
+		// Open source file
+		//nolint:gosec // G304: src is a controlled staging file path, not user input
+		srcFile, err := os.Open(src)
+		if err != nil {
+			return fmt.Errorf("failed to open source file: %w", err)
+		}
+		defer func() {
+			_ = srcFile.Close() // Best effort close
+		}()
+
+		// Get source file info for permissions
+		srcInfo, err := srcFile.Stat()
+		if err != nil {
+			return fmt.Errorf("failed to stat source file: %w", err)
+		}
+
+		// Create destination file with same permissions
+		//nolint:gosec // G304: dst is a validated target path from allow-list
+		dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcInfo.Mode())
+		if err != nil {
+			return fmt.Errorf("failed to create destination file: %w", err)
+		}
+
+		// Copy contents
+		if _, err := io.Copy(dstFile, srcFile); err != nil {
+			_ = dstFile.Close()
+			_ = os.Remove(dst) // Clean up partial destination file
+			return fmt.Errorf("failed to copy file contents: %w", err)
+		}
+
+		// Ensure data is written to disk
+		if err := dstFile.Sync(); err != nil {
+			_ = dstFile.Close()
+			_ = os.Remove(dst)
+			return fmt.Errorf("failed to sync destination file: %w", err)
+		}
+
+		// Close destination file
+		if err := dstFile.Close(); err != nil {
+			return fmt.Errorf("failed to close destination file: %w", err)
+		}
+
+		// Remove source file after successful copy
+		if err := os.Remove(src); err != nil {
+			return fmt.Errorf("failed to remove source file: %w", err)
+		}
+
+		return nil
+	}
+
+	// Other error, return as-is
+	return err
+}
+
 // Apply applies a configuration bundle atomically.
 // Steps:
 // 1. Validate bundle (size, file count, Base64 encoding)
@@ -123,8 +194,16 @@ func (a *Applier) Apply(bundle *protocol.ConfigBundle) error {
 			return fmt.Errorf("failed to decode file %s: %w", file.Path, err)
 		}
 
-		// Write to temp directory
-		tempPath := filepath.Join(a.tempDir, filepath.Base(file.Path))
+		// Write to temp directory preserving directory structure
+		tempPath := filepath.Join(a.tempDir, file.Path)
+
+		// Ensure parent directory exists
+		tempDir := filepath.Dir(tempPath)
+		//nolint:gosec // G301: 0755 is standard for directory permissions
+		if err := os.MkdirAll(tempDir, 0o755); err != nil {
+			return fmt.Errorf("failed to create staging directory %s: %w", tempDir, err)
+		}
+
 		// #nosec G115 - file mode values are guaranteed to be within uint32 range
 		if err := os.WriteFile(tempPath, decoded, os.FileMode(file.Mode)); err != nil {
 			return fmt.Errorf("failed to write temp file %s: %w", file.Path, err)
@@ -157,8 +236,8 @@ func (a *Applier) Apply(bundle *protocol.ConfigBundle) error {
 			return fmt.Errorf("failed to backup file %s: %w", targetPath, err)
 		}
 
-		// Atomic rename (os.Rename is atomic on same filesystem)
-		if err := os.Rename(tempPath, targetPath); err != nil {
+		// Atomic move (tries rename first, falls back to copy+delete for cross-device)
+		if err := atomicMove(tempPath, targetPath); err != nil {
 			// Rollback on failure
 			if rollbackErr := a.rollback.Restore(); rollbackErr != nil {
 				return fmt.Errorf("failed to move file %s to %s (rollback also failed: %v): %w", tempPath, targetPath, rollbackErr, err)

@@ -204,15 +204,23 @@ boarding pass --username admin
 
 **3. Config File (Lowest Priority)**
 
-Create `~/.config/boardingpass/config.yaml` (Linux/Unix):
+The config file is automatically created and updated after successful authentication, remembering your last connection:
+
+```bash
+# First time: specify host
+boarding pass --host 192.168.1.100 --username admin
+
+# Subsequent commands: host is remembered
+boarding info
+boarding connections
+boarding complete
+```
+
+You can also manually create/edit `~/.config/boardingpass/config.yaml` (Linux/Unix):
 ```yaml
 host: 192.168.1.100
 port: 8443
-```
-
-Then run commands without flags:
-```bash
-boarding pass --username admin
+ca_cert: /path/to/ca.pem  # optional
 ```
 
 ### Quick Start
@@ -220,11 +228,11 @@ boarding pass --username admin
 #### Basic Provisioning Workflow
 
 ```bash
-# 1. Authenticate
+# 1. Authenticate (connection is saved for subsequent commands)
 boarding pass --host 192.168.1.100 --username admin
-# Prompts for password, stores session token
+# Prompts for password, stores session token and connection details
 
-# 2. Query device information
+# 2. Query device information (no --host needed)
 boarding info
 # Displays CPU, board, TPM, OS, FIPS status in YAML
 
@@ -255,8 +263,8 @@ set -euo pipefail
 export BOARDING_HOST=${DEVICE_IP}
 export BOARDING_PORT=8443
 
-# Authenticate (non-interactive)
-boarding pass --username admin --password "${DEVICE_PASSWORD}"
+# Authenticate (non-interactive, auto-accept TLS certificate)
+boarding pass -y --username admin --password "${DEVICE_PASSWORD}"
 
 # Query device info and save as artifact
 boarding info -o json > device-info.json
@@ -272,6 +280,11 @@ boarding complete
 
 echo "Provisioning completed successfully"
 ```
+
+### Global Flags
+
+These flags work with all commands:
+- `-y, --assumeyes` - Automatically answer 'yes' to prompts (e.g., TLS certificate acceptance)
 
 ### Commands
 
@@ -292,11 +305,11 @@ boarding pass --host 192.168.1.100 --username admin [--password SECRET]
 
 **Example:**
 ```bash
-# Interactive (prompts for credentials)
+# Interactive (prompts for credentials and certificate acceptance)
 boarding pass --host 192.168.1.100
 
-# Non-interactive (for scripts)
-boarding pass --host 192.168.1.100 --username admin --password secret123
+# Non-interactive (for scripts/automation)
+boarding pass -y --host 192.168.1.100 --username admin --password secret123
 
 # With custom CA certificate
 boarding pass --host internal.corp --ca-cert /etc/ssl/ca.pem --username admin

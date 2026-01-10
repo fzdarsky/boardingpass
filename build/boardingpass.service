@@ -7,6 +7,7 @@ ConditionPathExists=!/etc/boardingpass/issued
 
 [Service]
 Type=notify
+ExecStartPre=/usr/bin/boardingpass init
 ExecStart=/usr/bin/boardingpass
 Restart=no
 User=boardingpass
@@ -16,30 +17,30 @@ Group=boardingpass
 WorkingDirectory=/var/lib/boardingpass
 
 # Security hardening
-NoNewPrivileges=true
+NoNewPrivileges=false
 PrivateTmp=true
-ProtectSystem=strict
+ProtectSystem=yes
 ProtectHome=true
-ReadWritePaths=/var/lib/boardingpass /etc/boardingpass
+ReadWritePaths=/var/lib/boardingpass /etc
 ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectKernelLogs=true
 ProtectControlGroups=true
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
 RestrictNamespaces=true
 LockPersonality=true
 RestrictRealtime=true
-RestrictSUIDSGID=true
+RestrictSUIDSGID=false
 RemoveIPC=true
 PrivateMounts=true
 
 # Capabilities
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
-AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_SETUID CAP_SETGID
+AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_SETUID CAP_SETGID
 
 # Resource limits
 MemoryMax=150M
-TasksMax=10
+TasksMax=50
 
 # Logging
 StandardOutput=journal

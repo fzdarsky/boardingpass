@@ -32,6 +32,11 @@ func NewTOFUTransport(host string, caCertPath string) (*TOFUTransport, error) {
 		MinVersion: tls.VersionTLS13,
 	}
 
+	transport := &TOFUTransport{
+		certStore: certStore,
+		host:      host,
+	}
+
 	// If custom CA is provided, use it for validation
 	if caCertPath != "" {
 		caCert, err := os.ReadFile(caCertPath) // #nosec G304 - caCertPath is user-provided config
@@ -46,72 +51,57 @@ func NewTOFUTransport(host string, caCertPath string) (*TOFUTransport, error) {
 
 		tlsConfig.RootCAs = certPool
 	} else {
-		// For TOFU, we need to handle certificate verification ourselves
+		// For TOFU, we verify certificates in the VerifyPeerCertificate callback
+		// This runs during TLS handshake, before the request body is sent
 		tlsConfig.InsecureSkipVerify = true
-		tlsConfig.VerifyPeerCertificate = func(_ [][]byte, _ [][]*x509.Certificate) error {
-			// This callback is called even with InsecureSkipVerify=true
-			// We use it to implement TOFU verification
-			return nil // Actual verification happens in RoundTrip
-		}
+		tlsConfig.VerifyPeerCertificate = transport.verifyTOFU
 	}
 
-	baseTransport := &http.Transport{
+	transport.base = &http.Transport{
 		TLSClientConfig: tlsConfig,
 	}
 
-	return &TOFUTransport{
-		base:      baseTransport,
-		certStore: certStore,
-		host:      host,
-	}, nil
+	return transport, nil
 }
 
-// RoundTrip implements the http.RoundTripper interface with TOFU certificate verification.
-func (t *TOFUTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	// If we're using a custom CA (RootCAs is set), skip TOFU and use normal verification
-	if t.base.TLSClientConfig.RootCAs != nil {
-		return t.base.RoundTrip(req)
+// verifyTOFU implements Trust-On-First-Use certificate verification.
+// This is called during the TLS handshake, before any request body is sent.
+func (t *TOFUTransport) verifyTOFU(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+	// With InsecureSkipVerify=true, verifiedChains is empty
+	// We need to parse the raw certificates ourselves
+	if len(rawCerts) == 0 {
+		return fmt.Errorf("no TLS certificate received from server")
 	}
 
-	// For TOFU: first try the request to get the certificate
-	resp, err := t.base.RoundTrip(req)
+	// Parse the first (peer) certificate
+	cert, err := x509.ParseCertificate(rawCerts[0])
 	if err != nil {
-		// Check if this is a certificate error (it shouldn't be since we have InsecureSkipVerify)
-		return nil, err
+		return fmt.Errorf("failed to parse server certificate: %w", err)
 	}
-
-	// Get the peer certificate from the connection state
-	if resp.TLS == nil || len(resp.TLS.PeerCertificates) == 0 {
-		_ = resp.Body.Close()
-		return nil, fmt.Errorf("no TLS certificate received from server")
-	}
-
-	cert := resp.TLS.PeerCertificates[0]
 
 	// Verify certificate against known fingerprints
 	if err := t.certStore.VerifyFingerprint(t.host, cert); err != nil {
-		_ = resp.Body.Close()
-		return nil, err
+		return err
 	}
 
 	// If certificate is not known, prompt user
 	if !t.certStore.IsKnown(t.host, cert) {
-		_ = resp.Body.Close()
-
 		// Prompt user to accept certificate
 		if !cliTLS.PromptAcceptCertificate(t.host, cert) {
-			return nil, fmt.Errorf("certificate rejected by user")
+			return fmt.Errorf("certificate rejected by user")
 		}
 
 		// Add to known certificates
 		if err := t.certStore.Add(t.host, cert); err != nil {
-			return nil, fmt.Errorf("failed to save certificate: %w", err)
+			return fmt.Errorf("failed to save certificate: %w", err)
 		}
-
-		// Retry the request now that certificate is accepted
-		return t.base.RoundTrip(req)
 	}
 
-	// Certificate is known and matches - return response
-	return resp, nil
+	return nil
+}
+
+// RoundTrip implements the http.RoundTripper interface.
+// Certificate verification happens in the TLS callback, so this just delegates to the base transport.
+func (t *TOFUTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return t.base.RoundTrip(req)
 }

@@ -74,6 +74,8 @@ archives:
 
 nfpms:
   - id: boardingpass
+    ids:
+      - boardingpass
     package_name: boardingpass
     vendor: BoardingPass Project
     homepage: https://github.com/fzdarsky/boardingpass

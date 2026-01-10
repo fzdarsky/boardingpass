@@ -12,8 +12,91 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"strings"
 	"time"
 )
+
+// getSystemHostname returns the system hostname, or empty string if unavailable.
+func getSystemHostname() string {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return ""
+	}
+	return hostname
+}
+
+// getNetworkIPs returns all non-loopback IP addresses from active network interfaces.
+func getNetworkIPs() []net.IP {
+	var ips []net.IP
+
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return ips
+	}
+
+	for _, iface := range interfaces {
+		// Skip loopback and down interfaces
+		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			// Skip loopback IPs
+			if ip == nil || ip.IsLoopback() {
+				continue
+			}
+
+			ips = append(ips, ip)
+		}
+	}
+
+	return ips
+}
+
+// buildSANs constructs DNS names and IP addresses for certificate SANs.
+// Includes static SANs (localhost, boardingpass.local) plus dynamic SANs
+// (hostname, network IPs, mDNS-style names).
+func buildSANs() (dnsNames []string, ipAddresses []net.IP) {
+	// Static DNS SANs
+	dnsNames = []string{
+		"localhost",
+		"boardingpass.local",
+	}
+
+	// Static IP SANs
+	ipAddresses = []net.IP{
+		net.ParseIP("127.0.0.1"),
+		net.ParseIP("::1"),
+	}
+
+	// Add system hostname
+	if hostname := getSystemHostname(); hostname != "" {
+		dnsNames = append(dnsNames, hostname)
+
+		// Add mDNS-style name: boardingpass-<hostname>.local
+		mdnsName := "boardingpass-" + strings.ToLower(hostname) + ".local"
+		dnsNames = append(dnsNames, mdnsName)
+	}
+
+	// Add all network interface IPs
+	networkIPs := getNetworkIPs()
+	ipAddresses = append(ipAddresses, networkIPs...)
+
+	return dnsNames, ipAddresses
+}
 
 // GenerateSelfSignedCert generates a self-signed TLS certificate and key.
 // Returns the paths to the generated cert and key files.
@@ -33,6 +116,9 @@ func GenerateSelfSignedCert(certPath, keyPath string, validDays int) error {
 		return fmt.Errorf("failed to generate serial number: %w", err)
 	}
 
+	// Build SANs (includes static + dynamic hostname/IPs)
+	dnsNames, ipAddresses := buildSANs()
+
 	// Create certificate template
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
@@ -47,15 +133,9 @@ func GenerateSelfSignedCert(certPath, keyPath string, validDays int) error {
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 
-		// Add localhost and common device addresses as SANs
-		DNSNames: []string{
-			"localhost",
-			"boardingpass.local",
-		},
-		IPAddresses: []net.IP{
-			net.ParseIP("127.0.0.1"),
-			net.ParseIP("::1"),
-		},
+		// Add SANs for maximum compatibility (static + dynamic)
+		DNSNames:    dnsNames,
+		IPAddresses: ipAddresses,
 	}
 
 	// Create self-signed certificate
