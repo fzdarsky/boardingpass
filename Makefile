@@ -83,6 +83,8 @@ release:
 ## deploy: Build RPM and deploy to local RHEL bootc container
 deploy: release
 	@echo "Detected architecture: $(UNAME_ARCH) -> $(RPM_ARCH)"
+	@echo "Removing old known certificates file (if exists)..."
+	@rm -f ~/.config/boardingpass/known_certs.yaml
 	@echo "Building bootc container image for $(RPM_ARCH)..."
 	@podman build -f $(CONTAINERFILE) --build-arg ARCH=$(RPM_ARCH) -t $(IMAGE_NAME) .
 	@echo "Running bootc container..."
@@ -97,7 +99,9 @@ deploy: release
 		--privileged \
 		$(IMAGE_NAME)
 	@echo "Bootc container started. Container name: $(CONTAINER_NAME)"
-	@echo "Access the service at https://localhost:8443"
+	@echo ""
+	@echo "Log in with: boarding -y pass --host localhost --username boardingpass --password $$(podman exec $(CONTAINER_NAME) sh -c "ip link show | grep -A1 '^2:' | grep 'link/ether' | awk '{print \$$2}' | head -n1")"
+	@echo ""
 	@echo "Stop with: podman stop $(CONTAINER_NAME)"
 
 ## undeploy: Stop and remove the bootc container

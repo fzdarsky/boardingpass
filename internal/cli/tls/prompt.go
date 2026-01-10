@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/fzdarsky/boardingpass/internal/cli/clicontext"
 )
 
 // PromptAcceptCertificate prompts the user to accept or reject an unknown certificate.
 // Returns true if the user accepts, false if they reject.
+// If --assumeyes flag is set, automatically accepts the certificate without prompting.
 func PromptAcceptCertificate(host string, cert *x509.Certificate) bool {
 	fingerprint := ComputeFingerprint(cert)
 
@@ -22,6 +25,12 @@ func PromptAcceptCertificate(host string, cert *x509.Certificate) bool {
 	fmt.Fprintf(os.Stderr, "  Valid Until: %s\n", cert.NotAfter)
 	fmt.Fprintf(os.Stderr, "  Fingerprint: %s\n", fingerprint)
 	fmt.Fprintf(os.Stderr, "\n")
+
+	// Check if assumeyes flag is set
+	if clicontext.AssumeYes() {
+		fmt.Fprintf(os.Stderr, "Automatically accepting certificate (--assumeyes flag is set)\n")
+		return true
+	}
 
 	return promptYesNo("Do you want to accept this certificate?")
 }

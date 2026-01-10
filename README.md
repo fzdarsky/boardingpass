@@ -255,8 +255,8 @@ set -euo pipefail
 export BOARDING_HOST=${DEVICE_IP}
 export BOARDING_PORT=8443
 
-# Authenticate (non-interactive)
-boarding pass --username admin --password "${DEVICE_PASSWORD}"
+# Authenticate (non-interactive, auto-accept TLS certificate)
+boarding pass -y --username admin --password "${DEVICE_PASSWORD}"
 
 # Query device info and save as artifact
 boarding info -o json > device-info.json
@@ -272,6 +272,11 @@ boarding complete
 
 echo "Provisioning completed successfully"
 ```
+
+### Global Flags
+
+These flags work with all commands:
+- `-y, --assumeyes` - Automatically answer 'yes' to prompts (e.g., TLS certificate acceptance)
 
 ### Commands
 
@@ -292,11 +297,11 @@ boarding pass --host 192.168.1.100 --username admin [--password SECRET]
 
 **Example:**
 ```bash
-# Interactive (prompts for credentials)
+# Interactive (prompts for credentials and certificate acceptance)
 boarding pass --host 192.168.1.100
 
-# Non-interactive (for scripts)
-boarding pass --host 192.168.1.100 --username admin --password secret123
+# Non-interactive (for scripts/automation)
+boarding pass -y --host 192.168.1.100 --username admin --password secret123
 
 # With custom CA certificate
 boarding pass --host internal.corp --ca-cert /etc/ssl/ca.pem --username admin
