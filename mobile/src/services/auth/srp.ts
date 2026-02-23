@@ -16,6 +16,7 @@
  */
 
 import * as srp from 'secure-remote-password/client';
+import { APIClient } from '../api/client';
 
 /**
  * SRP Configuration Constants
@@ -49,6 +50,36 @@ interface SRPEphemeral {
 interface SRPSession {
   key: string; // K - shared session key
   proof: string; // M1 - client proof
+}
+
+/**
+ * API Types (matching OpenAPI spec)
+ */
+interface SRPInitRequest {
+  username: string;
+  A: string; // Client's ephemeral public key
+}
+
+interface SRPInitResponse {
+  salt: string; // Server's salt (Base64)
+  B: string; // Server's ephemeral public key (Base64)
+}
+
+interface SRPVerifyRequest {
+  M1: string; // Client proof (Base64)
+}
+
+interface SRPVerifyResponse {
+  M2: string; // Server proof (Base64)
+  session_token: string; // Session token
+}
+
+/**
+ * Complete authentication result
+ */
+export interface AuthenticationResult {
+  sessionToken: string;
+  expiresAt: Date; // Typically 30 minutes from now
 }
 
 /**
@@ -317,6 +348,209 @@ export class SRPAuthService {
 
     // Clear session (shared secret and proofs)
     this.session = null;
+  }
+
+  /**
+   * API Integration: SRP Init Flow (POST /auth/srp/init)
+   *
+   * Step 1 of the SRP-6a handshake with the BoardingPass server.
+   * Sends the client's ephemeral public key A and receives the server's
+   * salt and ephemeral public key B.
+   *
+   * @param apiClient - Configured API client for the target device
+   * @param username - SRP username (typically "boardingpass")
+   * @returns Server's salt and ephemeral public key B
+   * @throws Error if init request fails or server response is invalid
+   */
+  public async initAuthentication(
+    apiClient: APIClient,
+    username: string
+  ): Promise<SRPInitResponse> {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[SRP API] Initiating SRP handshake', {
+        endpoint: '/auth/srp/init',
+        username,
+      });
+    }
+
+    try {
+      // Generate ephemeral keypair (a, A)
+      const publicKey = this.generateEphemeral();
+
+      // Prepare init request
+      const request: SRPInitRequest = {
+        username,
+        A: publicKey,
+      };
+
+      // Send init request to server
+      const response = await apiClient.post<SRPInitResponse>('/auth/srp/init', request);
+
+      // Validate response structure
+      if (!response.salt || !response.B) {
+        throw new Error('Invalid init response: missing salt or B');
+      }
+
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[SRP API] Init response received', {
+          saltLength: response.salt.length,
+          BLength: response.B.length,
+        });
+      }
+
+      return response;
+    } catch (error) {
+      // Clean up on error
+      this.cleanup();
+
+      if (__DEV__) {
+        console.error('[SRP API] Init request failed:', error);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * API Integration: SRP Verify Flow (POST /auth/srp/verify)
+   *
+   * Step 2 of the SRP-6a handshake with the BoardingPass server.
+   * Sends the client proof M1 and receives the server proof M2 and session token.
+   *
+   * @param apiClient - Configured API client for the target device
+   * @param username - SRP username (must match init request)
+   * @param password - Device password (connection code)
+   * @param salt - Salt from init response
+   * @param serverPublicKey - Server's ephemeral public key B from init response
+   * @returns Authentication result with session token and expiry
+   * @throws Error if verify request fails, server proof is invalid, or response is malformed
+   */
+  public async verifyAuthentication(
+    apiClient: APIClient,
+    username: string,
+    password: string,
+    salt: string,
+    serverPublicKey: string
+  ): Promise<AuthenticationResult> {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[SRP API] Verifying authentication', {
+        endpoint: '/auth/srp/verify',
+        username,
+        note: 'Password NEVER logged (FR-029)',
+      });
+    }
+
+    try {
+      // Derive session and compute client proof M1
+      const clientProof = this.deriveSession(username, password, salt, serverPublicKey);
+
+      // Prepare verify request
+      const request: SRPVerifyRequest = {
+        M1: clientProof,
+      };
+
+      // Send verify request to server
+      const response = await apiClient.post<SRPVerifyResponse>('/auth/srp/verify', request);
+
+      // Validate response structure
+      if (!response.M2 || !response.session_token) {
+        throw new Error('Invalid verify response: missing M2 or session_token');
+      }
+
+      // Validate server proof M2
+      this.validateServerProof(response.M2);
+
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[SRP API] Authentication successful', {
+          tokenReceived: true,
+          mutualAuthComplete: true,
+        });
+      }
+
+      // Calculate session expiry (server sets 30 minutes)
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+      return {
+        sessionToken: response.session_token,
+        expiresAt,
+      };
+    } catch (error) {
+      // Clean up on error
+      this.cleanup();
+
+      if (__DEV__) {
+        console.error('[SRP API] Verify request failed:', error);
+      }
+
+      throw error;
+    } finally {
+      // CRITICAL: Clear session data after authentication completes
+      // (success or failure) to prevent secrets from remaining in memory
+      this.cleanup();
+    }
+  }
+
+  /**
+   * Complete SRP-6a Authentication Flow
+   *
+   * Convenience method that combines init and verify steps into a single flow.
+   * This is the primary method for authenticating with a BoardingPass device.
+   *
+   * @param apiClient - Configured API client for the target device
+   * @param username - SRP username (typically "boardingpass")
+   * @param password - Device password (connection code)
+   * @returns Authentication result with session token and expiry
+   * @throws Error if authentication fails at any step
+   */
+  public async authenticate(
+    apiClient: APIClient,
+    username: string,
+    password: string
+  ): Promise<AuthenticationResult> {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[SRP API] Starting complete authentication flow', {
+        username,
+        steps: ['init', 'verify'],
+      });
+    }
+
+    try {
+      // Step 1: Init - exchange ephemeral public keys
+      const initResponse = await this.initAuthentication(apiClient, username);
+
+      // Step 2: Verify - exchange proofs and receive session token
+      const result = await this.verifyAuthentication(
+        apiClient,
+        username,
+        password,
+        initResponse.salt,
+        initResponse.B
+      );
+
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[SRP API] Complete authentication flow successful', {
+          sessionToken: '***' + result.sessionToken.slice(-8),
+          expiresAt: result.expiresAt.toISOString(),
+        });
+      }
+
+      return result;
+    } catch (error) {
+      if (__DEV__) {
+        console.error('[SRP API] Authentication flow failed:', error);
+      }
+
+      // Ensure cleanup even if error is thrown
+      this.cleanup();
+
+      throw error;
+    }
   }
 
   /**

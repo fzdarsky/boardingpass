@@ -133,22 +133,22 @@
 - [x] T059 [P] [US2] Install secure-remote-password library in mobile/package.json
 - [x] T060 [P] [US2] Install expo-camera and expo-barcode-scanner in mobile/package.json
 - [x] T061 [US2] **CRITICAL**: Configure SRP-6a client with FIPS parameters in mobile/src/services/auth/srp.ts (SHA-256, RFC 5054 2048-bit, g=2)
-- [ ] T062 [US2] Implement SRP-6a init flow in mobile/src/services/auth/srp.ts (POST /auth/srp/init)
-- [ ] T063 [US2] Implement SRP-6a verify flow in mobile/src/services/auth/srp.ts (POST /auth/srp/verify)
-- [ ] T064 [US2] Create session management service in mobile/src/services/auth/session.ts (store token, check expiry)
-- [ ] T065 [US2] Create useAuth hook in mobile/src/hooks/useAuth.ts (wraps SRP flow and session management)
-- [ ] T066 [P] [US2] Create QRScanner component in mobile/src/components/QRScanner/index.tsx
-- [ ] T067 [P] [US2] Create ConnectionCodeInput component in mobile/src/components/ConnectionCodeInput/index.tsx
-- [ ] T068 [US2] Implement authentication screen in mobile/app/device/authenticate.tsx
-- [ ] T069 [US2] Add connection code validation (format check per FR-027)
-- [ ] T070 [US2] Add camera permission handling with rationale UI (FR-026)
-- [ ] T071 [US2] Implement QR code format validation (reject invalid codes)
-- [ ] T072 [US2] Add manual/QR toggle UI in authentication screen
-- [ ] T073 [US2] Clear connection code from memory after auth attempt (FR-036)
-- [ ] T074 [US2] Implement progressive delay on auth failures (1s → 2s → 5s → 60s per FR-038)
-- [ ] T075 [US2] Add authentication error handling (invalid code, timeout, network errors per FR-024, FR-028)
-- [ ] T076 [US2] Add success transition to device detail screen
-- [ ] T077 [US2] Add logging for auth events (no sensitive data: connection codes, SRP values, tokens)
+- [x] T062 [US2] Implement SRP-6a init flow in mobile/src/services/auth/srp.ts (POST /auth/srp/init)
+- [x] T063 [US2] Implement SRP-6a verify flow in mobile/src/services/auth/srp.ts (POST /auth/srp/verify)
+- [x] T064 [US2] Create session management service in mobile/src/services/auth/session.ts (store token, check expiry)
+- [x] T065 [US2] Create useAuth hook in mobile/src/hooks/useAuth.ts (wraps SRP flow and session management)
+- [x] T066 [P] [US2] Create QRScanner component in mobile/src/components/QRScanner/index.tsx
+- [x] T067 [P] [US2] Create ConnectionCodeInput component in mobile/src/components/ConnectionCodeInput/index.tsx
+- [x] T068 [US2] Implement authentication screen in mobile/app/device/authenticate.tsx
+- [x] T069 [US2] Add connection code validation (format check per FR-027)
+- [x] T070 [US2] Add camera permission handling with rationale UI (FR-026)
+- [x] T071 [US2] Implement QR code format validation (reject invalid codes)
+- [x] T072 [US2] Add manual/QR toggle UI in authentication screen
+- [x] T073 [US2] Clear connection code from memory after auth attempt (FR-036)
+- [x] T074 [US2] Implement progressive delay on auth failures (1s → 2s → 5s → 60s per FR-038)
+- [x] T075 [US2] Add authentication error handling (invalid code, timeout, network errors per FR-024, FR-028)
+- [x] T076 [US2] Add success transition to device detail screen
+- [x] T077 [US2] Add logging for auth events (no sensitive data: connection codes, SRP values, tokens)
 
 **Checkpoint**: Authentication should work independently - can authenticate via manual or QR code, session stored securely
 

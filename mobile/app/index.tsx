@@ -48,7 +48,7 @@ export default function DeviceDiscoveryScreen() {
   const handleDevicePress = (device: Device) => {
     if (device.status === 'online') {
       router.push({
-        pathname: '/device/authenticate',
+        pathname: '/device/authenticate' as any,
         params: {
           deviceId: device.id,
           deviceName: device.name,
