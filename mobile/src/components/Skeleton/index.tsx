@@ -100,8 +100,8 @@ export function SkeletonDeviceInfoSection() {
       <SkeletonBase width="40%" height={20} style={styles.sectionTitle} />
 
       {/* Info rows */}
-      {[1, 2, 3, 4].map(i => (
-        <View key={i} style={styles.infoRow}>
+      {[1, 2, 3, 4].map(id => (
+        <View key={`info-row-${id}`} style={styles.infoRow}>
           <SkeletonBase width="30%" height={14} style={styles.infoLabel} />
           <SkeletonBase width="60%" height={14} />
         </View>

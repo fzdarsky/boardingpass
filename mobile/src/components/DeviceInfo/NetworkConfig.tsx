@@ -51,9 +51,9 @@ export function NetworkConfig({ networkConfig, showStatusIndicators = true }: Ne
         subtitle={`${networkConfig.interfaces.length} interface${networkConfig.interfaces.length !== 1 ? 's' : ''}`}
       />
       <Card.Content>
-        {sortedInterfaces.map((iface, index) => (
-          <View key={`${iface.name}-${index}`}>
-            {index > 0 && <Divider style={styles.divider} />}
+        {sortedInterfaces.map((iface, idx) => (
+          <View key={`iface-${iface.index}-${iface.name}`}>
+            {idx > 0 && <Divider style={styles.divider} />}
             <NetworkInterfaceItem
               interface={iface}
               showStatusIndicator={showStatusIndicators}
@@ -151,9 +151,9 @@ function NetworkInterfaceItem({ interface: iface, showStatusIndicator, theme }: 
               <Text variant="bodySmall" style={styles.ipFamilyLabel}>
                 IPv4
               </Text>
-              {ipv4Addresses.map((addr, index) => (
+              {ipv4Addresses.map(addr => (
                 <Text
-                  key={`ipv4-${index}`}
+                  key={`ipv4-${addr.address}-${addr.prefixLength}`}
                   variant="bodyMedium"
                   style={styles.monospace}
                 >
@@ -169,9 +169,9 @@ function NetworkInterfaceItem({ interface: iface, showStatusIndicator, theme }: 
               <Text variant="bodySmall" style={styles.ipFamilyLabel}>
                 IPv6
               </Text>
-              {ipv6Addresses.map((addr, index) => (
+              {ipv6Addresses.map(addr => (
                 <Text
-                  key={`ipv6-${index}`}
+                  key={`ipv6-${addr.address}-${addr.prefixLength}`}
                   variant="bodyMedium"
                   style={styles.monospace}
                 >

@@ -10,7 +10,7 @@
  * - Duplicate name handling (FR-006)
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, FlatList, RefreshControl, View } from 'react-native';
 import { Text, ActivityIndicator, Button } from 'react-native-paper';
 import { Device } from '@/types/device';
@@ -42,6 +42,18 @@ export function DeviceList({
   );
 
   const hasDuplicateNames = Object.values(deviceNamesCount).some(count => count > 1);
+
+  // Render item callback (memoized to avoid re-creation)
+  const renderDeviceCard = useCallback(
+    ({ item }: { item: Device }) => (
+      <DeviceCard
+        device={item}
+        onPress={() => onDevicePress?.(item)}
+        showDuplicateIndicator={hasDuplicateNames && deviceNamesCount[item.name] > 1}
+      />
+    ),
+    [onDevicePress, hasDuplicateNames, deviceNamesCount]
+  );
 
   // Render empty state
   if (devices.length === 0 && !isScanning) {
@@ -93,13 +105,7 @@ export function DeviceList({
     <FlatList
       data={devices}
       keyExtractor={item => item.id}
-      renderItem={({ item }) => (
-        <DeviceCard
-          device={item}
-          onPress={() => onDevicePress?.(item)}
-          showDuplicateIndicator={hasDuplicateNames && deviceNamesCount[item.name] > 1}
-        />
-      )}
+      renderItem={renderDeviceCard}
       contentContainerStyle={styles.listContent}
       refreshControl={
         onRefresh ? <RefreshControl refreshing={isScanning} onRefresh={onRefresh} /> : undefined

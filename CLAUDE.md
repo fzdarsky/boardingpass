@@ -23,6 +23,7 @@ The project uses Go 1.25+ with CGO disabled for static linking. GoReleaser handl
 ## Architecture & Structure
 
 ### General Design Principles
+
 - **Pattern:** Modular Monolith.
 - **KISS (Keep It Simple, Stupid)**: Strive for simplicity in design and implementation.
 - **YAGNI (You Ain't Gonna Need It)**: Avoid adding features or complexity until absolutely necessary.
@@ -108,12 +109,14 @@ After completing work on a task or list of tasks, **always** run `make lint` and
 ## Testing
 
 Tests follow standard Go conventions:
+
 - Unit tests are co-located with source files (e.g., `internal/auth/session_test.go` tests `internal/auth/session.go`)
 - `tests/integration/` - API endpoint tests using httptest
 - `tests/contract/` - OpenAPI spec validation
 - `tests/e2e/` - Containerized systemd environment tests
 
 Run tests:
+
 - All tests: `make test`
 - Single package: `go test -v ./internal/auth`
 - Single test: `go test -v -run TestName ./internal/auth`
@@ -128,6 +131,7 @@ After completing work on a task or list of tasks, **always** run `make test` and
 - `build/boardingpass.sudoers` - Restricted sudo permissions for commands
 
 ## Active Technologies
+
 - Go 1.25+ (BoardingPass service)
 - TypeScript 5.x with React Native 0.74+, targeting ES2022 (Mobile onboarding app)
 
@@ -209,18 +213,21 @@ eas build --platform android # Build Android via EAS
 - **Type Safety**: Strict TypeScript mode enabled
 
 **Component Structure:**
+
 - Keep components small and focused (single responsibility)
 - Extract reusable components to `src/components/`
 - Colocate component-specific files (styles, tests, utils)
 - Use custom hooks for complex stateful logic
 
 **State Management:**
+
 - Use React Context for global state (DeviceContext, AuthContext, CertificateContext)
 - Use local state (useState) for component-specific state
 - Use custom hooks to encapsulate business logic
 - Avoid prop drilling - use Context when passing state through 3+ levels
 
 **Security Requirements:**
+
 - NEVER log sensitive data (connection codes, session tokens, SRP values)
 - Clear sensitive data from memory after use (FR-036)
 - Use expo-secure-store for persistent sensitive data (tokens, certificate pins)
@@ -228,6 +235,7 @@ eas build --platform android # Build Android via EAS
 - Validate all user inputs before submission
 
 **Performance Guidelines:**
+
 - Use React.memo() for expensive components
 - Optimize FlatList with proper keyExtractor and getItemLayout
 - Lazy load heavy components
@@ -235,6 +243,7 @@ eas build --platform android # Build Android via EAS
 - Monitor bundle size (target < 50MB)
 
 **Accessibility:**
+
 - Add accessibilityLabel to all interactive elements
 - Support screen readers (VoiceOver/TalkBack)
 - Ensure sufficient color contrast (WCAG AA)
@@ -255,12 +264,14 @@ Verify SRP configuration in `mobile/src/services/auth/srp.ts` before committing 
 The mobile app consumes the BoardingPass RESTful API defined in `specs/001-boardingpass-api/contracts/openapi.yaml`.
 
 **Type Generation Workflow:**
+
 1. Update OpenAPI spec in `specs/001-boardingpass-api/contracts/openapi.yaml`
 2. Run `npm run generate:types` in `mobile/` directory
 3. Types are generated to `mobile/src/types/api.ts`
 4. Never manually edit generated types
 
 **API Client Pattern:**
+
 - Use `mobile/src/services/api/client.ts` for HTTP requests
 - Implement service-specific modules (e.g., `info.ts`, `network.ts`)
 - Always include authentication token in requests
@@ -270,23 +281,27 @@ The mobile app consumes the BoardingPass RESTful API defined in `specs/001-board
 ### Testing Strategy
 
 **Unit Tests** (`mobile/tests/unit/`):
+
 - Test utilities, hooks, and business logic
 - Mock external dependencies
 - Use Jest + React Native Testing Library
 - Target 80%+ code coverage
 
 **Integration Tests** (`mobile/tests/integration/`):
+
 - Test authentication flows
 - Test device discovery
 - Test API integration
 - Use real API responses (mock server)
 
 **Contract Tests** (`mobile/tests/contract/`):
+
 - Validate API responses against OpenAPI spec
 - Ensure mobile app and service are compatible
 - Run before releases
 
 **E2E Tests** (`mobile/tests/e2e/`):
+
 - Test complete user flows
 - Use Detox for iOS and Android
 - Test on physical devices before release
@@ -294,22 +309,26 @@ The mobile app consumes the BoardingPass RESTful API defined in `specs/001-board
 ### Common Tasks
 
 **Adding a New Screen:**
+
 1. Create screen file in `app/` directory (e.g., `app/settings.tsx`)
 2. Expo Router automatically generates route
 3. Add navigation in existing screens using `router.push('/settings')`
 
 **Adding a New Component:**
+
 1. Create component directory in `src/components/` (e.g., `src/components/Button/`)
 2. Add `index.tsx` with component implementation
 3. Export from component directory
 4. Write unit tests in `mobile/tests/unit/components/`
 
 **Adding a New Hook:**
+
 1. Create hook file in `src/hooks/` (e.g., `src/hooks/useDeviceInfo.ts`)
 2. Implement hook following React hooks rules
 3. Write unit tests in `mobile/tests/unit/hooks/`
 
 **Adding a New API Endpoint:**
+
 1. Update OpenAPI spec in `specs/001-boardingpass-api/contracts/openapi.yaml`
 2. Run `npm run generate:types` to update types
 3. Create service module in `src/services/api/` if needed
@@ -341,30 +360,35 @@ Implementation: `mobile/src/services/certificates/`
 ### Troubleshooting
 
 **Type errors after API changes:**
+
 ```bash
 npm run generate:types        # Regenerate types from OpenAPI spec
 npm run typecheck             # Verify no type errors
 ```
 
 **Native module not found:**
+
 ```bash
 npx expo prebuild --clean     # Regenerate native projects
 npm run ios                   # Rebuild app
 ```
 
 **Tests failing:**
+
 ```bash
 npm test -- --clearCache      # Clear Jest cache
 npm test                      # Re-run tests
 ```
 
 **Bundle size too large:**
+
 ```bash
 npx react-native-bundle-visualizer  # Analyze bundle
 # Consider code splitting or removing unused dependencies
 ```
 
 ## Recent Changes
+
 - 003-mobile-onboarding-app: Added TypeScript 5.x with React Native 0.74+, targeting ES2022
 - 003-mobile-onboarding-app: Implemented device discovery (mDNS + fallback), SRP-6a authentication, certificate pinning, device information display
 - 003-mobile-onboarding-app: Added skeleton loading screens, haptic feedback, comprehensive error handling
