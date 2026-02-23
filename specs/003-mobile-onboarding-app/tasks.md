@@ -162,27 +162,27 @@
 
 ### Tests for User Story 3
 
-- [ ] T078 [P] [US3] Contract test for /info endpoint in mobile/tests/contract/info.test.ts
-- [ ] T079 [P] [US3] Contract test for /network endpoint in mobile/tests/contract/network.test.ts
-- [ ] T080 [P] [US3] Integration test for device info retrieval in mobile/tests/integration/device-info.test.ts
+- [x] T078 [P] [US3] Contract test for /info endpoint in mobile/tests/contract/info.test.ts
+- [x] T079 [P] [US3] Contract test for /network endpoint in mobile/tests/contract/network.test.ts
+- [x] T080 [P] [US3] Integration test for device info retrieval in mobile/tests/integration/device-info.test.ts
 
 ### Implementation for User Story 3
 
-- [ ] T081 [P] [US3] Create device info service in mobile/src/services/api/info.ts (GET /info with auth token)
-- [ ] T082 [P] [US3] Create network config service in mobile/src/services/api/network.ts (GET /network with auth token)
-- [ ] T083 [US3] Create useDeviceInfo hook in mobile/src/hooks/useDeviceInfo.ts (fetch info + network)
-- [ ] T084 [P] [US3] Create SystemInfo display component in mobile/src/components/DeviceInfo/SystemInfo.tsx
-- [ ] T085 [P] [US3] Create NetworkConfig display component in mobile/src/components/DeviceInfo/NetworkConfig.tsx
-- [ ] T086 [P] [US3] Create TPMInfo display component in mobile/src/components/DeviceInfo/TPMInfo.tsx
-- [ ] T087 [P] [US3] Create BoardInfo display component in mobile/src/components/DeviceInfo/BoardInfo.tsx
-- [ ] T088 [US3] Implement device detail screen in mobile/app/device/[id].tsx
-- [ ] T089 [US3] Format device data for readability (FR-018): UUIDs, MAC addresses, IP addresses
-- [ ] T090 [US3] Add loading states for info queries (FR-019)
-- [ ] T091 [US3] Add error handling for info query failures (FR-024, FR-028)
-- [ ] T092 [US3] Add retry mechanism for transient failures (FR-025)
-- [ ] T093 [US3] Display partial data when some queries succeed and others fail
-- [ ] T094 [US3] Add FIPS status indicator (visual badge for enabled/validated)
-- [ ] T095 [US3] Add network interface status indicators (up/down with colors)
+- [x] T081 [P] [US3] Create device info service in mobile/src/services/api/info.ts (GET /info with auth token)
+- [x] T082 [P] [US3] Create network config service in mobile/src/services/api/network.ts (GET /network with auth token)
+- [x] T083 [US3] Create useDeviceInfo hook in mobile/src/hooks/useDeviceInfo.ts (fetch info + network)
+- [x] T084 [P] [US3] Create SystemInfo display component in mobile/src/components/DeviceInfo/SystemInfo.tsx
+- [x] T085 [P] [US3] Create NetworkConfig display component in mobile/src/components/DeviceInfo/NetworkConfig.tsx
+- [x] T086 [P] [US3] Create TPMInfo display component in mobile/src/components/DeviceInfo/TPMInfo.tsx
+- [x] T087 [P] [US3] Create BoardInfo display component in mobile/src/components/DeviceInfo/BoardInfo.tsx
+- [x] T088 [US3] Implement device detail screen in mobile/app/device/[id].tsx
+- [x] T089 [US3] Format device data for readability (FR-018): UUIDs, MAC addresses, IP addresses
+- [x] T090 [US3] Add loading states for info queries (FR-019)
+- [x] T091 [US3] Add error handling for info query failures (FR-024, FR-028)
+- [x] T092 [US3] Add retry mechanism for transient failures (FR-025)
+- [x] T093 [US3] Display partial data when some queries succeed and others fail
+- [x] T094 [US3] Add FIPS status indicator (visual badge for enabled/validated)
+- [x] T095 [US3] Add network interface status indicators (up/down with colors)
 
 **Checkpoint**: Device information should display correctly - all data formatted and readable, errors handled gracefully
 
