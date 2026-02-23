@@ -251,8 +251,8 @@
 
 **Purpose**: Improvements that affect multiple user stories and final quality assurance
 
-- [ ] T128 [P] Add loading states and skeleton screens to all data-fetching screens
-- [ ] T129 [P] Add haptic feedback for button presses and important events
+- [X] T128 [P] Add loading states and skeleton screens to all data-fetching screens
+- [X] T129 [P] Add haptic feedback for button presses and important events
 - [ ] T130 [P] Add accessibility labels to all interactive elements
 - [ ] T131 [P] Test and fix screen orientation changes (portrait/landscape per FR-023)
 - [ ] T132 [P] Optimize bundle size (tree shaking, code splitting)
@@ -271,8 +271,8 @@
 - [ ] T145 Test on physical Android device (verify camera, mDNS, secure storage, permissions)
 - [ ] T146 Validate against success criteria in spec.md (SC-001 through SC-010)
 - [ ] T147 Run quickstart.md validation (follow setup guide from scratch, verify it works)
-- [ ] T148 [P] Update CLAUDE.md with mobile app development workflow
-- [ ] T149 Create mobile app README in mobile/README.md (setup, development, testing)
+- [X] T148 [P] Update CLAUDE.md with mobile app development workflow
+- [X] T149 Create mobile app README in mobile/README.md (setup, development, testing)
 
 **Checkpoint**: App is production-ready - all tests pass, performance targets met, works on both platforms
 

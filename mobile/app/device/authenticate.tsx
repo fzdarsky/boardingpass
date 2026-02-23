@@ -40,6 +40,13 @@ import { spacing, theme } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 import QRScanner from '@/components/QRScanner';
 import ConnectionCodeInput from '@/components/ConnectionCodeInput';
+import {
+  authenticationStartFeedback,
+  authenticationSuccessFeedback,
+  authenticationFailureFeedback,
+  qrCodeScannedFeedback,
+  HapticFeedback,
+} from '@/utils/haptics';
 
 /**
  * Authentication mode
@@ -224,6 +231,9 @@ export default function AuthenticateScreen(): React.ReactElement {
     try {
       clearError();
 
+      // Haptic feedback for authentication start (T129)
+      await authenticationStartFeedback();
+
       // Perform SRP-6a authentication
       await authenticate(host, portNumber, connectionCode);
 
@@ -240,6 +250,9 @@ export default function AuthenticateScreen(): React.ReactElement {
 
       // Reset failure count on success
       setFailureCount(0);
+
+      // Haptic feedback for success (T129)
+      await authenticationSuccessFeedback();
 
       // Show success message
       setSnackbarMessage('Authentication successful!');
@@ -264,6 +277,9 @@ export default function AuthenticateScreen(): React.ReactElement {
       const newFailureCount = failureCount + 1;
       setFailureCount(newFailureCount);
 
+      // Haptic feedback for failure (T129)
+      await authenticationFailureFeedback();
+
       // Apply progressive delay (FR-038)
       applyFailureDelay(newFailureCount);
 
@@ -277,7 +293,7 @@ export default function AuthenticateScreen(): React.ReactElement {
   /**
    * Handle QR code scanned
    */
-  const handleCodeScanned = (code: string) => {
+  const handleCodeScanned = async (code: string) => {
     if (__DEV__) {
       // eslint-disable-next-line no-console
       console.log('[Authenticate] QR code scanned', {
@@ -285,6 +301,9 @@ export default function AuthenticateScreen(): React.ReactElement {
         note: 'Code value NEVER logged (FR-029)',
       });
     }
+
+    // Haptic feedback for QR code scanned (T129)
+    await qrCodeScannedFeedback();
 
     setConnectionCode(code);
     setAuthMode('manual');
@@ -312,7 +331,7 @@ export default function AuthenticateScreen(): React.ReactElement {
   /**
    * Handle mode change
    */
-  const handleModeChange = (value: string) => {
+  const handleModeChange = async (value: string) => {
     const newMode = value as AuthMode;
 
     if (__DEV__) {
@@ -322,6 +341,9 @@ export default function AuthenticateScreen(): React.ReactElement {
         to: newMode,
       });
     }
+
+    // Haptic feedback for mode selection (T129)
+    await HapticFeedback.selection();
 
     setAuthMode(newMode);
   };

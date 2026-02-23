@@ -26,6 +26,7 @@ import { SystemInfo, NetworkConfig, TPMInfo, BoardInfo } from '../../src/compone
 import { useDeviceInfo, useDeviceInfoAvailability } from '../../src/hooks/useDeviceInfo';
 import { createAPIClient } from '../../src/services/api/client';
 import { spacing } from '../../src/theme';
+import { SkeletonDeviceDetail } from '../../src/components/Skeleton';
 
 /**
  * Device Detail Screen Component
@@ -115,14 +116,9 @@ export default function DeviceDetailScreen() {
           />
         }
       >
-        {/* Initial Loading State (T090) */}
+        {/* Initial Loading State with Skeleton (T090, T128) */}
         {deviceInfo.isLoading && !availability.hasAnyData && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" animating={true} />
-            <Text variant="bodyLarge" style={styles.loadingText}>
-              Loading device information...
-            </Text>
-          </View>
+          <SkeletonDeviceDetail />
         )}
 
         {/* Error Banner for Partial Data (T093) */}

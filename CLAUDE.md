@@ -128,7 +128,243 @@ After completing work on a task or list of tasks, **always** run `make test` and
 - `build/boardingpass.sudoers` - Restricted sudo permissions for commands
 
 ## Active Technologies
-- TypeScript 5.x with React Native 0.74+, targeting ES2022 (003-mobile-onboarding-app)
+- Go 1.25+ (BoardingPass service)
+- TypeScript 5.x with React Native 0.74+, targeting ES2022 (Mobile onboarding app)
+
+## Mobile App Development Workflow
+
+The `mobile/` directory contains a React Native mobile application for discovering and onboarding BoardingPass devices.
+
+### Quick Start
+
+```bash
+cd mobile
+npm install                    # Install dependencies
+npm run generate:types         # Generate TypeScript types from OpenAPI spec
+npx expo prebuild              # Generate ios/ and android/ directories
+npm start                      # Start Metro bundler
+npm run ios                    # Run on iOS simulator
+npm run android                # Run on Android emulator
+```
+
+### Project Structure
+
+```
+mobile/
+├── app/                      # Expo Router screens (file-based routing)
+│   ├── index.tsx            # Device discovery screen
+│   ├── device/[id].tsx      # Device detail screen
+│   └── device/authenticate.tsx  # Authentication screen
+├── src/
+│   ├── components/          # Reusable UI components
+│   ├── services/            # Business logic (discovery, auth, API, certificates)
+│   ├── hooks/               # Custom React hooks
+│   ├── contexts/            # React Context providers
+│   ├── types/               # TypeScript type definitions
+│   └── utils/               # Utility functions
+└── tests/                   # Unit, integration, contract, and E2E tests
+```
+
+### Development Commands
+
+```bash
+# Development
+npm start                    # Start Metro bundler
+npm run ios                  # Run on iOS
+npm run android              # Run on Android
+npm run web                  # Run in browser (limited functionality)
+
+# Type Generation
+npm run generate:types       # Generate types from OpenAPI spec
+npm run validate:spec        # Validate OpenAPI specification
+
+# Testing
+npm test                     # Run unit tests
+npm run test:watch          # Run tests in watch mode
+npm run test:coverage       # Run tests with coverage report
+npm run test:integration    # Run integration tests
+npm run e2e:test:ios        # Run E2E tests on iOS
+npm run e2e:test:android    # Run E2E tests on Android
+
+# Code Quality
+npm run lint                 # Lint code
+npm run lint:fix             # Lint and auto-fix issues
+npm run format               # Format code with Prettier
+npm run typecheck            # TypeScript type checking
+
+# Building
+npx expo prebuild            # Generate native projects
+eas build --platform ios     # Build iOS via EAS
+eas build --platform android # Build Android via EAS
+```
+
+### Mobile Coding Standards
+
+- **Framework**: React Native with Expo managed workflow
+- **UI Library**: React Native Paper (Material Design 3)
+- **Navigation**: Expo Router (file-based routing)
+- **State Management**: React Context API + custom hooks
+- **Styling**: StyleSheet API (no styled-components or CSS-in-JS libraries)
+- **Testing**: Jest + React Native Testing Library + Detox (E2E)
+- **Type Safety**: Strict TypeScript mode enabled
+
+**Component Structure:**
+- Keep components small and focused (single responsibility)
+- Extract reusable components to `src/components/`
+- Colocate component-specific files (styles, tests, utils)
+- Use custom hooks for complex stateful logic
+
+**State Management:**
+- Use React Context for global state (DeviceContext, AuthContext, CertificateContext)
+- Use local state (useState) for component-specific state
+- Use custom hooks to encapsulate business logic
+- Avoid prop drilling - use Context when passing state through 3+ levels
+
+**Security Requirements:**
+- NEVER log sensitive data (connection codes, session tokens, SRP values)
+- Clear sensitive data from memory after use (FR-036)
+- Use expo-secure-store for persistent sensitive data (tokens, certificate pins)
+- Implement certificate pinning for self-signed TLS certificates
+- Validate all user inputs before submission
+
+**Performance Guidelines:**
+- Use React.memo() for expensive components
+- Optimize FlatList with proper keyExtractor and getItemLayout
+- Lazy load heavy components
+- Keep UI rendering at 60 FPS
+- Monitor bundle size (target < 50MB)
+
+**Accessibility:**
+- Add accessibilityLabel to all interactive elements
+- Support screen readers (VoiceOver/TalkBack)
+- Ensure sufficient color contrast (WCAG AA)
+- Test with accessibility tools enabled
+
+### FIPS Compatibility (Critical)
+
+The mobile app MUST use FIPS 140-3 compatible parameters for SRP-6a authentication to interoperate with the BoardingPass service:
+
+- **Hash Algorithm**: SHA-256 (FIPS 180-4 approved)
+- **SRP Group**: RFC 5054 2048-bit safe prime
+- **Generator**: g = 2
+
+Verify SRP configuration in `mobile/src/services/auth/srp.ts` before committing authentication changes.
+
+### API Integration
+
+The mobile app consumes the BoardingPass RESTful API defined in `specs/001-boardingpass-api/contracts/openapi.yaml`.
+
+**Type Generation Workflow:**
+1. Update OpenAPI spec in `specs/001-boardingpass-api/contracts/openapi.yaml`
+2. Run `npm run generate:types` in `mobile/` directory
+3. Types are generated to `mobile/src/types/api.ts`
+4. Never manually edit generated types
+
+**API Client Pattern:**
+- Use `mobile/src/services/api/client.ts` for HTTP requests
+- Implement service-specific modules (e.g., `info.ts`, `network.ts`)
+- Always include authentication token in requests
+- Handle certificate pinning for self-signed certificates
+- Implement proper error handling and retry logic
+
+### Testing Strategy
+
+**Unit Tests** (`mobile/tests/unit/`):
+- Test utilities, hooks, and business logic
+- Mock external dependencies
+- Use Jest + React Native Testing Library
+- Target 80%+ code coverage
+
+**Integration Tests** (`mobile/tests/integration/`):
+- Test authentication flows
+- Test device discovery
+- Test API integration
+- Use real API responses (mock server)
+
+**Contract Tests** (`mobile/tests/contract/`):
+- Validate API responses against OpenAPI spec
+- Ensure mobile app and service are compatible
+- Run before releases
+
+**E2E Tests** (`mobile/tests/e2e/`):
+- Test complete user flows
+- Use Detox for iOS and Android
+- Test on physical devices before release
+
+### Common Tasks
+
+**Adding a New Screen:**
+1. Create screen file in `app/` directory (e.g., `app/settings.tsx`)
+2. Expo Router automatically generates route
+3. Add navigation in existing screens using `router.push('/settings')`
+
+**Adding a New Component:**
+1. Create component directory in `src/components/` (e.g., `src/components/Button/`)
+2. Add `index.tsx` with component implementation
+3. Export from component directory
+4. Write unit tests in `mobile/tests/unit/components/`
+
+**Adding a New Hook:**
+1. Create hook file in `src/hooks/` (e.g., `src/hooks/useDeviceInfo.ts`)
+2. Implement hook following React hooks rules
+3. Write unit tests in `mobile/tests/unit/hooks/`
+
+**Adding a New API Endpoint:**
+1. Update OpenAPI spec in `specs/001-boardingpass-api/contracts/openapi.yaml`
+2. Run `npm run generate:types` to update types
+3. Create service module in `src/services/api/` if needed
+4. Write integration tests
+
+### Mobile App Specifications
+
+Detailed specifications for the mobile app are in `specs/003-mobile-onboarding-app/`:
+
+- `spec.md` - Feature specification and user stories
+- `plan.md` - Implementation plan and architecture
+- `data-model.md` - Entity definitions and relationships
+- `research.md` - Technical research and decisions
+- `quickstart.md` - Developer quick start guide
+- `tasks.md` - Implementation task breakdown
+
+### Certificate Pinning Workflow
+
+The mobile app implements Trust-On-First-Use (TOFU) certificate pinning:
+
+1. **First Connection**: Fetch server certificate, compute SHA-256 fingerprint
+2. **User Confirmation**: Display certificate details, request user trust
+3. **Pin Storage**: Store fingerprint in secure storage (OS Keychain/Keystore)
+4. **Subsequent Connections**: Verify certificate fingerprint matches pinned value
+5. **Certificate Change**: Alert user, require re-confirmation
+
+Implementation: `mobile/src/services/certificates/`
+
+### Troubleshooting
+
+**Type errors after API changes:**
+```bash
+npm run generate:types        # Regenerate types from OpenAPI spec
+npm run typecheck             # Verify no type errors
+```
+
+**Native module not found:**
+```bash
+npx expo prebuild --clean     # Regenerate native projects
+npm run ios                   # Rebuild app
+```
+
+**Tests failing:**
+```bash
+npm test -- --clearCache      # Clear Jest cache
+npm test                      # Re-run tests
+```
+
+**Bundle size too large:**
+```bash
+npx react-native-bundle-visualizer  # Analyze bundle
+# Consider code splitting or removing unused dependencies
+```
 
 ## Recent Changes
 - 003-mobile-onboarding-app: Added TypeScript 5.x with React Native 0.74+, targeting ES2022
+- 003-mobile-onboarding-app: Implemented device discovery (mDNS + fallback), SRP-6a authentication, certificate pinning, device information display
+- 003-mobile-onboarding-app: Added skeleton loading screens, haptic feedback, comprehensive error handling

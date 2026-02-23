@@ -15,6 +15,7 @@ import { Card, Text, Badge, IconButton, Portal, Modal } from 'react-native-paper
 import { Device, DeviceStatus } from '@/types/device';
 import { CertificateStatusIndicator } from '../CertificateInfo/StatusIndicator';
 import { CertificateInfoDisplay } from '../CertificateInfo';
+import { deviceSelectionFeedback } from '@/utils/haptics';
 
 export interface DeviceCardProps {
   device: Device;
@@ -33,9 +34,17 @@ export function DeviceCard({
   const statusConfig = getStatusConfig(device.status);
   const discoveryBadgeColor = getDiscoveryMethodColor(device.discoveryMethod);
 
+  // Wrap onPress with haptic feedback (T129)
+  const handlePress = async () => {
+    if (onPress) {
+      await deviceSelectionFeedback();
+      onPress();
+    }
+  };
+
   return (
     <>
-      <Card style={styles.card} onPress={onPress}>
+      <Card style={styles.card} onPress={handlePress}>
         <Card.Content>
           {/* Header: Name and Status */}
           <View style={styles.header}>

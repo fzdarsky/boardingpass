@@ -15,6 +15,7 @@ import { StyleSheet, FlatList, RefreshControl, View } from 'react-native';
 import { Text, ActivityIndicator, Button } from 'react-native-paper';
 import { Device } from '@/types/device';
 import { DeviceCard } from './DeviceCard';
+import { SkeletonDeviceList } from '../Skeleton';
 
 export interface DeviceListProps {
   devices: Device[];
@@ -72,17 +73,17 @@ export function DeviceList({
     );
   }
 
-  // Render scanning state
+  // Render scanning state with skeleton screens (T128)
   if (isScanning && devices.length === 0) {
     return (
-      <View style={styles.scanningContainer}>
-        <ActivityIndicator size="large" />
-        <Text variant="titleMedium" style={styles.scanningTitle}>
-          Scanning for devices...
-        </Text>
-        <Text variant="bodySmall" style={styles.scanningText}>
-          Looking for _boardingpass._tcp services
-        </Text>
+      <View style={styles.container}>
+        <View style={styles.scanningHeader}>
+          <ActivityIndicator size="small" />
+          <Text variant="bodyMedium" style={styles.scanningHeaderText}>
+            Scanning for devices...
+          </Text>
+        </View>
+        <SkeletonDeviceList count={3} />
       </View>
     );
   }
@@ -125,6 +126,9 @@ export function DeviceList({
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   listContent: {
     paddingVertical: 8,
   },
