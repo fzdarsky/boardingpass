@@ -227,21 +227,21 @@
 
 **Note**: This affects User Stories 2 and 3 (authentication and info retrieval require HTTPS)
 
-- [ ] T113 Create certificate utilities in mobile/src/services/certificates/utils.ts (fetch cert, compute fingerprint)
-- [ ] T114 [P] Create certificate validation service in mobile/src/services/certificates/validation.ts (pin on first trust, validate on subsequent)
-- [ ] T115 [P] Create CertificateInfo display component in mobile/src/components/CertificateInfo/index.tsx
-- [ ] T116 [P] Create CertificateStatusIndicator component in mobile/src/components/CertificateInfo/StatusIndicator.tsx
-- [ ] T117 Create certificate trust dialog in mobile/src/components/CertificateInfo/TrustDialog.tsx
-- [ ] T118 Integrate certificate fetching into API client (mobile/src/services/api/client.ts)
-- [ ] T119 Implement certificate trust workflow (fetch → display info → user confirms → pin)
-- [ ] T120 Implement certificate validation on subsequent connections (check fingerprint, alert on change)
-- [ ] T121 Add certificate status indicators to device list (trusted CA, self-signed trusted, new, changed)
-- [ ] T122 Add certificate info tooltip/popup to device cards (issuer, subject, validity, fingerprint per FR-033)
-- [ ] T123 Implement certificate change alert (FR-035) with option to trust new cert or abort
-- [ ] T124 Store certificate pins in secure storage (expo-secure-store)
-- [ ] T125 Add self-signed vs CA-signed visual distinction (FR-032)
-- [ ] T126 Write unit tests for certificate utilities in mobile/tests/unit/services/certificates/utils.test.ts
-- [ ] T127 [P] Write integration tests for certificate pinning flow in mobile/tests/integration/certificate-pinning.test.ts
+- [X] T113 Create certificate utilities in mobile/src/services/certificates/utils.ts (fetch cert, compute fingerprint)
+- [X] T114 [P] Create certificate validation service in mobile/src/services/certificates/validation.ts (pin on first trust, validate on subsequent)
+- [X] T115 [P] Create CertificateInfo display component in mobile/src/components/CertificateInfo/index.tsx
+- [X] T116 [P] Create CertificateStatusIndicator component in mobile/src/components/CertificateInfo/StatusIndicator.tsx
+- [X] T117 Create certificate trust dialog in mobile/src/components/CertificateInfo/TrustDialog.tsx
+- [X] T118 Integrate certificate fetching into API client (mobile/src/services/api/client.ts)
+- [X] T119 Implement certificate trust workflow (fetch → display info → user confirms → pin)
+- [X] T120 Implement certificate validation on subsequent connections (check fingerprint, alert on change)
+- [X] T121 Add certificate status indicators to device list (trusted CA, self-signed trusted, new, changed)
+- [X] T122 Add certificate info tooltip/popup to device cards (issuer, subject, validity, fingerprint per FR-033)
+- [X] T123 Implement certificate change alert (FR-035) with option to trust new cert or abort
+- [X] T124 Store certificate pins in secure storage (expo-secure-store)
+- [X] T125 Add self-signed vs CA-signed visual distinction (FR-032)
+- [X] T126 Write unit tests for certificate utilities in mobile/tests/unit/services/certificates/utils.test.ts
+- [X] T127 [P] Write integration tests for certificate pinning flow in mobile/tests/integration/certificate-pinning.test.ts
 
 **Checkpoint**: Certificate pinning should work - users can trust self-signed certs, pinning prevents MITM, cert changes detected
 
@@ -393,6 +393,7 @@ With multiple developers:
 - [ ] T077: Verify no SRP values logged (ephemeral keys, session keys, connection codes)
 
 **References**:
+
 - `specs/003-mobile-onboarding-app/research.md` Section 1 "FIPS Compatibility Requirements"
 - `specs/003-mobile-onboarding-app/contracts/README.md` "FIPS Compatibility Requirements"
 - `specs/003-mobile-onboarding-app/quickstart.md` "FIPS Compatibility Setup"

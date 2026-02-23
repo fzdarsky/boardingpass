@@ -9,43 +9,77 @@
  * - Last seen timestamp
  */
 
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Card, Text, Badge, IconButton } from 'react-native-paper';
+import React, { useState } from 'react';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import { Card, Text, Badge, IconButton, Portal, Modal } from 'react-native-paper';
 import { Device, DeviceStatus } from '@/types/device';
+import { CertificateStatusIndicator } from '../CertificateInfo/StatusIndicator';
+import { CertificateInfoDisplay } from '../CertificateInfo';
 
 export interface DeviceCardProps {
   device: Device;
   onPress?: () => void;
   showDuplicateIndicator?: boolean;
+  showCertificateStatus?: boolean;
 }
 
-export function DeviceCard({ device, onPress, showDuplicateIndicator = false }: DeviceCardProps) {
+export function DeviceCard({
+  device,
+  onPress,
+  showDuplicateIndicator = false,
+  showCertificateStatus = true
+}: DeviceCardProps) {
+  const [showCertModal, setShowCertModal] = useState(false);
   const statusConfig = getStatusConfig(device.status);
   const discoveryBadgeColor = getDiscoveryMethodColor(device.discoveryMethod);
 
   return (
-    <Card style={styles.card} onPress={onPress}>
-      <Card.Content>
-        {/* Header: Name and Status */}
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Text variant="titleMedium" style={styles.name}>
-              {device.name}
-            </Text>
-            {showDuplicateIndicator && (
-              <Text variant="bodySmall" style={styles.ipAddress}>
-                {device.host}
+    <>
+      <Card style={styles.card} onPress={onPress}>
+        <Card.Content>
+          {/* Header: Name and Status */}
+          <View style={styles.header}>
+            <View style={styles.titleContainer}>
+              <Text variant="titleMedium" style={styles.name}>
+                {device.name}
               </Text>
-            )}
+              {showDuplicateIndicator && (
+                <Text variant="bodySmall" style={styles.ipAddress}>
+                  {device.host}
+                </Text>
+              )}
+            </View>
+            <View style={styles.statusContainer}>
+              <View style={[styles.statusIndicator, { backgroundColor: statusConfig.color }]} />
+              <Text variant="bodySmall" style={styles.statusText}>
+                {statusConfig.label}
+              </Text>
+            </View>
           </View>
-          <View style={styles.statusContainer}>
-            <View style={[styles.statusIndicator, { backgroundColor: statusConfig.color }]} />
-            <Text variant="bodySmall" style={styles.statusText}>
-              {statusConfig.label}
-            </Text>
-          </View>
-        </View>
+
+          {/* Certificate Status (FR-032, FR-033) */}
+          {showCertificateStatus && device.certificateInfo && (
+            <View style={styles.certificateRow}>
+              <CertificateStatusIndicator
+                status={device.certificateInfo.trustStatus}
+                showLabel={false}
+                size="small"
+              />
+              <Text variant="bodySmall" style={styles.certificateLabel}>
+                {device.certificateInfo.isSelfSigned ? 'Self-Signed' : 'CA-Signed'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowCertModal(true)}
+                style={styles.certificateInfoButton}
+              >
+                <IconButton
+                  icon="information-outline"
+                  size={16}
+                  onPress={() => setShowCertModal(true)}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
 
         {/* Device Info */}
         <View style={styles.info}>
@@ -107,6 +141,27 @@ export function DeviceCard({ device, onPress, showDuplicateIndicator = false }: 
         </Card.Actions>
       )}
     </Card>
+
+    {/* Certificate Info Modal (FR-033) */}
+    {device.certificateInfo && (
+      <Portal>
+        <Modal
+          visible={showCertModal}
+          onDismiss={() => setShowCertModal(false)}
+          contentContainerStyle={styles.modal}
+        >
+          <CertificateInfoDisplay certificate={device.certificateInfo} compact={false} />
+          <View style={styles.modalActions}>
+            <IconButton
+              icon="close"
+              mode="contained"
+              onPress={() => setShowCertModal(false)}
+            />
+          </View>
+        </Modal>
+      </Portal>
+    )}
+  </>
   );
 }
 
@@ -233,5 +288,34 @@ const styles = StyleSheet.create({
   txtRecord: {
     color: '#666',
     fontFamily: 'monospace',
+  },
+  certificateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 4,
+    gap: 8,
+  },
+  certificateLabel: {
+    flex: 1,
+    color: '#666',
+  },
+  certificateInfoButton: {
+    marginLeft: 'auto',
+  },
+  modal: {
+    backgroundColor: 'white',
+    padding: 20,
+    margin: 20,
+    borderRadius: 8,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
   },
 });
