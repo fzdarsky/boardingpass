@@ -196,26 +196,26 @@
 
 ### Tests for User Story 4
 
-- [ ] T096 [P] [US4] Integration test for network error recovery in mobile/tests/integration/error-recovery.test.ts
-- [ ] T097 [P] [US4] Integration test for permission denial handling in mobile/tests/integration/permission-errors.test.ts
-- [ ] T098 [P] [US4] Unit test for error message generation in mobile/tests/unit/utils/error-messages.test.ts
+- [x] T096 [P] [US4] Integration test for network error recovery in mobile/tests/integration/error-recovery.test.ts
+- [x] T097 [P] [US4] Integration test for permission denial handling in mobile/tests/integration/permission-errors.test.ts
+- [x] T098 [P] [US4] Unit test for error message generation in mobile/tests/unit/utils/error-messages.test.ts
 
 ### Implementation for User Story 4
 
-- [ ] T099 [P] [US4] Create error message utilities in mobile/src/utils/error-messages.ts (user-friendly messages per FR-024)
-- [ ] T100 [P] [US4] Create PermissionDeniedView component in mobile/src/components/Errors/PermissionDeniedView.tsx
-- [ ] T101 [P] [US4] Create NetworkErrorView component in mobile/src/components/Errors/NetworkErrorView.tsx
-- [ ] T102 [P] [US4] Create TimeoutErrorView component in mobile/src/components/Errors/TimeoutErrorView.tsx
-- [ ] T103 [US4] Enhance ErrorBoundary with recovery actions (retry, navigate back)
-- [ ] T104 [US4] Add network error handling to discovery service (show error, offer retry)
-- [ ] T105 [US4] Add timeout error handling to auth service (show timeout message, offer retry)
-- [ ] T106 [US4] Add permission error handling to QR scanner (guide to settings, offer manual entry)
-- [ ] T107 [US4] Add unreachable device error handling (clear message, suggest retry or different device)
-- [ ] T108 [US4] Implement global error toast notifications (non-critical errors)
-- [ ] T109 [US4] Implement error dialog for critical errors (blocking issues)
-- [ ] T110 [US4] Add "Open Settings" button for permission errors (iOS/Android deep links)
-- [ ] T111 [US4] Add retry buttons to all error views
-- [ ] T112 [US4] Add context-specific help text for common errors (mDNS blocked, network issues)
+- [x] T099 [P] [US4] Create error message utilities in mobile/src/utils/error-messages.ts (user-friendly messages per FR-024)
+- [x] T100 [P] [US4] Create PermissionDeniedView component in mobile/src/components/Errors/PermissionDeniedView.tsx
+- [x] T101 [P] [US4] Create NetworkErrorView component in mobile/src/components/Errors/NetworkErrorView.tsx
+- [x] T102 [P] [US4] Create TimeoutErrorView component in mobile/src/components/Errors/TimeoutErrorView.tsx
+- [x] T103 [US4] Enhance ErrorBoundary with recovery actions (retry, navigate back)
+- [x] T104 [US4] Add network error handling to discovery service (show error, offer retry)
+- [x] T105 [US4] Add timeout error handling to auth service (show timeout message, offer retry)
+- [x] T106 [US4] Add permission error handling to QR scanner (guide to settings, offer manual entry)
+- [x] T107 [US4] Add unreachable device error handling (clear message, suggest retry or different device)
+- [x] T108 [US4] Implement global error toast notifications (non-critical errors)
+- [x] T109 [US4] Implement error dialog for critical errors (blocking issues)
+- [x] T110 [US4] Add "Open Settings" button for permission errors (iOS/Android deep links)
+- [x] T111 [US4] Add retry buttons to all error views
+- [x] T112 [US4] Add context-specific help text for common errors (mDNS blocked, network issues)
 
 **Checkpoint**: Error handling should be comprehensive - all error scenarios have clear messages and recovery options
 

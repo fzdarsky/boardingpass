@@ -12,10 +12,14 @@
  * ```
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { createSRPService, AuthenticationResult } from '../services/auth/srp';
 import { sessionManager, SessionData } from '../services/auth/session';
 import { createAPIClient } from '../services/api/client';
+import { toAppError, isTimeoutError, isAuthError, isNetworkError, AppError } from '../utils/error-messages';
+
+// Progressive delay thresholds (FR-038)
+const PROGRESSIVE_DELAYS = [1000, 2000, 5000, 60000]; // 1s, 2s, 5s, 60s
 
 /**
  * Authentication state
@@ -25,7 +29,9 @@ export interface AuthState {
   isAuthenticating: boolean;
   sessionToken: string | null;
   expiresAt: Date | null;
-  error: Error | null;
+  error: AppError | null;
+  failureCount: number;
+  nextRetryDelay: number;
 }
 
 /**
@@ -67,6 +73,11 @@ export interface UseAuthResult extends AuthState {
    * Clear the current error
    */
   clearError: () => void;
+
+  /**
+   * Retry authentication (only available when error exists)
+   */
+  retry: (() => Promise<void>) | undefined;
 }
 
 /**
@@ -82,7 +93,17 @@ export function useAuth(deviceId: string): UseAuthResult {
     sessionToken: null,
     expiresAt: null,
     error: null,
+    failureCount: 0,
+    nextRetryDelay: 0,
   });
+
+  // Track last auth attempt details for retry
+  const lastAuthAttempt = useRef<{
+    host: string;
+    port: number;
+    connectionCode: string;
+    username: string;
+  } | null>(null);
 
   /**
    * Load existing session on mount
@@ -134,7 +155,23 @@ export function useAuth(deviceId: string): UseAuthResult {
           host,
           port,
           username,
+          failureCount: state.failureCount,
         });
+      }
+
+      // Store for retry
+      lastAuthAttempt.current = { host, port, connectionCode, username };
+
+      // Apply progressive delay for failed attempts (FR-038)
+      if (state.failureCount > 0) {
+        const delayIndex = Math.min(state.failureCount - 1, PROGRESSIVE_DELAYS.length - 1);
+        const delay = PROGRESSIVE_DELAYS[delayIndex];
+
+        if (__DEV__) {
+          console.log(`[useAuth] Applying progressive delay: ${delay}ms (attempt ${state.failureCount + 1})`);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
 
       // Set authenticating state
@@ -157,14 +194,19 @@ export function useAuth(deviceId: string): UseAuthResult {
         // Store session securely
         await sessionManager.storeSession(deviceId, result.sessionToken, result.expiresAt);
 
-        // Update state
+        // Update state - clear failure count on success
         setState({
           isAuthenticated: true,
           isAuthenticating: false,
           sessionToken: result.sessionToken,
           expiresAt: result.expiresAt,
           error: null,
+          failureCount: 0,
+          nextRetryDelay: 0,
         });
+
+        // Clear last attempt
+        lastAuthAttempt.current = null;
 
         if (__DEV__) {
           // eslint-disable-next-line no-console
@@ -176,24 +218,51 @@ export function useAuth(deviceId: string): UseAuthResult {
 
         return result;
       } catch (error) {
-        const authError = error instanceof Error ? error : new Error('Authentication failed');
+        const newFailureCount = state.failureCount + 1;
+        const nextDelayIndex = Math.min(newFailureCount - 1, PROGRESSIVE_DELAYS.length - 1);
+        const nextDelay = PROGRESSIVE_DELAYS[nextDelayIndex];
+
+        // Classify error type
+        let errorType: 'timeout' | 'auth' | 'network' | 'unknown' = 'unknown';
+        if (isTimeoutError(error)) {
+          errorType = 'timeout';
+        } else if (isAuthError(error)) {
+          errorType = 'auth';
+        } else if (isNetworkError(error)) {
+          errorType = 'network';
+        }
+
+        const appError = toAppError(error, errorType);
+        appError.context = {
+          ...appError.context,
+          operation: 'auth',
+          deviceId,
+          failureCount: newFailureCount,
+        };
 
         setState({
           isAuthenticated: false,
           isAuthenticating: false,
           sessionToken: null,
           expiresAt: null,
-          error: authError,
+          error: appError,
+          failureCount: newFailureCount,
+          nextRetryDelay: nextDelay,
         });
 
         if (__DEV__) {
-          console.error('[useAuth] Authentication failed:', error);
+          console.error('[useAuth] Authentication failed:', {
+            error: appError.message,
+            type: appError.type,
+            failureCount: newFailureCount,
+            nextRetryDelay: nextDelay,
+          });
         }
 
-        throw authError;
+        throw appError;
       }
     },
-    [deviceId]
+    [deviceId, state.failureCount]
   );
 
   /**
@@ -209,14 +278,19 @@ export function useAuth(deviceId: string): UseAuthResult {
       // Clear session from secure storage
       await sessionManager.clearSession(deviceId);
 
-      // Update state
+      // Update state - clear failure count
       setState({
         isAuthenticated: false,
         isAuthenticating: false,
         sessionToken: null,
         expiresAt: null,
         error: null,
+        failureCount: 0,
+        nextRetryDelay: 0,
       });
+
+      // Clear last attempt
+      lastAuthAttempt.current = null;
 
       if (__DEV__) {
         // eslint-disable-next-line no-console
@@ -279,6 +353,18 @@ export function useAuth(deviceId: string): UseAuthResult {
     }));
   }, []);
 
+  /**
+   * Retry authentication with last attempt params
+   */
+  const retry = useCallback(async (): Promise<void> => {
+    if (!lastAuthAttempt.current) {
+      throw new Error('No previous authentication attempt to retry');
+    }
+
+    const { host, port, connectionCode, username } = lastAuthAttempt.current;
+    await authenticate(host, port, connectionCode, username);
+  }, [authenticate]);
+
   return {
     ...state,
     authenticate,
@@ -286,6 +372,7 @@ export function useAuth(deviceId: string): UseAuthResult {
     checkSession,
     getToken,
     clearError,
+    retry: state.error ? retry : undefined,
   };
 }
 

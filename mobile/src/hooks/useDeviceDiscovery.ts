@@ -11,11 +11,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Device } from '@/types/device';
 import { getMDNSDiscoveryService } from '@/services/discovery/mdns';
 import { getFallbackIPService } from '@/services/discovery/fallback';
+import { toAppError, isNetworkError, AppError } from '@/utils/error-messages';
 
 export interface UseDeviceDiscoveryResult {
   devices: Device[];
   isScanning: boolean;
-  error: Error | null;
+  error: AppError | null;
+  errorCount: number;
+  retry: (() => void) | undefined;
   startDiscovery: () => void;
   stopDiscovery: () => void;
   refreshDevices: () => void;
@@ -28,7 +31,8 @@ export interface UseDeviceDiscoveryResult {
 export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   const [devices, setDevices] = useState<Device[]>([]);
   const [isScanning, setIsScanning] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<AppError | null>(null);
+  const [errorCount, setErrorCount] = useState(0);
 
   const mdnsService = useRef(getMDNSDiscoveryService());
   const fallbackService = useRef(getFallbackIPService());
@@ -130,7 +134,18 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       const cleanupRemoved = mdnsService.current.onDeviceRemoved(removeDevice);
       const cleanupError = mdnsService.current.onError(err => {
         console.error('mDNS error:', err);
-        setError(err);
+
+        // Convert to AppError with context
+        const appError = toAppError(err, isNetworkError(err) ? 'network' : 'unknown');
+        appError.context = {
+          ...appError.context,
+          service: 'mdns',
+          operation: 'discovery',
+        };
+
+        setError(appError);
+        setErrorCount(prev => prev + 1);
+        setIsScanning(false);
       });
 
       cleanupFunctions.current.push(cleanupFound, cleanupResolved, cleanupRemoved, cleanupError);
@@ -148,8 +163,14 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
         console.log('Discovery timeout reached');
       }, 10000);
     } catch (err) {
-      const discoveryError = err instanceof Error ? err : new Error('Discovery failed');
-      setError(discoveryError);
+      const appError = toAppError(err, isNetworkError(err) ? 'network' : 'unknown');
+      appError.context = {
+        ...appError.context,
+        operation: 'discovery',
+      };
+
+      setError(appError);
+      setErrorCount(prev => prev + 1);
       setIsScanning(false);
     }
   }, [isScanning, addOrUpdateDevice, removeDevice, checkFallback]);
@@ -184,11 +205,20 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
    * Refresh devices (re-scan)
    */
   const refreshDevices = useCallback(() => {
+    setError(null);
     stopDiscovery();
     setTimeout(() => {
       startDiscovery();
     }, 100);
   }, [stopDiscovery, startDiscovery]);
+
+  /**
+   * Retry after error
+   */
+  const retry = useCallback(() => {
+    setError(null);
+    refreshDevices();
+  }, [refreshDevices]);
 
   /**
    * Cleanup on unmount
@@ -208,6 +238,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
     devices: sortedDevices,
     isScanning,
     error,
+    errorCount,
+    retry: error ? retry : undefined,
     startDiscovery,
     stopDiscovery,
     refreshDevices,
