@@ -31,9 +31,9 @@ jobs:
 
       - name: Check generated code is up-to-date
         run: |
-          make generate
+          make generate-service
           if [ -n "$(git status --porcelain)" ]; then
-            echo "Error: Generated code is out of date. Please run 'make generate' and commit the changes."
+            echo "Error: Generated code is out of date. Please run 'make generate-service' and commit the changes."
             git status
             git diff
             exit 1

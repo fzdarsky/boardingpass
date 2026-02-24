@@ -24,6 +24,16 @@ See [quickstart.md](../specs/003-mobile-onboarding-app/quickstart.md) for detail
 
 ### Installation
 
+**Using Makefile (recommended from project root):**
+
+```bash
+make install-deps-app     # Install dependencies
+make generate-app         # Generate TypeScript types from OpenAPI spec
+make build-app-ios        # Generate iOS native project
+```
+
+**Or using npm directly:**
+
 ```bash
 # Install dependencies
 npm install
@@ -37,6 +47,16 @@ npx expo prebuild
 
 ### Running
 
+**Using Makefile (from project root):**
+
+```bash
+make run-app-ios         # iOS simulator
+make run-app-android     # Android emulator
+make run-app             # Default platform (macOS→iOS, Linux→Android)
+```
+
+**Or using npm:**
+
 ```bash
 # iOS simulator
 npm run ios
@@ -49,6 +69,48 @@ npm start
 ```
 
 ## Development Commands
+
+The BoardingPass project uses a consistent Makefile naming scheme. All targets follow the pattern: `{action}-app[-{platform}]`
+
+### Makefile Targets (run from project root)
+
+```bash
+# Installation & Setup
+make install-deps-app        # Install npm dependencies
+make generate-app            # Generate TypeScript types from OpenAPI
+
+# Building
+make build-app-ios           # Generate iOS native project (expo prebuild)
+make build-app-android       # Generate Android native project
+make build-app               # Generate both iOS and Android
+
+# Testing
+make test-unit-app           # Run unit tests
+make test-integration-app    # Run integration tests
+make test-e2e-app-ios        # Run E2E tests on iOS
+make test-e2e-app-android    # Run E2E tests on Android
+make test-contract-app       # Run contract tests
+make test-app                # Run all tests
+
+# Code Quality
+make lint-app                # Run ESLint
+
+# Running
+make run-app-ios             # Run on iOS simulator
+make run-app-android         # Run on Android emulator
+make run-app                 # Run on default platform
+
+# Cleaning
+make clean-cache-app         # Clear Metro cache (.expo, node_modules/.cache)
+make clean-native-app        # Remove native projects (ios/, android/)
+make clean-app               # Clean cache + native projects
+make clean-app-full          # Deep clean including node_modules
+
+# Troubleshooting Workflows
+make fix-app                 # Fix common issues (Xcode 26, deps, cache)
+make rebuild-app-ios         # Full rebuild: clean + build + run (iOS)
+make rebuild-app-android     # Full rebuild: clean + build + run (Android)
+```
 
 ### Testing
 
@@ -196,9 +258,19 @@ Configuration: `src/services/auth/srp.ts`
 
 If you see `cannot find 'TARGET_IPHONE_SIMULATOR' in scope` in `expo-dev-menu`:
 
+**Using Makefile (from project root):**
+
+```bash
+make fix-app         # Runs expo install --fix + clean + prebuild
+make run-app-ios     # Run on iOS
+```
+
+**Or manually:**
+
 ```bash
 # This is a known compatibility issue with Xcode 26+
 # First, ensure you have the latest Expo SDK 51 packages
+cd mobile
 npx expo install --fix
 
 # Then rebuild the iOS project
@@ -226,18 +298,40 @@ This can be caused by two issues:
 
 **1. Missing native dependencies:**
 
+**Using Makefile:**
+
 ```bash
-npm run typecheck          # Look for "Cannot find module 'expo-*'" errors
-npx expo install expo-haptics  # Install any missing modules
-rm -rf ios && npx expo prebuild --platform ios  # Rebuild native projects
-npm run ios                # Run again
+cd mobile && npm run typecheck    # Look for "Cannot find module 'expo-*'" errors
+cd mobile && npx expo install expo-haptics  # Install any missing modules
+make build-app-ios                # Rebuild native projects (from project root)
+make run-app-ios                  # Run again
 ```
 
-**Note**: Always run `npx expo prebuild` after installing new Expo native modules (expo-haptics, expo-camera, etc.) to regenerate native code.
+**Or manually:**
+
+```bash
+cd mobile
+npm run typecheck                 # Look for "Cannot find module 'expo-*'" errors
+npx expo install expo-haptics     # Install any missing modules
+rm -rf ios && npx expo prebuild --platform ios  # Rebuild native projects
+npm run ios                       # Run again
+```
+
+**Note**: Always run `make build-app-ios` (or `npx expo prebuild`) after installing new Expo native modules (expo-haptics, expo-camera, etc.) to regenerate native code.
 
 **2. Metro bundler cache issues (shows "Unable to resolve module ./index"):**
 
+**Using Makefile:**
+
 ```bash
+make clean-cache-app       # Clear Metro cache (from project root)
+make run-app-ios           # Restart with clear cache
+```
+
+**Or manually:**
+
+```bash
+cd mobile
 # Clear Metro cache and restart
 rm -rf .expo node_modules/.cache
 npx expo start --clear
@@ -260,23 +354,56 @@ config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
 config.resolver.unstable_enablePackageExports = true;
 ```
 
-Then clear cache and restart:
+Then clear cache and rebuild:
+
+**Using Makefile:**
 
 ```bash
-rm -rf .expo node_modules/.cache
-npx expo start --clear
+make clean-app         # Clear cache + native projects (from project root)
+make build-app-ios     # Regenerate iOS project
+make run-app-ios       # Run
+```
+
+**Or manually:**
+
+```bash
+cd mobile
+rm -rf .expo node_modules/.cache ios android
+npx expo prebuild --platform ios
+npm run ios
 ```
 
 ### Type errors after API changes
 
+**Using Makefile:**
+
 ```bash
-npm run generate:types    # Regenerate types
+make generate-app          # Regenerate types from OpenAPI (from project root)
+cd mobile && npm run typecheck  # Verify
+```
+
+**Or manually:**
+
+```bash
+cd mobile
+npm run generate:types     # Regenerate types
 npm run typecheck          # Verify
 ```
 
 ### Native module not found
 
+**Using Makefile:**
+
 ```bash
+make clean-native-app      # Remove ios/android (from project root)
+make build-app-ios         # Regenerate native projects
+make run-app-ios           # Rebuild
+```
+
+**Or manually:**
+
+```bash
+cd mobile
 npx expo prebuild --clean  # Regenerate native projects
 npm run ios                # Rebuild
 ```
@@ -307,6 +434,17 @@ npm run ios                # Rebuild
 ## Contributing
 
 Before submitting changes:
+
+**Using Makefile (from project root):**
+
+1. `make generate-app` - Regenerate types if OpenAPI changed
+2. `cd mobile && npm run typecheck` - No TypeScript errors
+3. `make lint-app` - No linting errors
+4. `make test-app` - All tests pass
+5. Test on both iOS and Android (`make run-app-ios`, `make run-app-android`)
+6. Update documentation
+
+**Or using npm:**
 
 1. `npm run typecheck` - No TypeScript errors
 2. `npm run lint` - No linting errors

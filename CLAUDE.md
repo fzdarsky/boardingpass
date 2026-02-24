@@ -8,15 +8,65 @@ BoardingPass is a lightweight, ephemeral bootstrap service for headless Linux de
 
 ## Build & Development Commands
 
+BoardingPass uses a consistent Makefile naming scheme across all components: service, CLI, and mobile app.
+
+### Common Commands
+
 ```bash
-make build      # Build binary to _output/bin/boardingpass
-make test       # Run all tests with race detection
-make lint       # Run golangci-lint (v2 config, includes gosec)
-make generate   # Regenerate all generated code (mocks)
-make coverage   # Generate coverage report to _output/coverage/
-make clean      # Remove _output/ directory
-make deps       # Download and verify dependencies
+# Quick feedback loop (default target)
+make all                  # lint + unit tests + build (all components)
+
+# Component-specific builds
+make build-service        # Build service binary to _output/bin/boardingpass
+make build-cli            # Build CLI binary to _output/bin/boarding
+make build-app-ios        # Generate iOS native project (expo prebuild)
+make build-app-android    # Generate Android native project
+make build-app            # Generate both iOS and Android projects
+make build-all            # Build all components
+
+# Testing
+make test-unit-service    # Run service unit tests
+make test-unit-app        # Run mobile app unit tests
+make test-unit-all        # Run all unit tests
+make test-service         # Run all service tests (unit + integration + e2e + contract)
+make test-app             # Run all app tests
+make test-all             # Run all tests for all components
+
+# Code quality
+make lint-service         # Run golangci-lint on service
+make lint-app             # Run ESLint + react-doctor on mobile app
+make lint-all             # Lint all components
+
+# Code generation
+make generate-service     # Regenerate Go mocks
+make generate-app         # Regenerate TypeScript types from OpenAPI
+make generate-all         # Regenerate all code
+
+# Cleaning
+make clean-app            # Clear Metro cache + native projects
+make clean-all            # Clean all components
+make clean-all-full       # Deep clean including node_modules
+
+# App-specific workflows (troubleshooting)
+make clean-cache-app      # Clear Metro cache only
+make clean-native-app     # Remove ios/android only
+make rebuild-app-ios      # Full rebuild: clean + build + run (iOS)
+make fix-app              # Fix common issues (Xcode 26, deps, cache)
+
+# Other
+make coverage             # Generate coverage report to _output/coverage/
+make deps                 # Download and verify Go dependencies
+make release              # Build release packages (RPM, DEB, archives)
+make deploy               # Deploy service to bootc container
 ```
+
+**Pattern**: `{action}-{component}[-{variant}]`
+
+- **Components**: `service`, `cli`, `app`, `all`
+- **Actions**: `install-deps`, `generate`, `lint`, `build`, `test-*`, `run`, `clean`
+- **Platform variants**: `-ios`, `-android` (for app targets)
+
+Run `make help` to see all available targets.
 
 The project uses Go 1.25+ with CGO disabled for static linking. GoReleaser handles cross-compilation and packaging (outputs to `_output/dist/`).
 
@@ -100,11 +150,12 @@ Available slash commands: `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`,
 
 ## Generating
 
-After changing mocked interfaces and before committing, run `make generate` to update mocks.
+After changing mocked interfaces and before committing, run `make generate-service` to update mocks.
+For mobile app type generation, run `make generate-app` to regenerate TypeScript types from OpenAPI spec.
 
 ## Linting
 
-After completing work on a task or list of tasks, **always** run `make lint` and fix **all** errors.
+After completing work on a task or list of tasks, **always** run `make lint-all` (or component-specific `make lint-service` / `make lint-app`) and fix **all** errors.
 
 ## Testing
 
@@ -117,11 +168,14 @@ Tests follow standard Go conventions:
 
 Run tests:
 
-- All tests: `make test`
-- Single package: `go test -v ./internal/auth`
-- Single test: `go test -v -run TestName ./internal/auth`
+- All tests: `make test-all` (all components, all test types)
+- Service tests: `make test-service` (unit + integration + e2e + contract)
+- App tests: `make test-app` (unit + integration + e2e + contract)
+- Unit tests only: `make test-unit-all` (fast feedback)
+- Single Go package: `go test -v ./internal/auth`
+- Single Go test: `go test -v -run TestName ./internal/auth`
 
-After completing work on a task or list of tasks, **always** run `make test` and fix **all** errors.
+After completing work on a task or list of tasks, **always** run `make test-all` (or component-specific tests) and fix **all** errors.
 
 ## Configuration Files
 
@@ -141,14 +195,23 @@ The `mobile/` directory contains a React Native mobile application for discoveri
 
 ### Quick Start
 
+Using Makefile (recommended):
+
+```bash
+make install-deps-app          # Install dependencies
+make generate-app              # Generate TypeScript types from OpenAPI spec
+make build-app-ios             # Generate iOS native project
+make run-app-ios               # Run on iOS simulator
+```
+
+Or using npm directly:
+
 ```bash
 cd mobile
 npm install                    # Install dependencies
 npm run generate:types         # Generate TypeScript types from OpenAPI spec
-npx expo prebuild              # Generate ios/ and android/ directories
-npm start                      # Start Metro bundler
+npx expo prebuild --platform ios  # Generate ios/ directory
 npm run ios                    # Run on iOS simulator
-npm run android                # Run on Android emulator
 ```
 
 ### Project Structure
@@ -362,34 +425,49 @@ Implementation: `mobile/src/services/certificates/`
 **Xcode 26+ build errors (TARGET_IPHONE_SIMULATOR):**
 
 ```bash
-# Ensure latest packages and rebuild
+# Use Makefile target to fix common issues
+make fix-app       # Runs expo install --fix + clean + prebuild
+make run-app-ios   # Run on iOS
+```
+
+Or manually:
+
+```bash
+cd mobile
 npx expo install --fix
 rm -rf ios && npx expo prebuild --platform ios
 npm run ios
 ```
 
-If errors persist, manually patch `node_modules/expo-dev-menu/ios/DevMenuViewController.swift` to use `#if targetEnvironment(simulator)` instead of `TARGET_IPHONE_SIMULATOR`. See mobile/README.md for details.
+If errors persist, manually patch `node_modules/expo-dev-menu/ios/DevMenuViewController.swift` to use `#if targetEnvironment(simulator)` instead of `TARGET_IPHONE_SIMULATOR`. See [mobile/README.md](mobile/README.md) for details.
 
 **Missing native modules (e.g., expo-haptics):**
 
 ```bash
-npm run typecheck             # Identify missing modules
-npx expo install expo-haptics # Install missing module
-npx expo prebuild --clean     # Rebuild native projects (REQUIRED)
-npm run ios                   # Run app
+cd mobile
+npm run typecheck                # Identify missing modules
+npx expo install expo-haptics    # Install missing module
+make build-app-ios               # Rebuild native projects (REQUIRED)
+make run-app-ios                 # Run app
 ```
 
-**IMPORTANT**: Always run `npx expo prebuild` after installing native Expo modules. Unlike JavaScript-only packages, native modules require regenerating the native projects.
+**IMPORTANT**: Always run `make build-app-ios` (or `npx expo prebuild`) after installing native Expo modules. Unlike JavaScript-only packages, native modules require regenerating the native projects.
 
 **Metro bundler cache issues ("Unable to resolve module ./index"):**
 
 ```bash
-# Clear Metro cache and restart
+# Use Makefile target for quick cache clear
+make clean-cache-app   # Clears .expo and node_modules/.cache
+make run-app-ios       # Restart with clear cache
+```
+
+Or manually:
+
+```bash
+cd mobile
 rm -rf .expo node_modules/.cache
 npx expo start --clear
-
-# In another terminal, rebuild
-npm run ios
+# In another terminal: npm run ios
 ```
 
 Common after installing native modules, running prebuild, or switching branches.
@@ -403,35 +481,45 @@ Occurs when packages (axios, etc.) load Node.js modules instead of React Native 
 # config.resolver.resolverMainFields = ['react-native', 'browser', 'main']
 # config.resolver.unstable_enablePackageExports = true
 
-# Then clear cache and restart
-rm -rf .expo node_modules/.cache
-npx expo start --clear
+# Then clear cache and rebuild
+make clean-app         # Clears cache + native projects
+make build-app-ios     # Regenerate iOS project
+make run-app-ios       # Run
 ```
 
 **Type errors after API changes:**
 
 ```bash
-npm run generate:types        # Regenerate types from OpenAPI spec
-npm run typecheck             # Verify no type errors
+make generate-app      # Regenerate types from OpenAPI spec
+cd mobile && npm run typecheck  # Verify no type errors
 ```
 
 **Native module not found:**
 
 ```bash
-npx expo prebuild --clean     # Regenerate native projects
-npm run ios                   # Rebuild app
+make clean-native-app  # Remove ios/android
+make build-app-ios     # Regenerate native projects
+make run-app-ios       # Rebuild app
 ```
 
 **Tests failing:**
 
 ```bash
-npm test -- --clearCache      # Clear Jest cache
-npm test                      # Re-run tests
+cd mobile
+npm test -- --clearCache  # Clear Jest cache
+npm test                  # Re-run tests
+```
+
+Or use Makefile:
+
+```bash
+make test-unit-app     # Run app unit tests
 ```
 
 **Bundle size too large:**
 
 ```bash
+cd mobile
 npx react-native-bundle-visualizer  # Analyze bundle
 # Consider code splitting or removing unused dependencies
 ```
