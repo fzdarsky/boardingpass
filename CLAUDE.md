@@ -359,6 +359,55 @@ Implementation: `mobile/src/services/certificates/`
 
 ### Troubleshooting
 
+**Xcode 26+ build errors (TARGET_IPHONE_SIMULATOR):**
+
+```bash
+# Ensure latest packages and rebuild
+npx expo install --fix
+rm -rf ios && npx expo prebuild --platform ios
+npm run ios
+```
+
+If errors persist, manually patch `node_modules/expo-dev-menu/ios/DevMenuViewController.swift` to use `#if targetEnvironment(simulator)` instead of `TARGET_IPHONE_SIMULATOR`. See mobile/README.md for details.
+
+**Missing native modules (e.g., expo-haptics):**
+
+```bash
+npm run typecheck             # Identify missing modules
+npx expo install expo-haptics # Install missing module
+npx expo prebuild --clean     # Rebuild native projects (REQUIRED)
+npm run ios                   # Run app
+```
+
+**IMPORTANT**: Always run `npx expo prebuild` after installing native Expo modules. Unlike JavaScript-only packages, native modules require regenerating the native projects.
+
+**Metro bundler cache issues ("Unable to resolve module ./index"):**
+
+```bash
+# Clear Metro cache and restart
+rm -rf .expo node_modules/.cache
+npx expo start --clear
+
+# In another terminal, rebuild
+npm run ios
+```
+
+Common after installing native modules, running prebuild, or switching branches.
+
+**"Unable to resolve module crypto" error:**
+
+Occurs when packages (axios, etc.) load Node.js modules instead of React Native versions.
+
+```bash
+# Ensure metro.config.js has:
+# config.resolver.resolverMainFields = ['react-native', 'browser', 'main']
+# config.resolver.unstable_enablePackageExports = true
+
+# Then clear cache and restart
+rm -rf .expo node_modules/.cache
+npx expo start --clear
+```
+
 **Type errors after API changes:**
 
 ```bash

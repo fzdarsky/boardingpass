@@ -17,9 +17,9 @@ See [quickstart.md](../specs/003-mobile-onboarding-app/quickstart.md) for detail
 
 ### Prerequisites
 
-- Node.js 18+ LTS
-- npm 9+
-- For iOS: Xcode 15+, CocoaPods
+- Node.js 20+ LTS
+- npm 10+
+- For iOS: Xcode 15-26 (tested with 26.2), CocoaPods
 - For Android: Android Studio, JDK 17, Android SDK API 29+
 
 ### Installation
@@ -108,7 +108,7 @@ eas build --platform android
 
 ## Project Structure
 
-```
+```text
 mobile/
 ├── app/                      # Expo Router screens (file-based routing)
 │   ├── index.tsx            # Device discovery screen
@@ -191,6 +191,81 @@ EXPO_PUBLIC_MDNS_SERVICE_NAME=_boardingpass._tcp
 Configuration: `src/services/auth/srp.ts`
 
 ## Troubleshooting
+
+### Xcode 26+ build errors (iOS)
+
+If you see `cannot find 'TARGET_IPHONE_SIMULATOR' in scope` in `expo-dev-menu`:
+
+```bash
+# This is a known compatibility issue with Xcode 26+
+# First, ensure you have the latest Expo SDK 51 packages
+npx expo install --fix
+
+# Then rebuild the iOS project
+rm -rf ios && npx expo prebuild --platform ios
+npm run ios
+```
+
+If the error persists, you may need to manually patch `node_modules/expo-dev-menu/ios/DevMenuViewController.swift` line 66:
+
+```swift
+# Replace:
+let isSimulator = TARGET_IPHONE_SIMULATOR > 0
+
+# With:
+#if targetEnvironment(simulator)
+let isSimulator = true
+#else
+let isSimulator = false
+#endif
+```
+
+### "Problem loading the project" error
+
+This can be caused by two issues:
+
+**1. Missing native dependencies:**
+
+```bash
+npm run typecheck          # Look for "Cannot find module 'expo-*'" errors
+npx expo install expo-haptics  # Install any missing modules
+rm -rf ios && npx expo prebuild --platform ios  # Rebuild native projects
+npm run ios                # Run again
+```
+
+**Note**: Always run `npx expo prebuild` after installing new Expo native modules (expo-haptics, expo-camera, etc.) to regenerate native code.
+
+**2. Metro bundler cache issues (shows "Unable to resolve module ./index"):**
+
+```bash
+# Clear Metro cache and restart
+rm -rf .expo node_modules/.cache
+npx expo start --clear
+
+# In another terminal, rebuild the app
+npm run ios
+```
+
+This is common after installing native modules, running prebuild, or switching git branches.
+
+### "Unable to resolve module crypto" error
+
+This occurs when packages (like axios) try to load Node.js-specific modules instead of browser/React Native versions.
+
+**Solution**: Ensure [metro.config.js](metro.config.js) has proper package resolution:
+
+```javascript
+// Configure resolver to use React Native and browser-compatible modules
+config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
+config.resolver.unstable_enablePackageExports = true;
+```
+
+Then clear cache and restart:
+
+```bash
+rm -rf .expo node_modules/.cache
+npx expo start --clear
+```
 
 ### Type errors after API changes
 
