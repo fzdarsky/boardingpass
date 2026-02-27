@@ -67,9 +67,7 @@ export default function DeviceDetailScreen() {
         <Stack.Screen
           options={{
             title: 'Device Details',
-            headerLeft: () => (
-              <Appbar.BackAction onPress={() => router.back()} />
-            ),
+            headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
           }}
         />
         <View style={styles.errorContainer}>
@@ -92,9 +90,7 @@ export default function DeviceDetailScreen() {
       <Stack.Screen
         options={{
           title: `Device: ${id}`,
-          headerLeft: () => (
-            <Appbar.BackAction onPress={() => router.back()} />
-          ),
+          headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
           headerRight: () => (
             <Appbar.Action
               icon="refresh"
@@ -117,9 +113,7 @@ export default function DeviceDetailScreen() {
         }
       >
         {/* Initial Loading State with Skeleton (T090, T128) */}
-        {deviceInfo.isLoading && !availability.hasAnyData && (
-          <SkeletonDeviceDetail />
-        )}
+        {deviceInfo.isLoading && !availability.hasAnyData && <SkeletonDeviceDetail />}
 
         {/* Error Banner for Partial Data (T093) */}
         {availability.hasPartialData && (

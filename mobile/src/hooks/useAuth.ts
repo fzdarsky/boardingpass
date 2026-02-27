@@ -16,7 +16,13 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { createSRPService, AuthenticationResult } from '../services/auth/srp';
 import { sessionManager, SessionData } from '../services/auth/session';
 import { createAPIClient } from '../services/api/client';
-import { toAppError, isTimeoutError, isAuthError, isNetworkError, AppError } from '../utils/error-messages';
+import {
+  toAppError,
+  isTimeoutError,
+  isAuthError,
+  isNetworkError,
+  AppError,
+} from '../utils/error-messages';
 
 // Progressive delay thresholds (FR-038)
 const PROGRESSIVE_DELAYS = [1000, 2000, 5000, 60000]; // 1s, 2s, 5s, 60s
@@ -168,7 +174,9 @@ export function useAuth(deviceId: string): UseAuthResult {
         const delay = PROGRESSIVE_DELAYS[delayIndex];
 
         if (__DEV__) {
-          console.log(`[useAuth] Applying progressive delay: ${delay}ms (attempt ${state.failureCount + 1})`);
+          console.log(
+            `[useAuth] Applying progressive delay: ${delay}ms (attempt ${state.failureCount + 1})`
+          );
         }
 
         await new Promise(resolve => setTimeout(resolve, delay));

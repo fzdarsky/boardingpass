@@ -23,6 +23,7 @@ export interface UseDeviceDiscoveryResult {
   startDiscovery: () => void;
   stopDiscovery: () => void;
   refreshDevices: () => void;
+  addManualDevice: (ip: string, port: number) => Device;
 }
 
 /**
@@ -136,7 +137,9 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       const cleanupError = mdnsService.current.onError(err => {
         // On iOS, mDNS errors are expected on simulator - handle gracefully
         if (Platform.OS === 'ios') {
-          console.warn('mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.');
+          console.warn(
+            'mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.'
+          );
           // Don't show error to user - just stop scanning and clear any previous errors
           setError(null);
           setIsScanning(false);
@@ -176,7 +179,9 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
     } catch (err) {
       // On iOS, mDNS errors are expected on simulator - handle gracefully
       if (Platform.OS === 'ios') {
-        console.warn('mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.');
+        console.warn(
+          'mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.'
+        );
         setError(null); // Clear any previous errors
         setIsScanning(false);
         // Still check fallback IP
@@ -242,6 +247,33 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   }, [refreshDevices]);
 
   /**
+   * Add a device manually by IP address and port.
+   *
+   * No HTTPS probe is performed because React Native's native TLS stack
+   * rejects self-signed certificates at the handshake level, making probes
+   * fail against BoardingPass devices. Instead, the device is added directly
+   * and reachability is verified when the user initiates authentication.
+   */
+  const addManualDevice = useCallback(
+    (ip: string, port: number): Device => {
+      const manualDevice: Device = {
+        id: `manual:${ip}:${port}`,
+        name: `Device (${ip})`,
+        host: ip,
+        port,
+        addresses: [ip],
+        discoveryMethod: 'manual',
+        status: 'online',
+        lastSeen: new Date(),
+      };
+
+      addOrUpdateDevice(manualDevice);
+      return manualDevice;
+    },
+    [addOrUpdateDevice]
+  );
+
+  /**
    * Cleanup on unmount
    */
   useEffect(() => {
@@ -264,5 +296,6 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
     startDiscovery,
     stopDiscovery,
     refreshDevices,
+    addManualDevice,
   };
 }

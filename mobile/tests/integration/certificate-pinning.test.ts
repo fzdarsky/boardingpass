@@ -295,9 +295,7 @@ describe('Certificate Pinning Integration', () => {
       const { result } = renderHook(() => useCertificateValidation());
 
       // Mock storage error
-      (SecureStore.setItemAsync as jest.Mock).mockRejectedValue(
-        new Error('Storage unavailable')
-      );
+      (SecureStore.setItemAsync as jest.Mock).mockRejectedValue(new Error('Storage unavailable'));
 
       // Try to pin a certificate
       await act(async () => {
@@ -355,12 +353,7 @@ describe('Certificate Pinning Integration', () => {
       let validatingDuringFetch = false;
 
       await act(async () => {
-        const promise = result.current.validateCertificate(
-          mockDeviceId,
-          mockHost,
-          mockPort,
-          true
-        );
+        const promise = result.current.validateCertificate(mockDeviceId, mockHost, mockPort, true);
 
         // Check if validating flag is set during async operation
         validatingDuringFetch = result.current.isValidating;

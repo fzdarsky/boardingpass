@@ -200,10 +200,14 @@ export function useDeviceInfo(
       );
     } else if (!hasSystemInfo) {
       // Only /info failed
-      newState.error = new Error(`Failed to fetch system information: ${newState.errors?.info?.message}`);
+      newState.error = new Error(
+        `Failed to fetch system information: ${newState.errors?.info?.message}`
+      );
     } else if (!hasNetworkConfig) {
       // Only /network failed
-      newState.error = new Error(`Failed to fetch network configuration: ${newState.errors?.network?.message}`);
+      newState.error = new Error(
+        `Failed to fetch network configuration: ${newState.errors?.network?.message}`
+      );
     } else {
       // Both succeeded
       newState.error = null;

@@ -28,9 +28,7 @@ export interface CertificateValidationResult {
  * Manages certificate pinning and validation for device connections.
  */
 export class CertificateValidationService {
-  constructor(
-    private storage: ReturnType<typeof useSecureStorage>
-  ) {}
+  constructor(private storage: ReturnType<typeof useSecureStorage>) {}
 
   /**
    * Validate certificate for device connection

@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     console.error('ErrorBoundary caught error:', error, errorInfo);
 
     // Track error count
-    this.setState((prev) => ({
+    this.setState(prev => ({
       errorCount: prev.errorCount + 1,
     }));
 
@@ -109,8 +109,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 <View style={styles.warningBox}>
                   <Icon source="alert" size={20} color="#FF9800" />
                   <Text style={styles.warningText}>
-                    This error has occurred {this.state.errorCount} times. If it persists, try
-                    going back or restarting the app.
+                    This error has occurred {this.state.errorCount} times. If it persists, try going
+                    back or restarting the app.
                   </Text>
                 </View>
               )}

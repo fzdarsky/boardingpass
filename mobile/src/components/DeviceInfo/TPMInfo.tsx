@@ -101,8 +101,8 @@ export function TPMInfo({ tpmInfo }: TPMInfoProps) {
         {/* No TPM Message */}
         {!hasTPM && (
           <Text variant="bodyMedium" style={styles.noTPMText}>
-            This device does not have a Trusted Platform Module. Hardware-based security
-            features may be limited.
+            This device does not have a Trusted Platform Module. Hardware-based security features
+            may be limited.
           </Text>
         )}
       </Card.Content>

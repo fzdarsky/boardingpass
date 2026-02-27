@@ -51,7 +51,9 @@ export class MDNSDiscoveryService {
     } catch (error) {
       // On iOS, mDNS may fail on simulator - handle gracefully
       if (Platform.OS === 'ios') {
-        console.warn('mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.');
+        console.warn(
+          'mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.'
+        );
         // Don't throw - allow app to continue with fallback discovery
         this.isScanning = false;
         return;

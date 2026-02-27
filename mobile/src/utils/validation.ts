@@ -113,6 +113,63 @@ export function isValidURL(url: string): boolean {
 }
 
 /**
+ * IPv4 address with optional port validation pattern
+ * Matches: 192.168.1.100 or 192.168.1.100:8443
+ */
+const IPV4_WITH_PORT_PATTERN = /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}(:\d{1,5})?$/;
+
+/**
+ * Parse and validate a host:port string for manual device entry.
+ *
+ * Accepted formats:
+ *   "192.168.1.100"       → { host: "192.168.1.100", port: 8443 }
+ *   "192.168.1.100:9443"  → { host: "192.168.1.100", port: 9443 }
+ */
+export function parseAndValidateHostPort(
+  input: string,
+  defaultPort: number = 8443
+): { valid: boolean; host?: string; port?: number; error?: string } {
+  const trimmed = sanitizeInput(input);
+
+  if (trimmed.length === 0) {
+    return { valid: false, error: 'Address cannot be empty' };
+  }
+
+  // Validate against IPv4 pattern with optional port
+  if (!IPV4_WITH_PORT_PATTERN.test(trimmed)) {
+    return { valid: false, error: 'Invalid IPv4 address format' };
+  }
+
+  // Extract host and port
+  const colonIndex = trimmed.lastIndexOf(':');
+  let host: string;
+  let port: number = defaultPort;
+
+  // Check if there's a port (colon after the IP, not part of it)
+  // IPv4 has exactly 3 dots, so colon after 4th octet is the port separator
+  const dotCount = (trimmed.match(/\./g) || []).length;
+  if (colonIndex > -1 && dotCount === 3) {
+    const afterLastDot = trimmed.lastIndexOf('.');
+    if (colonIndex > afterLastDot) {
+      // Colon is after the last dot, so it's a port separator
+      host = trimmed.substring(0, colonIndex);
+      const portStr = trimmed.substring(colonIndex + 1);
+      port = parseInt(portStr, 10);
+
+      if (!isValidPort(port)) {
+        return { valid: false, error: 'Port must be between 1 and 65535' };
+      }
+    } else {
+      host = trimmed;
+    }
+  } else {
+    host = trimmed;
+  }
+
+  return { valid: true, host, port };
+}
+
+/**
  * Sanitize user input (remove dangerous characters)
  */
 export function sanitizeInput(input: string): string {

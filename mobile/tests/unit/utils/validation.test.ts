@@ -16,6 +16,7 @@ import {
   isValidDeviceName,
   sanitizeInput,
   validateAndSanitizeConnectionCode,
+  parseAndValidateHostPort,
 } from '../../../src/utils/validation';
 
 describe('IP Address Validation', () => {
@@ -104,6 +105,102 @@ describe('Port Validation', () => {
       expect(isValidPort(65536)).toBe(false);
       expect(isValidPort(-1)).toBe(false);
       expect(isValidPort(1.5)).toBe(false);
+    });
+  });
+});
+
+describe('Host:Port Parsing', () => {
+  describe('parseAndValidateHostPort', () => {
+    it('should parse IPv4 address without port (default 8443)', () => {
+      const result = parseAndValidateHostPort('192.168.1.100');
+      expect(result.valid).toBe(true);
+      expect(result.host).toBe('192.168.1.100');
+      expect(result.port).toBe(8443);
+    });
+
+    it('should parse IPv4 address with port', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:9443');
+      expect(result.valid).toBe(true);
+      expect(result.host).toBe('192.168.1.100');
+      expect(result.port).toBe(9443);
+    });
+
+    it('should accept custom default port', () => {
+      const result = parseAndValidateHostPort('192.168.1.100', 443);
+      expect(result.valid).toBe(true);
+      expect(result.port).toBe(443);
+    });
+
+    it('should reject empty input', () => {
+      const result = parseAndValidateHostPort('');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Address cannot be empty');
+    });
+
+    it('should reject whitespace-only input', () => {
+      const result = parseAndValidateHostPort('   ');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Address cannot be empty');
+    });
+
+    it('should reject invalid IPv4 format', () => {
+      expect(parseAndValidateHostPort('192').valid).toBe(false);
+      expect(parseAndValidateHostPort('192.168').valid).toBe(false);
+      expect(parseAndValidateHostPort('192.168.1').valid).toBe(false);
+      expect(parseAndValidateHostPort('192.168.1.1.1').valid).toBe(false);
+      expect(parseAndValidateHostPort('256.1.1.1').valid).toBe(false);
+      expect(parseAndValidateHostPort('invalid!host').valid).toBe(false);
+      expect(parseAndValidateHostPort('mydevice.local').valid).toBe(false);
+    });
+
+    it('should reject out-of-range port', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:99999');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Port must be between 1 and 65535');
+    });
+
+    it('should reject port 0', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:0');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Port must be between 1 and 65535');
+    });
+
+    it('should handle whitespace around input', () => {
+      const result = parseAndValidateHostPort('  192.168.1.100  ');
+      expect(result.valid).toBe(true);
+      expect(result.host).toBe('192.168.1.100');
+    });
+
+    it('should reject trailing colon with no port', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Invalid IPv4 address format');
+    });
+
+    it('should reject non-numeric port', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:abc');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Invalid IPv4 address format');
+    });
+
+    it('should accept port 1 (minimum)', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:1');
+      expect(result.valid).toBe(true);
+      expect(result.port).toBe(1);
+    });
+
+    it('should accept port 65535 (maximum)', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:65535');
+      expect(result.valid).toBe(true);
+      expect(result.port).toBe(65535);
+    });
+
+    it('should validate various valid IPv4 addresses', () => {
+      expect(parseAndValidateHostPort('10.0.0.1').valid).toBe(true);
+      expect(parseAndValidateHostPort('172.16.0.1').valid).toBe(true);
+      expect(parseAndValidateHostPort('255.255.255.255').valid).toBe(true);
+      expect(parseAndValidateHostPort('0.0.0.0').valid).toBe(true);
+      expect(parseAndValidateHostPort('1.1.1.1').valid).toBe(true);
     });
   });
 });

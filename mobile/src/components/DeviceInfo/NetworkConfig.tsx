@@ -10,7 +10,10 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Card, Text, List, Chip, Divider, useTheme } from 'react-native-paper';
-import type { NetworkConfig as NetworkConfigType, NetworkInterface } from '../../services/api/network';
+import type {
+  NetworkConfig as NetworkConfigType,
+  NetworkInterface,
+} from '../../services/api/network';
 import {
   isInterfaceUp,
   formatMACAddress,
@@ -83,7 +86,11 @@ interface NetworkInterfaceItemProps {
  *
  * Displays a single network interface with status indicator, MAC address, and IP addresses.
  */
-function NetworkInterfaceItem({ interface: iface, showStatusIndicator, theme }: NetworkInterfaceItemProps) {
+function NetworkInterfaceItem({
+  interface: iface,
+  showStatusIndicator,
+  theme,
+}: NetworkInterfaceItemProps) {
   const isUp = isInterfaceUp(iface);
   const statusColor = isUp ? '#4CAF50' : '#F44336'; // Green : Red (T095)
   const typeHint = getInterfaceTypeHint(iface.name);
@@ -97,12 +104,7 @@ function NetworkInterfaceItem({ interface: iface, showStatusIndicator, theme }: 
       {/* Interface header with status indicator */}
       <View style={styles.interfaceHeader}>
         {showStatusIndicator && (
-          <View
-            style={[
-              styles.statusIndicator,
-              { backgroundColor: statusColor },
-            ]}
-          />
+          <View style={[styles.statusIndicator, { backgroundColor: statusColor }]} />
         )}
         <View style={styles.interfaceTitle}>
           <Text variant="titleMedium" style={styles.interfaceName}>
@@ -115,10 +117,7 @@ function NetworkInterfaceItem({ interface: iface, showStatusIndicator, theme }: 
         <Chip
           mode="outlined"
           compact
-          style={[
-            styles.statusChip,
-            isUp && { borderColor: statusColor },
-          ]}
+          style={[styles.statusChip, isUp && { borderColor: statusColor }]}
           textStyle={[
             styles.statusChipText,
             { color: isUp ? statusColor : theme.colors.onSurfaceVariant },

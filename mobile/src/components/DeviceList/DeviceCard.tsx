@@ -11,7 +11,7 @@
 
 import React, { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
-import { Card, Text, Badge, IconButton, Portal, Modal } from 'react-native-paper';
+import { Card, Text, Badge, IconButton, Portal, Modal, useTheme } from 'react-native-paper';
 import { Device, DeviceStatus } from '@/types/device';
 import { CertificateStatusIndicator } from '../CertificateInfo/StatusIndicator';
 import { CertificateInfoDisplay } from '../CertificateInfo';
@@ -28,11 +28,20 @@ export function DeviceCard({
   device,
   onPress,
   showDuplicateIndicator = false,
-  showCertificateStatus = true
+  showCertificateStatus = true,
 }: DeviceCardProps) {
+  const theme = useTheme();
   const [showCertModal, setShowCertModal] = useState(false);
   const statusConfig = getStatusConfig(device.status);
   const discoveryBadgeColor = getDiscoveryMethodColor(device.discoveryMethod);
+
+  // Dynamic styles that depend on theme
+  const dynamicStyles = {
+    secondaryText: { color: theme.colors.onSurfaceVariant },
+    primaryText: { color: theme.colors.onSurface },
+    subtleBackground: { backgroundColor: theme.colors.surfaceVariant },
+    modalBackground: { backgroundColor: theme.colors.surface },
+  };
 
   // Wrap onPress with haptic feedback (T129)
   const handlePress = async () => {
@@ -53,14 +62,14 @@ export function DeviceCard({
                 {device.name}
               </Text>
               {showDuplicateIndicator && (
-                <Text variant="bodySmall" style={styles.ipAddress}>
+                <Text variant="bodySmall" style={[styles.ipAddress, dynamicStyles.secondaryText]}>
                   {device.host}
                 </Text>
               )}
             </View>
             <View style={styles.statusContainer}>
               <View style={[styles.statusIndicator, { backgroundColor: statusConfig.color }]} />
-              <Text variant="bodySmall" style={styles.statusText}>
+              <Text variant="bodySmall" style={[styles.statusText, dynamicStyles.secondaryText]}>
                 {statusConfig.label}
               </Text>
             </View>
@@ -68,13 +77,16 @@ export function DeviceCard({
 
           {/* Certificate Status (FR-032, FR-033) */}
           {showCertificateStatus && device.certificateInfo && (
-            <View style={styles.certificateRow}>
+            <View style={[styles.certificateRow, dynamicStyles.subtleBackground]}>
               <CertificateStatusIndicator
                 status={device.certificateInfo.trustStatus}
                 showLabel={false}
                 size="small"
               />
-              <Text variant="bodySmall" style={styles.certificateLabel}>
+              <Text
+                variant="bodySmall"
+                style={[styles.certificateLabel, dynamicStyles.secondaryText]}
+              >
                 {device.certificateInfo.isSelfSigned ? 'Self-Signed' : 'CA-Signed'}
               </Text>
               <TouchableOpacity
@@ -90,87 +102,87 @@ export function DeviceCard({
             </View>
           )}
 
-        {/* Device Info */}
-        <View style={styles.info}>
-          <View style={styles.infoRow}>
-            <Text variant="bodySmall" style={styles.label}>
-              Address:
-            </Text>
-            <Text variant="bodySmall" style={styles.value}>
-              {device.host}:{device.port}
-            </Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text variant="bodySmall" style={styles.label}>
-              Discovery:
-            </Text>
-            <Badge style={[styles.badge, { backgroundColor: discoveryBadgeColor }]}>
-              {device.discoveryMethod.toUpperCase()}
-            </Badge>
-          </View>
-
-          {device.addresses.length > 1 && (
+          {/* Device Info */}
+          <View style={styles.info}>
             <View style={styles.infoRow}>
-              <Text variant="bodySmall" style={styles.label}>
-                Addresses:
+              <Text variant="bodySmall" style={[styles.label, dynamicStyles.secondaryText]}>
+                Address:
               </Text>
-              <Text variant="bodySmall" style={styles.value}>
-                {device.addresses.length} interfaces
+              <Text variant="bodySmall" style={[styles.value, dynamicStyles.primaryText]}>
+                {device.host}:{device.port}
               </Text>
             </View>
-          )}
 
-          <View style={styles.infoRow}>
-            <Text variant="bodySmall" style={styles.label}>
-              Last seen:
-            </Text>
-            <Text variant="bodySmall" style={styles.value}>
-              {formatLastSeen(device.lastSeen)}
-            </Text>
-          </View>
-        </View>
-
-        {/* TXT Records (if available) */}
-        {device.txt && Object.keys(device.txt).length > 0 && (
-          <View style={styles.txtRecords}>
-            {Object.entries(device.txt).map(([key, value]) => (
-              <Text key={key} variant="bodySmall" style={styles.txtRecord}>
-                {key}: {value}
+            <View style={styles.infoRow}>
+              <Text variant="bodySmall" style={[styles.label, dynamicStyles.secondaryText]}>
+                Discovery:
               </Text>
-            ))}
+              <Badge style={[styles.badge, { backgroundColor: discoveryBadgeColor }]}>
+                {device.discoveryMethod.toUpperCase()}
+              </Badge>
+            </View>
+
+            {device.addresses.length > 1 && (
+              <View style={styles.infoRow}>
+                <Text variant="bodySmall" style={[styles.label, dynamicStyles.secondaryText]}>
+                  Addresses:
+                </Text>
+                <Text variant="bodySmall" style={[styles.value, dynamicStyles.primaryText]}>
+                  {device.addresses.length} interfaces
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.infoRow}>
+              <Text variant="bodySmall" style={[styles.label, dynamicStyles.secondaryText]}>
+                Last seen:
+              </Text>
+              <Text variant="bodySmall" style={[styles.value, dynamicStyles.primaryText]}>
+                {formatLastSeen(device.lastSeen)}
+              </Text>
+            </View>
           </View>
+
+          {/* TXT Records (if available) */}
+          {device.txt && Object.keys(device.txt).length > 0 && (
+            <View style={[styles.txtRecords, dynamicStyles.subtleBackground]}>
+              {Object.entries(device.txt).map(([key, value]) => (
+                <Text
+                  key={key}
+                  variant="bodySmall"
+                  style={[styles.txtRecord, dynamicStyles.secondaryText]}
+                >
+                  {key}: {value}
+                </Text>
+              ))}
+            </View>
+          )}
+        </Card.Content>
+
+        {/* Action Button */}
+        {onPress && device.status === 'online' && (
+          <Card.Actions>
+            <IconButton icon="login" mode="contained" onPress={onPress} />
+          </Card.Actions>
         )}
-      </Card.Content>
+      </Card>
 
-      {/* Action Button */}
-      {onPress && device.status === 'online' && (
-        <Card.Actions>
-          <IconButton icon="login" mode="contained" onPress={onPress} />
-        </Card.Actions>
+      {/* Certificate Info Modal (FR-033) */}
+      {device.certificateInfo && (
+        <Portal>
+          <Modal
+            visible={showCertModal}
+            onDismiss={() => setShowCertModal(false)}
+            contentContainerStyle={[styles.modal, dynamicStyles.modalBackground]}
+          >
+            <CertificateInfoDisplay certificate={device.certificateInfo} compact={false} />
+            <View style={styles.modalActions}>
+              <IconButton icon="close" mode="contained" onPress={() => setShowCertModal(false)} />
+            </View>
+          </Modal>
+        </Portal>
       )}
-    </Card>
-
-    {/* Certificate Info Modal (FR-033) */}
-    {device.certificateInfo && (
-      <Portal>
-        <Modal
-          visible={showCertModal}
-          onDismiss={() => setShowCertModal(false)}
-          contentContainerStyle={styles.modal}
-        >
-          <CertificateInfoDisplay certificate={device.certificateInfo} compact={false} />
-          <View style={styles.modalActions}>
-            <IconButton
-              icon="close"
-              mode="contained"
-              onPress={() => setShowCertModal(false)}
-            />
-          </View>
-        </Modal>
-      </Portal>
-    )}
-  </>
+    </>
   );
 }
 
@@ -238,6 +250,7 @@ const styles = StyleSheet.create({
   card: {
     marginVertical: 8,
     marginHorizontal: 16,
+    borderRadius: 4,
   },
   header: {
     flexDirection: 'row',
@@ -253,7 +266,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   ipAddress: {
-    color: '#666',
     fontStyle: 'italic',
   },
   statusContainer: {
@@ -266,9 +278,7 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
   },
-  statusText: {
-    color: '#666',
-  },
+  statusText: {},
   info: {
     gap: 6,
   },
@@ -278,12 +288,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    color: '#666',
     minWidth: 80,
   },
   value: {
     flex: 1,
-    color: '#333',
   },
   badge: {
     fontSize: 10,
@@ -291,11 +299,9 @@ const styles = StyleSheet.create({
   txtRecords: {
     marginTop: 12,
     padding: 8,
-    backgroundColor: '#f5f5f5',
     borderRadius: 4,
   },
   txtRecord: {
-    color: '#666',
     fontFamily: 'monospace',
   },
   certificateRow: {
@@ -305,19 +311,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    backgroundColor: '#f8f9fa',
     borderRadius: 4,
     gap: 8,
   },
   certificateLabel: {
     flex: 1,
-    color: '#666',
   },
   certificateInfoButton: {
     marginLeft: 'auto',
   },
   modal: {
-    backgroundColor: 'white',
     padding: 20,
     margin: 20,
     borderRadius: 8,

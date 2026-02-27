@@ -12,7 +12,7 @@
 
 import React, { useCallback } from 'react';
 import { StyleSheet, FlatList, RefreshControl, View } from 'react-native';
-import { Text, ActivityIndicator, Button } from 'react-native-paper';
+import { Text, ActivityIndicator, Button, useTheme } from 'react-native-paper';
 import { Device } from '@/types/device';
 import { DeviceCard } from './DeviceCard';
 import { SkeletonDeviceList } from '../Skeleton';
@@ -23,6 +23,7 @@ export interface DeviceListProps {
   onRefresh?: () => void;
   onDevicePress?: (device: Device) => void;
   onStartScan?: () => void;
+  onAddDevice?: () => void;
 }
 
 export function DeviceList({
@@ -31,7 +32,15 @@ export function DeviceList({
   onRefresh,
   onDevicePress,
   onStartScan,
+  onAddDevice,
 }: DeviceListProps) {
+  const theme = useTheme();
+
+  // Dynamic styles that depend on theme
+  const dynamicStyles = {
+    secondaryText: { color: theme.colors.onSurfaceVariant },
+  };
+
   // Detect duplicate device names
   const deviceNamesCount = devices.reduce(
     (acc, device) => {
@@ -62,23 +71,28 @@ export function DeviceList({
         <Text variant="titleLarge" style={styles.emptyTitle}>
           No Devices Found
         </Text>
-        <Text variant="bodyMedium" style={styles.emptyText}>
+        <Text variant="bodyMedium" style={[styles.emptyText, dynamicStyles.secondaryText]}>
           Make sure your device is on the same network
         </Text>
         <View style={styles.emptyHints}>
-          <Text variant="bodySmall" style={styles.emptyHint}>
+          <Text variant="bodySmall" style={[styles.emptyHint, dynamicStyles.secondaryText]}>
             • Device must be running BoardingPass service
           </Text>
-          <Text variant="bodySmall" style={styles.emptyHint}>
+          <Text variant="bodySmall" style={[styles.emptyHint, dynamicStyles.secondaryText]}>
             • mDNS must be enabled on your network
           </Text>
-          <Text variant="bodySmall" style={styles.emptyHint}>
+          <Text variant="bodySmall" style={[styles.emptyHint, dynamicStyles.secondaryText]}>
             • Check firewall settings
           </Text>
         </View>
         {onStartScan && (
           <Button mode="contained" onPress={onStartScan} icon="radar" style={styles.scanButton}>
             Scan Network
+          </Button>
+        )}
+        {onAddDevice && (
+          <Button mode="outlined" onPress={onAddDevice} icon="plus" style={styles.addButton}>
+            Add Device
           </Button>
         )}
       </View>
@@ -91,7 +105,10 @@ export function DeviceList({
       <View style={styles.container}>
         <View style={styles.scanningHeader}>
           <ActivityIndicator size="small" />
-          <Text variant="bodyMedium" style={styles.scanningHeaderText}>
+          <Text
+            variant="bodyMedium"
+            style={[styles.scanningHeaderText, dynamicStyles.secondaryText]}
+          >
             Scanning for devices...
           </Text>
         </View>
@@ -114,7 +131,10 @@ export function DeviceList({
         isScanning ? (
           <View style={styles.scanningHeader}>
             <ActivityIndicator size="small" />
-            <Text variant="bodySmall" style={styles.scanningHeaderText}>
+            <Text
+              variant="bodySmall"
+              style={[styles.scanningHeaderText, dynamicStyles.secondaryText]}
+            >
               Scanning...
             </Text>
           </View>
@@ -122,7 +142,7 @@ export function DeviceList({
       }
       ListEmptyComponent={
         <View style={styles.emptyContainer}>
-          <Text variant="bodyMedium" style={styles.emptyText}>
+          <Text variant="bodyMedium" style={[styles.emptyText, dynamicStyles.secondaryText]}>
             No devices found
           </Text>
         </View>
@@ -151,7 +171,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyText: {
-    color: '#666',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -160,10 +179,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   emptyHint: {
-    color: '#999',
     marginTop: 4,
   },
   scanButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 16,
+  },
+  addButton: {
+    marginTop: 12,
     paddingVertical: 4,
     paddingHorizontal: 16,
   },
@@ -180,7 +203,6 @@ const styles = StyleSheet.create({
   },
   scanningText: {
     marginTop: 4,
-    color: '#666',
   },
   scanningHeader: {
     flexDirection: 'row',
@@ -189,7 +211,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 8,
   },
-  scanningHeaderText: {
-    color: '#666',
-  },
+  scanningHeaderText: {},
 });

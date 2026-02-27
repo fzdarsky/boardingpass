@@ -155,10 +155,7 @@ function determineTrustStatus(
  * @param pinned - Pinned certificate from storage
  * @returns true if certificates match, false otherwise
  */
-export function validateCertificatePin(
-  current: CertificateInfo,
-  pinned: CertificateInfo
-): boolean {
+export function validateCertificatePin(current: CertificateInfo, pinned: CertificateInfo): boolean {
   // Compare fingerprints (case-insensitive)
   return current.fingerprint.toLowerCase() === pinned.fingerprint.toLowerCase();
 }

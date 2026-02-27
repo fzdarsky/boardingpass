@@ -31,9 +31,7 @@ export function BoardInfo({ boardInfo, formatSerial = true }: BoardInfoProps) {
   const theme = useTheme();
 
   // Format serial number for readability (T089)
-  const formattedSerial = formatSerial
-    ? formatSerialNumber(boardInfo.serial)
-    : boardInfo.serial;
+  const formattedSerial = formatSerial ? formatSerialNumber(boardInfo.serial) : boardInfo.serial;
 
   return (
     <Card style={styles.card}>
@@ -41,14 +39,7 @@ export function BoardInfo({ boardInfo, formatSerial = true }: BoardInfoProps) {
         title="Board Information"
         titleVariant="titleLarge"
         subtitle="Hardware details"
-        left={props => (
-          <Icon
-            {...props}
-            source="chip"
-            size={24}
-            color={theme.colors.primary}
-          />
-        )}
+        left={props => <Icon {...props} source="chip" size={24} color={theme.colors.primary} />}
       />
       <Card.Content>
         {/* Manufacturer */}

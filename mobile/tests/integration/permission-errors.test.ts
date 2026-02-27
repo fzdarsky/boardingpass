@@ -298,7 +298,9 @@ describe('Permission Denial Handling Integration Tests', () => {
       });
 
       const { result } = renderHook(() => {
-        const [step, setStep] = React.useState<'rationale' | 'request' | 'granted' | 'denied'>('rationale');
+        const [step, setStep] = React.useState<'rationale' | 'request' | 'granted' | 'denied'>(
+          'rationale'
+        );
 
         const proceedToRequest = async () => {
           setStep('request');
@@ -319,8 +321,10 @@ describe('Permission Denial Handling Integration Tests', () => {
 
     it('should provide context-specific help text for permission denial', async () => {
       const helpTexts = {
-        camera_needed_for_qr: 'Camera access is required to scan QR codes. You can also enter the connection code manually.',
-        local_network_needed: 'Local network access is required to discover devices on your network.',
+        camera_needed_for_qr:
+          'Camera access is required to scan QR codes. You can also enter the connection code manually.',
+        local_network_needed:
+          'Local network access is required to discover devices on your network.',
       };
 
       // Verify help texts are informative and actionable

@@ -22,7 +22,12 @@ interface SkeletonBaseProps {
 /**
  * Base Skeleton Component with shimmer animation
  */
-export function SkeletonBase({ width = '100%', height = 20, borderRadius = 4, style }: SkeletonBaseProps) {
+export function SkeletonBase({
+  width = '100%',
+  height = 20,
+  borderRadius = 4,
+  style,
+}: SkeletonBaseProps) {
   const animatedValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {

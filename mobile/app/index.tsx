@@ -13,20 +13,37 @@
  * - Logging without sensitive data (T053 - FR-029)
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Snackbar } from 'react-native-paper';
+import {
+  Button,
+  Snackbar,
+  Portal,
+  Dialog,
+  TextInput,
+  HelperText,
+  useTheme,
+} from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useDeviceDiscovery } from '@/hooks/useDeviceDiscovery';
 import { DeviceList } from '@/components/DeviceList';
 import { Device } from '@/types/device';
+import { parseAndValidateHostPort } from '@/utils/validation';
+import { HapticFeedback } from '@/utils/haptics';
 
 export default function DeviceDiscoveryScreen() {
   const router = useRouter();
-  const { devices, isScanning, error, startDiscovery, refreshDevices } = useDeviceDiscovery();
+  const theme = useTheme();
+  const { devices, isScanning, error, startDiscovery, refreshDevices, addManualDevice } =
+    useDeviceDiscovery();
 
-  const [snackbarVisible, setSnackbarVisible] = React.useState(false);
-  const [snackbarMessage, setSnackbarMessage] = React.useState('');
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+
+  // Manual device entry dialog state
+  const [addDialogVisible, setAddDialogVisible] = useState(false);
+  const [addressInput, setAddressInput] = useState('');
+  const [addressError, setAddressError] = useState<string | undefined>(undefined);
 
   // Auto-start discovery on mount
   useEffect(() => {
@@ -66,8 +83,47 @@ export default function DeviceDiscoveryScreen() {
     startDiscovery();
   };
 
+  /**
+   * Manual device entry handlers
+   */
+  const handleOpenAddDialog = () => {
+    setAddressInput('');
+    setAddressError(undefined);
+    setAddDialogVisible(true);
+  };
+
+  const handleCloseAddDialog = () => {
+    setAddDialogVisible(false);
+    setAddressInput('');
+    setAddressError(undefined);
+  };
+
+  const handleAddressChange = (text: string) => {
+    setAddressInput(text);
+    if (text.trim().length === 0) {
+      setAddressError(undefined);
+      return;
+    }
+    const result = parseAndValidateHostPort(text);
+    setAddressError(result.valid ? undefined : result.error);
+  };
+
+  const handleAddDevice = () => {
+    const result = parseAndValidateHostPort(addressInput);
+    if (!result.valid || !result.host || !result.port) {
+      setAddressError(result.error);
+      return;
+    }
+
+    addManualDevice(result.host, result.port);
+    HapticFeedback.success();
+    handleCloseAddDialog();
+  };
+
+  const isAddButtonEnabled = addressInput.trim().length > 0 && !addressError;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Device List with integrated features:
           - T044: DeviceCard component with status indicators
           - T045: DeviceList component
@@ -83,21 +139,68 @@ export default function DeviceDiscoveryScreen() {
         onRefresh={refreshDevices}
         onDevicePress={handleDevicePress}
         onStartScan={handleStartScan}
+        onAddDevice={handleOpenAddDialog}
       />
 
-      {/* Manual Scan Button (when devices are shown) */}
+      {/* Action Bar (when devices are shown) */}
       {devices.length > 0 && !isScanning && (
-        <View style={styles.actionBar}>
-          <Button
-            mode="contained"
-            onPress={refreshDevices}
-            icon="refresh"
-            style={styles.refreshButton}
-          >
-            Refresh
-          </Button>
+        <View
+          style={[
+            styles.actionBar,
+            { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.outlineVariant },
+          ]}
+        >
+          <View style={styles.actionBarButtons}>
+            <Button
+              mode="contained"
+              onPress={refreshDevices}
+              icon="refresh"
+              style={styles.actionButton}
+            >
+              Refresh
+            </Button>
+            <Button
+              mode="outlined"
+              onPress={handleOpenAddDialog}
+              icon="plus"
+              style={styles.actionButton}
+            >
+              Add Device
+            </Button>
+          </View>
         </View>
       )}
+
+      {/* Manual Device Entry Dialog */}
+      <Portal>
+        <Dialog visible={addDialogVisible} onDismiss={handleCloseAddDialog} style={styles.dialog}>
+          <Dialog.Title>Add Device</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="Device address"
+              placeholder="192.168.1.100:8443"
+              value={addressInput}
+              onChangeText={handleAddressChange}
+              onSubmitEditing={isAddButtonEnabled ? handleAddDevice : undefined}
+              mode="outlined"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              error={!!addressError}
+              accessibilityLabel="Device IP address"
+            />
+            <HelperText type={addressError ? 'error' : 'info'} visible={true}>
+              {addressError || 'Enter IP address with optional port (default: 8443)'}
+            </HelperText>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={handleCloseAddDialog}>Cancel</Button>
+            <Button mode="contained" onPress={handleAddDevice} disabled={!isAddButtonEnabled}>
+              Add
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
 
       {/* Error Snackbar */}
       <Snackbar
@@ -121,15 +224,19 @@ export default function DeviceDiscoveryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   actionBar: {
     padding: 16,
-    backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
   },
-  refreshButton: {
-    paddingVertical: 4,
+  actionBarButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+  },
+  dialog: {
+    borderRadius: 4,
   },
 });

@@ -73,22 +73,13 @@ export const NetworkErrorView: React.FC<NetworkErrorViewProps> = ({
 
       <View style={styles.actions}>
         {onRetry && (
-          <Button
-            mode="contained"
-            onPress={onRetry}
-            style={styles.primaryButton}
-            icon="refresh"
-          >
+          <Button mode="contained" onPress={onRetry} style={styles.primaryButton} icon="refresh">
             Try Again
           </Button>
         )}
 
         {onCancel && (
-          <Button
-            mode="outlined"
-            onPress={onCancel}
-            style={styles.secondaryButton}
-          >
+          <Button mode="outlined" onPress={onCancel} style={styles.secondaryButton}>
             Cancel
           </Button>
         )}

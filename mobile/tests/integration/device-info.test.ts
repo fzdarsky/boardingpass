@@ -467,9 +467,7 @@ describe('Device Information Retrieval Integration', () => {
       const uuid = '550e8400-e29b-41d4-a716-446655440000';
       const formatted = uuid.toLowerCase();
 
-      expect(formatted).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-      );
+      expect(formatted).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
       // Implementation should display UUIDs in lowercase with dashes
     });
 

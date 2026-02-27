@@ -183,9 +183,7 @@ describe('Network Error Recovery Integration Tests', () => {
         message: 'timeout of 5000ms exceeded',
       });
 
-      const { result } = renderHook(() =>
-        useDeviceInfo('device-1', 'mock-token')
-      );
+      const { result } = renderHook(() => useDeviceInfo('device-1', 'mock-token'));
 
       await waitFor(() => {
         expect(result.current.error).toBeDefined();
@@ -215,9 +213,7 @@ describe('Network Error Recovery Integration Tests', () => {
         return Promise.reject(new Error('Unknown endpoint'));
       });
 
-      const { result } = renderHook(() =>
-        useDeviceInfo('device-1', 'mock-token')
-      );
+      const { result } = renderHook(() => useDeviceInfo('device-1', 'mock-token'));
 
       await waitFor(() => {
         // System info should be available
@@ -248,9 +244,7 @@ describe('Network Error Recovery Integration Tests', () => {
         });
       });
 
-      const { result } = renderHook(() =>
-        useDeviceInfo('device-1', 'mock-token')
-      );
+      const { result } = renderHook(() => useDeviceInfo('device-1', 'mock-token'));
 
       // First attempt fails
       await waitFor(() => {

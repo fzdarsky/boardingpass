@@ -70,7 +70,8 @@ export function useCertificateValidation() {
 
         return result;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Certificate validation failed';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Certificate validation failed';
         setState({
           isValidating: false,
           certificate: null,
@@ -136,7 +137,8 @@ export function useCertificateValidation() {
         await validationService.removePinnedCertificate(deviceId);
         setState(prev => ({ ...prev, certificate: null, requiresTrust: false }));
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to remove certificate';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to remove certificate';
         setState(prev => ({ ...prev, error: errorMessage }));
         throw error;
       }

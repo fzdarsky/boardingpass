@@ -111,14 +111,24 @@ export function useSecureStorage() {
 }
 
 /**
+ * Sanitize a device ID for use as a SecureStore key.
+ * SecureStore keys may only contain alphanumeric characters, ".", "-", and "_".
+ * Device IDs use colons as separators (e.g. "manual:192.168.1.100:8443"),
+ * so we replace colons with underscores.
+ */
+function sanitizeKeyId(deviceId: string): string {
+  return deviceId.replace(/:/g, '_');
+}
+
+/**
  * Storage key constants for consistent naming
  */
 export const STORAGE_KEYS = {
   // Session tokens by device ID
-  sessionToken: (deviceId: string) => `session_token_${deviceId}`,
+  sessionToken: (deviceId: string) => `session_token_${sanitizeKeyId(deviceId)}`,
 
   // Certificate pins by device ID
-  certificatePin: (deviceId: string) => `cert_pin_${deviceId}`,
+  certificatePin: (deviceId: string) => `cert_pin_${sanitizeKeyId(deviceId)}`,
 
   // Last known device list (optional - for quick startup)
   deviceList: 'device_list',

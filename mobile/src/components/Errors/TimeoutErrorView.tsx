@@ -25,8 +25,7 @@ export const TimeoutErrorView: React.FC<TimeoutErrorViewProps> = ({
   const errorMessage = getErrorMessage(error);
   const helpText = getErrorHelpText(error);
 
-  const operationName =
-    operation || error.context?.operation || 'request';
+  const operationName = operation || error.context?.operation || 'request';
 
   return (
     <View style={styles.container}>
@@ -69,22 +68,13 @@ export const TimeoutErrorView: React.FC<TimeoutErrorViewProps> = ({
 
       <View style={styles.actions}>
         {onRetry && (
-          <Button
-            mode="contained"
-            onPress={onRetry}
-            style={styles.primaryButton}
-            icon="refresh"
-          >
+          <Button mode="contained" onPress={onRetry} style={styles.primaryButton} icon="refresh">
             Try Again
           </Button>
         )}
 
         {onCancel && (
-          <Button
-            mode="outlined"
-            onPress={onCancel}
-            style={styles.secondaryButton}
-          >
+          <Button mode="outlined" onPress={onCancel} style={styles.secondaryButton}>
             Cancel
           </Button>
         )}

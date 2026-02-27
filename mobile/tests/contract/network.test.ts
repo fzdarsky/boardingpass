@@ -110,11 +110,7 @@ describe('GET /network Contract', () => {
     });
 
     it('should validate MAC address format', () => {
-      const validMACs = [
-        'dc:a6:32:12:34:56',
-        '00:11:22:33:44:55',
-        'FF:EE:DD:CC:BB:AA',
-      ];
+      const validMACs = ['dc:a6:32:12:34:56', '00:11:22:33:44:55', 'FF:EE:DD:CC:BB:AA'];
       const macPattern = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
 
       validMACs.forEach(mac => {
@@ -177,15 +173,8 @@ describe('GET /network Contract', () => {
     });
 
     it('should validate IPv4 address format', () => {
-      const ipv4Pattern =
-        /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/;
-      const validIPv4 = [
-        '192.168.1.100',
-        '10.0.0.1',
-        '172.16.254.1',
-        '255.255.255.255',
-        '0.0.0.0',
-      ];
+      const ipv4Pattern = /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/;
+      const validIPv4 = ['192.168.1.100', '10.0.0.1', '172.16.254.1', '255.255.255.255', '0.0.0.0'];
 
       validIPv4.forEach(ip => {
         expect(ipv4Pattern.test(ip)).toBe(true);
