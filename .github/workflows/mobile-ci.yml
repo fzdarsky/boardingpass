@@ -17,10 +17,6 @@ on:
       - 'specs/001-boardingpass-api/contracts/**'
       - '.github/workflows/mobile-ci.yml'
 
-defaults:
-  run:
-    working-directory: mobile
-
 jobs:
   lint-and-typecheck:
     name: Lint and Type Check
@@ -38,16 +34,20 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: make install-deps-app
 
-      - name: Generate API types
-        run: npm run generate:types
+      - name: Check generated code is up-to-date
+        run: |
+          make generate-app
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Error: Generated code is out of date. Please run 'make generate-app' and commit the changes."
+            git status
+            git diff
+            exit 1
+          fi
 
-      - name: Run ESLint
-        run: npm run lint
-
-      - name: Run TypeScript type check
-        run: npm run typecheck
+      - name: Lint and type check
+        run: make lint-app
 
   unit-tests:
     name: Unit Tests
@@ -65,13 +65,13 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: make install-deps-app
 
       - name: Generate API types
-        run: npm run generate:types
+        run: make generate-app
 
       - name: Run unit tests
-        run: npm test -- --coverage --maxWorkers=2
+        run: make test-unit-app APP_TEST_ARGS="-- --coverage --maxWorkers=2"
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
@@ -96,13 +96,13 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: make install-deps-app
 
       - name: Generate API types
-        run: npm run generate:types
+        run: make generate-app
 
       - name: Run integration tests
-        run: npm run test:integration
+        run: make test-integration-app
 
   contract-tests:
     name: Contract Tests
@@ -120,16 +120,10 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Validate OpenAPI spec
-        run: npm run validate:spec
-
-      - name: Generate API types
-        run: npm run generate:types
+        run: make install-deps-app
 
       - name: Run contract tests
-        run: npm run test:contract
+        run: make test-contract-app
 
   build-ios:
     name: Build iOS
@@ -148,10 +142,7 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Generate API types
-        run: npm run generate:types
+        run: make install-deps-app
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
@@ -160,7 +151,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Prebuild iOS
-        run: npx expo prebuild --platform ios --clean
+        run: make build-app-ios
 
       - name: Cache CocoaPods
         uses: actions/cache@v3
@@ -171,11 +162,13 @@ jobs:
             ${{ runner.os }}-pods-
 
       - name: Install CocoaPods
+        working-directory: mobile
         run: |
           cd ios
           pod install
 
       - name: Build iOS app
+        working-directory: mobile
         run: |
           cd ios
           xcodebuild \
@@ -209,10 +202,7 @@ jobs:
           java-version: '17'
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Generate API types
-        run: npm run generate:types
+        run: make install-deps-app
 
       - name: Setup Expo
         uses: expo/expo-github-action@v8
@@ -221,7 +211,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Prebuild Android
-        run: npx expo prebuild --platform android --clean
+        run: make build-app-android
 
       - name: Cache Gradle
         uses: actions/cache@v3
@@ -234,6 +224,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: Build Android app
+        working-directory: mobile
         run: |
           cd android
           ./gradlew assembleRelease --no-daemon

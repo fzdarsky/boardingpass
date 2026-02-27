@@ -1,7 +1,9 @@
 .PHONY: all help
 .PHONY: install-deps-service install-deps-cli install-deps-app install-deps-all
 .PHONY: generate-service generate-app generate-all
+.PHONY: typecheck-app
 .PHONY: lint-service lint-cli lint-app lint-all
+.PHONY: validate-spec-app
 .PHONY: build-service build-cli build-app-ios build-app-android build-app build-all
 .PHONY: test-unit-service test-unit-cli test-unit-app test-unit-all
 .PHONY: test-integration-service test-integration-cli test-integration-app test-integration-all
@@ -48,7 +50,8 @@ GOTESTSUM := go tool gotestsum
 LDFLAGS := -s -w
 BUILD_FLAGS := -trimpath -ldflags="$(LDFLAGS)"
 
-# Mobile app paths
+# Mobile app (npm ci in CI, npm install locally)
+NPM_INSTALL := $(if $(CI),npm ci,npm install)
 MOBILE_DIR := mobile
 MOBILE_IOS_DIR := $(MOBILE_DIR)/ios
 MOBILE_ANDROID_DIR := $(MOBILE_DIR)/android
@@ -66,6 +69,9 @@ endif
 
 # iOS simulator default (can be overridden with IOS_DEVICE env var)
 IOS_DEVICE ?= iPhone 17 Pro
+
+# Extra args for app unit tests (e.g., APP_TEST_ARGS="-- --coverage --maxWorkers=2")
+APP_TEST_ARGS ?=
 
 # Physical iOS device name (can be overridden with IOS_PHYSICAL_DEVICE env var)
 # To find your device name, run: xcrun devicectl list devices
@@ -107,10 +113,13 @@ help:
 	@echo "  generate-app            - Generate TypeScript types from OpenAPI"
 	@echo "  generate-all            - Generate all code"
 	@echo ""
+	@echo "Type Checking:"
+	@echo "  typecheck-app           - Run TypeScript type check (generates types first)"
+	@echo ""
 	@echo "Linting:"
 	@echo "  lint-service            - Run golangci-lint on service"
 	@echo "  lint-cli                - Run golangci-lint on CLI"
-	@echo "  lint-app                - Run ESLint + react-doctor on mobile app"
+	@echo "  lint-app                - Generate types + typecheck + ESLint + react-doctor"
 	@echo "  lint-all                - Lint all components"
 	@echo ""
 	@echo "Building:"
@@ -125,6 +134,7 @@ help:
 	@echo "  test-unit-{component}   - Run unit tests"
 	@echo "  test-integration-{component} - Run integration tests"
 	@echo "  test-e2e-{component}    - Run end-to-end tests"
+	@echo "  validate-spec-app       - Validate OpenAPI spec"
 	@echo "  test-contract-{service|app} - Run contract tests"
 	@echo "  test-{component}        - Run all tests for component"
 	@echo "  test-all                - Run all tests for all components"
@@ -184,7 +194,7 @@ install-deps-cli: install-deps-service
 ## install-deps-app: Install npm dependencies for mobile app
 install-deps-app:
 	@echo "Installing mobile app dependencies..."
-	@cd $(MOBILE_DIR) && npm install
+	@cd $(MOBILE_DIR) && $(NPM_INSTALL)
 
 ## install-deps-all: Install all dependencies
 install-deps-all: install-deps-service install-deps-app
@@ -211,6 +221,15 @@ generate-all: generate-service generate-app
 	@echo "All code generation complete"
 
 # ============================================================================
+# Type Checking
+# ============================================================================
+
+## typecheck-app: Run TypeScript type check on mobile app (generates types first)
+typecheck-app: generate-app
+	@echo "Running TypeScript type check..."
+	@cd $(MOBILE_DIR) && npm run typecheck
+
+# ============================================================================
 # Linting
 # ============================================================================
 
@@ -224,8 +243,8 @@ lint-cli:
 	@echo "Running golangci-lint on CLI..."
 	@golangci-lint run
 
-## lint-app: Run ESLint and react-doctor on mobile app
-lint-app:
+## lint-app: Run typecheck + ESLint + react-doctor on mobile app
+lint-app: typecheck-app
 	@echo "Running ESLint on mobile app..."
 	@cd $(MOBILE_DIR) && npm run lint
 	@echo "Running react-doctor on mobile app..."
@@ -256,15 +275,15 @@ build-cli:
 	@ls -lh $(BIN_DIR)/$(CLI_BINARY_NAME)
 
 ## build-app-ios: Generate iOS native project
-build-app-ios:
+build-app-ios: generate-app
 	@echo "Generating iOS native project..."
-	@cd $(MOBILE_DIR) && npx expo prebuild --platform ios
+	@cd $(MOBILE_DIR) && npx expo prebuild --platform ios $(if $(CI),--clean,)
 	@echo "iOS project generated: $(MOBILE_IOS_DIR)/"
 
 ## build-app-android: Generate Android native project
-build-app-android:
+build-app-android: generate-app
 	@echo "Generating Android native project..."
-	@cd $(MOBILE_DIR) && npx expo prebuild --platform android
+	@cd $(MOBILE_DIR) && npx expo prebuild --platform android $(if $(CI),--clean,)
 	@echo "Android project generated: $(MOBILE_ANDROID_DIR)/"
 
 ## build-app: Generate both iOS and Android native projects
@@ -292,7 +311,7 @@ test-unit-cli:
 ## test-unit-app: Run mobile app unit tests
 test-unit-app:
 	@echo "Running mobile app unit tests..."
-	@cd $(MOBILE_DIR) && npm test
+	@cd $(MOBILE_DIR) && npm test $(APP_TEST_ARGS)
 
 ## test-unit-all: Run all unit tests
 test-unit-all: test-unit-service test-unit-app
@@ -363,8 +382,13 @@ test-contract-service:
 	@echo "Running service contract tests..."
 	@$(GOTEST) -v ./tests/contract/...
 
-## test-contract-app: Run mobile app contract tests
-test-contract-app:
+## validate-spec-app: Validate OpenAPI spec
+validate-spec-app:
+	@echo "Validating OpenAPI spec..."
+	@cd $(MOBILE_DIR) && npm run validate:spec
+
+## test-contract-app: Run mobile app contract tests (validates spec + generates types first)
+test-contract-app: validate-spec-app generate-app
 	@echo "Running mobile app contract tests..."
 	@cd $(MOBILE_DIR) && npm run test:contract
 
