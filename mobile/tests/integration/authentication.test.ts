@@ -28,7 +28,7 @@ describe('SRP-6a Authentication Integration', () => {
         id: 'test-device:192.168.1.100',
         name: 'test-device',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -57,13 +57,13 @@ describe('SRP-6a Authentication Integration', () => {
       // Connection code format (Base64-encoded JSON):
       // {
       //   "host": "192.168.1.100",
-      //   "port": 9443,
+      //   "port": 8443,
       //   "password": "device-unique-password"
       // }
 
       const mockConnectionCodeData = {
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         password: 'test-password-from-device',
       };
 
@@ -168,7 +168,7 @@ describe('SRP-6a Authentication Integration', () => {
     it('should parse Base64-encoded connection code', () => {
       const mockData = {
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         password: 'device-password',
       };
 
@@ -184,7 +184,7 @@ describe('SRP-6a Authentication Integration', () => {
       const validCode = Buffer.from(
         JSON.stringify({
           host: '192.168.1.100',
-          port: 9443,
+          port: 8443,
           password: 'password',
         })
       ).toString('base64');
@@ -361,8 +361,8 @@ describe('SRP-6a Authentication Integration', () => {
 
   describe('Security Requirements Validation', () => {
     it('should only connect via HTTPS', async () => {
-      const httpsURL = 'https://192.168.1.100:9443';
-      const httpURL = 'http://192.168.1.100:9443';
+      const httpsURL = 'https://192.168.1.100:8443';
+      const httpURL = 'http://192.168.1.100:8443';
 
       expect(httpsURL).toMatch(/^https:\/\//);
       expect(httpURL).toMatch(/^http:\/\//);

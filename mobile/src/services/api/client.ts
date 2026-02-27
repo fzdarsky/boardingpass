@@ -8,7 +8,7 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 
 const DEFAULT_TIMEOUT = 30000; // 30 seconds (matches spec)
-const DEFAULT_PORT = 9443;
+const DEFAULT_PORT = 8443;
 
 export interface APIClientConfig {
   baseURL?: string;

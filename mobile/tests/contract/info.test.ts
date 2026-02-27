@@ -213,7 +213,7 @@ describe('GET /info Contract', () => {
 
   describe('Security Requirements', () => {
     it('should use HTTPS (TLS 1.3+) for all requests', () => {
-      const baseURL = 'https://192.168.1.100:9443';
+      const baseURL = 'https://192.168.1.100:8443';
 
       expect(baseURL).toMatch(/^https:\/\//);
       // Implementation MUST reject HTTP connections
@@ -274,11 +274,11 @@ describe('GET /info Contract', () => {
   });
 
   describe('Endpoint Configuration', () => {
-    it('should connect to device port 9443 by default', () => {
-      const defaultPort = 9443;
+    it('should connect to device port 8443 by default', () => {
+      const defaultPort = 8443;
 
-      expect(defaultPort).toBe(9443);
-      // Per plan.md: BoardingPass API listens on port 9443
+      expect(defaultPort).toBe(8443);
+      // Per plan.md: BoardingPass API listens on port 8443
     });
 
     it('should timeout after reasonable period', () => {

@@ -1,7 +1,7 @@
 /**
  * Fallback IP Detection Service
  *
- * Checks well-known IP address (default: 192.168.1.100:9443) when mDNS is unavailable.
+ * Checks well-known IP address (default: 192.168.1.100:8443) when mDNS is unavailable.
  * Uses HTTPS HEAD request to verify device is reachable.
  *
  * Contract: See mobile/tests/integration/discovery.test.ts
@@ -22,7 +22,7 @@ export class FallbackIPService {
   constructor(config?: Partial<FallbackConfig>) {
     // Use environment variables or defaults
     const defaultIP = process.env.EXPO_PUBLIC_FALLBACK_IP || '192.168.1.100';
-    const defaultPort = parseInt(process.env.EXPO_PUBLIC_FALLBACK_PORT || '9443', 10);
+    const defaultPort = parseInt(process.env.EXPO_PUBLIC_FALLBACK_PORT || '8443', 10);
 
     this.config = {
       ip: config?.ip || defaultIP,

@@ -35,7 +35,7 @@ interface Device {
 
   // Network
   host: string;                  // IP address or hostname
-  port: number;                  // HTTPS port (default 9443)
+  port: number;                  // HTTPS port (default 8443)
   addresses: string[];           // All IP addresses (for multi-homed devices)
 
   // Discovery metadata

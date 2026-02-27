@@ -26,7 +26,7 @@ export type OSInfo = components['schemas']['OSInfo'];
  *
  * @example
  * ```typescript
- * const client = createAPIClient('192.168.1.100', 9443);
+ * const client = createAPIClient('192.168.1.100', 8443);
  * client.setAuthToken(sessionToken);
  *
  * const systemInfo = await getSystemInfo(client);

@@ -95,7 +95,7 @@ describe('Port Validation', () => {
   describe('isValidPort', () => {
     it('should validate correct ports', () => {
       expect(isValidPort(1)).toBe(true);
-      expect(isValidPort(9443)).toBe(true);
+      expect(isValidPort(8443)).toBe(true);
       expect(isValidPort(65535)).toBe(true);
     });
 

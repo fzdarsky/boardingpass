@@ -37,14 +37,14 @@ export class CertificateValidationService {
    *
    * @param deviceId - Device identifier
    * @param host - Device hostname or IP
-   * @param port - Device port (default 9443)
+   * @param port - Device port (default 8443)
    * @param useMock - Use mock certificate for testing (default false)
    * @returns Validation result with certificate info
    */
   async validateCertificate(
     deviceId: string,
     host: string,
-    port: number = 9443,
+    port: number = 8443,
     useMock: boolean = false
   ): Promise<CertificateValidationResult> {
     try {

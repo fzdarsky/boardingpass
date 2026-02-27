@@ -211,7 +211,7 @@ describe('Permission Denial Handling Integration Tests', () => {
         React.useEffect(() => {
           (async () => {
             try {
-              await fetch('https://192.168.1.100:9443/info');
+              await fetch('https://192.168.1.100:8443/info');
             } catch (err: any) {
               setError(err);
             }

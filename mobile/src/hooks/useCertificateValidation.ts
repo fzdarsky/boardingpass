@@ -45,7 +45,7 @@ export function useCertificateValidation() {
    *
    * @param deviceId - Device identifier
    * @param host - Device hostname or IP
-   * @param port - Device port (default 9443)
+   * @param port - Device port (default 8443)
    * @param useMock - Use mock certificate for testing
    * @returns Validation result
    */
@@ -53,7 +53,7 @@ export function useCertificateValidation() {
     async (
       deviceId: string,
       host: string,
-      port: number = 9443,
+      port: number = 8443,
       useMock: boolean = true // Set to true for development until native cert fetching is implemented
     ): Promise<CertificateValidationResult> => {
       setState(prev => ({ ...prev, isValidating: true, error: null }));

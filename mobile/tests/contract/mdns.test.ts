@@ -5,7 +5,7 @@
  * - Service type: _boardingpass._tcp
  * - TXT records: device metadata (optional)
  * - Addresses: IPv4/IPv6 addresses
- * - Port: HTTPS port (default 9443)
+ * - Port: HTTPS port (default 8443)
  *
  * These tests define the expected contract for mDNS discovery
  * and should FAIL before implementation.
@@ -37,7 +37,7 @@ describe('mDNS Service Discovery Contract', () => {
       const mockDiscoveredDevice = {
         name: 'boardingpass-device',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
       };
 
@@ -54,7 +54,7 @@ describe('mDNS Service Discovery Contract', () => {
       const mockMDNSResponse = {
         name: 'boardingpass-device',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100', 'fe80::1'],
         txt: { version: '1.0.0', model: 'raspberry-pi' },
       };
@@ -64,7 +64,7 @@ describe('mDNS Service Discovery Contract', () => {
         id: expect.any(String),
         name: 'boardingpass-device',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: expect.arrayContaining(['192.168.1.100', 'fe80::1']),
         discoveryMethod: 'mdns' as DiscoveryMethod,
         txt: expect.objectContaining({ version: '1.0.0' }),
@@ -131,7 +131,7 @@ describe('mDNS Service Discovery Contract', () => {
       const mockDeviceNoTxt = {
         name: 'boardingpass-device',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         txt: undefined,
       };
@@ -173,10 +173,10 @@ describe('mDNS Service Discovery Contract', () => {
   });
 
   describe('Port Handling', () => {
-    it('should use default port 9443 for HTTPS', () => {
-      // Contract: Default BoardingPass HTTPS port is 9443
-      const defaultPort = 9443;
-      expect(defaultPort).toBe(9443);
+    it('should use default port 8443 for HTTPS', () => {
+      // Contract: Default BoardingPass HTTPS port is 8443
+      const defaultPort = 8443;
+      expect(defaultPort).toBe(8443);
     });
 
     it('should support custom ports from mDNS announcement', () => {

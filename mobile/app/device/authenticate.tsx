@@ -73,7 +73,7 @@ export default function AuthenticateScreen(): React.ReactElement {
   }>();
 
   const { deviceId, deviceName, host, port } = params;
-  const portNumber = port ? parseInt(port, 10) : 9443;
+  const portNumber = port ? parseInt(port, 10) : 8443;
 
   const { authenticate, isAuthenticating, error, clearError } = useAuth(deviceId);
 

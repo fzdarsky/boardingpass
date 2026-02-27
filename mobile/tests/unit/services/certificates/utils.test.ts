@@ -20,7 +20,7 @@ import { CertificateInfo } from '../../../../src/types/certificate';
 describe('Certificate Utilities', () => {
   describe('fetchCertificateMock', () => {
     it('should return mock certificate data', async () => {
-      const cert = await fetchCertificateMock('192.168.1.100', 9443);
+      const cert = await fetchCertificateMock('192.168.1.100', 8443);
 
       expect(cert).toBeDefined();
       expect(cert.pemEncoded).toContain('BEGIN CERTIFICATE');
@@ -32,7 +32,7 @@ describe('Certificate Utilities', () => {
 
     it('should include host in certificate subject', async () => {
       const host = 'device.local';
-      const cert = await fetchCertificateMock(host, 9443);
+      const cert = await fetchCertificateMock(host, 8443);
 
       expect(cert.subject).toContain(host);
     });

@@ -30,13 +30,13 @@ export interface RawCertificateData {
  * For now, this is a placeholder that demonstrates the expected interface.
  *
  * @param host - Server hostname or IP
- * @param port - Server port (default 9443)
+ * @param port - Server port (default 8443)
  * @returns Raw certificate data
  * @throws Error if certificate cannot be fetched
  */
 export async function fetchCertificate(
   _host: string,
-  _port: number = 9443
+  _port: number = 8443
 ): Promise<RawCertificateData> {
   // TODO: Implement platform-specific certificate fetching
   // This will require a native module or library that can:
@@ -221,7 +221,7 @@ export function extractCommonName(dn: string): string {
  */
 export async function fetchCertificateMock(
   host: string,
-  port: number = 9443
+  port: number = 8443
 ): Promise<RawCertificateData> {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 500));

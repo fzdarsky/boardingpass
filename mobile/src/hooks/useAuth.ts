@@ -42,7 +42,7 @@ export interface UseAuthResult extends AuthState {
    * Authenticate with a device using connection code
    *
    * @param host - Device IP address or hostname
-   * @param port - Device HTTPS port (default 9443)
+   * @param port - Device HTTPS port (default 8443)
    * @param connectionCode - Device connection code (password)
    * @param username - SRP username (default "boardingpass")
    * @returns Authentication result with session token
@@ -144,7 +144,7 @@ export function useAuth(deviceId: string): UseAuthResult {
   const authenticate = useCallback(
     async (
       host: string,
-      port: number = 9443,
+      port: number = 8443,
       connectionCode: string,
       username: string = 'boardingpass'
     ): Promise<AuthenticationResult> => {

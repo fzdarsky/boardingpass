@@ -19,7 +19,7 @@ describe('Device Information Retrieval Integration', () => {
       // Mock authenticated request
       const sessionToken = 'valid_token_id.valid_signature';
       const deviceHost = '192.168.1.100';
-      const devicePort = 9443;
+      const devicePort = 8443;
 
       const expectedRequest = {
         method: 'GET',
@@ -38,7 +38,7 @@ describe('Device Information Retrieval Integration', () => {
     it('should fetch network config with valid session token', async () => {
       const sessionToken = 'valid_token_id.valid_signature';
       const deviceHost = '192.168.1.100';
-      const devicePort = 9443;
+      const devicePort = 8443;
 
       const expectedRequest = {
         method: 'GET',
@@ -208,7 +208,7 @@ describe('Device Information Retrieval Integration', () => {
     it('should handle connection refused', async () => {
       const connectionError = {
         code: 'ECONNREFUSED',
-        message: 'connect ECONNREFUSED 192.168.1.100:9443',
+        message: 'connect ECONNREFUSED 192.168.1.100:8443',
       };
 
       expect(connectionError.code).toBe('ECONNREFUSED');
@@ -505,7 +505,7 @@ describe('Device Information Retrieval Integration', () => {
 
   describe('Security Requirements', () => {
     it('should use HTTPS for all requests', async () => {
-      const baseURL = 'https://192.168.1.100:9443';
+      const baseURL = 'https://192.168.1.100:8443';
 
       expect(baseURL).toMatch(/^https:\/\//);
       // Implementation MUST reject HTTP connections

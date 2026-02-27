@@ -84,7 +84,7 @@ describe('useDeviceDiscovery Hook', () => {
       mockFallbackCheck();
 
       expect(mockFallbackCheck).toHaveBeenCalled();
-      // Should make HEAD request to 192.168.1.100:9443
+      // Should make HEAD request to 192.168.1.100:8443
     });
 
     it('should stop scanning when stopDiscovery called', async () => {
@@ -121,7 +121,7 @@ describe('useDeviceDiscovery Hook', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -141,7 +141,7 @@ describe('useDeviceDiscovery Hook', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -166,7 +166,7 @@ describe('useDeviceDiscovery Hook', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -189,7 +189,7 @@ describe('useDeviceDiscovery Hook', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -200,7 +200,7 @@ describe('useDeviceDiscovery Hook', () => {
         id: 'device2:192.168.1.101',
         name: 'device2',
         host: '192.168.1.101',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.101'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -223,7 +223,7 @@ describe('useDeviceDiscovery Hook', () => {
         id: 'fallback:192.168.1.100',
         name: 'BoardingPass Device',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'fallback',
         status: 'online',
@@ -250,7 +250,7 @@ describe('useDeviceDiscovery Hook', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         txt: { version: '1.0.0' },
@@ -285,7 +285,7 @@ describe('useDeviceDiscovery Hook', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -393,7 +393,7 @@ describe('useDeviceDiscovery Hook', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -419,7 +419,7 @@ describe('useDeviceDiscovery Hook', () => {
         id: 'device2:192.168.1.101',
         name: 'device2',
         host: '192.168.1.101',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.101'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -474,7 +474,7 @@ describe('useDeviceDiscovery Hook', () => {
       // Fallback IP should be configurable via .env
 
       const fallbackIP = process.env.EXPO_PUBLIC_FALLBACK_IP || '192.168.1.100';
-      const fallbackPort = parseInt(process.env.EXPO_PUBLIC_FALLBACK_PORT || '9443', 10);
+      const fallbackPort = parseInt(process.env.EXPO_PUBLIC_FALLBACK_PORT || '8443', 10);
 
       expect(fallbackIP).toBeDefined();
       expect(fallbackPort).toBeGreaterThan(0);

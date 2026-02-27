@@ -161,7 +161,7 @@ export class MDNSDiscoveryService {
       id,
       name: service.name,
       host: service.host,
-      port: service.port || 9443, // Default to 9443 if not specified
+      port: service.port || 8443, // Default to 8443 if not specified
       addresses: service.addresses || [service.host],
       discoveryMethod: 'mdns',
       txt: service.txt,

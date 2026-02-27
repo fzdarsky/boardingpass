@@ -3,7 +3,7 @@
  *
  * Tests the complete device discovery workflow including:
  * - mDNS service discovery
- * - Fallback IP detection (192.168.1.100:9443)
+ * - Fallback IP detection (192.168.1.100:8443)
  * - Device list management
  * - Auto-refresh on device appear/disappear
  * - Duplicate device handling
@@ -37,7 +37,7 @@ describe('Device Discovery Integration', () => {
       const mockMDNSEvent = {
         name: 'boardingpass-rpi4',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100', 'fe80::1234:5678:90ab:cdef'],
         txt: {
           version: '1.0.0',
@@ -50,7 +50,7 @@ describe('Device Discovery Integration', () => {
         id: 'boardingpass-rpi4:192.168.1.100',
         name: 'boardingpass-rpi4',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100', 'fe80::1234:5678:90ab:cdef'],
         discoveryMethod: 'mdns',
         txt: { version: '1.0.0', model: 'raspberry-pi-4' },
@@ -70,7 +70,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -97,15 +97,15 @@ describe('Device Discovery Integration', () => {
   describe('Fallback IP Detection', () => {
     it('should attempt fallback IP when mDNS unavailable', async () => {
       // Integration: If mDNS fails or is blocked, try fallback IP
-      // Default: 192.168.1.100:9443 (configurable via .env)
+      // Default: 192.168.1.100:8443 (configurable via .env)
 
       const fallbackConfig = {
         ip: '192.168.1.100',
-        port: 9443,
+        port: 8443,
       };
 
       expect(fallbackConfig.ip).toBe('192.168.1.100');
-      expect(fallbackConfig.port).toBe(9443);
+      expect(fallbackConfig.port).toBe(8443);
     });
 
     it('should check fallback IP via HTTPS HEAD request', async () => {
@@ -114,7 +114,7 @@ describe('Device Discovery Integration', () => {
 
       const fallbackRequest = {
         method: 'HEAD',
-        url: 'https://192.168.1.100:9443/',
+        url: 'https://192.168.1.100:8443/',
         timeout: 5000,
         validateStatus: expect.any(Function),
       };
@@ -131,7 +131,7 @@ describe('Device Discovery Integration', () => {
         id: 'fallback:192.168.1.100',
         name: 'BoardingPass Device', // Generic name for fallback
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'fallback',
         status: 'online',
@@ -162,7 +162,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         txt: { version: '1.0.0' },
@@ -174,7 +174,7 @@ describe('Device Discovery Integration', () => {
         id: 'fallback:192.168.1.100',
         name: 'BoardingPass Device',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'fallback',
         status: 'online',
@@ -196,7 +196,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -219,7 +219,7 @@ describe('Device Discovery Integration', () => {
         id: 'boardingpass:192.168.1.100',
         name: 'boardingpass',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -230,7 +230,7 @@ describe('Device Discovery Integration', () => {
         id: 'boardingpass:192.168.1.101',
         name: 'boardingpass',
         host: '192.168.1.101',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.101'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -250,7 +250,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -261,7 +261,7 @@ describe('Device Discovery Integration', () => {
         id: 'device2:192.168.1.101',
         name: 'device2',
         host: '192.168.1.101',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.101'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -285,7 +285,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -306,7 +306,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 9443,
+        port: 8443,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -405,7 +405,7 @@ describe('Device Discovery Integration', () => {
         id: `device${i}:192.168.1.${i}`,
         name: `device${i}`,
         host: `192.168.1.${i}`,
-        port: 9443,
+        port: 8443,
         addresses: [`192.168.1.${i}`],
         discoveryMethod: 'mdns' as DiscoveryMethod,
         status: 'online' as const,

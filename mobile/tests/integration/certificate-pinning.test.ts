@@ -19,7 +19,7 @@ jest.mock('expo-secure-store');
 describe('Certificate Pinning Integration', () => {
   const mockDeviceId = 'device-test-123';
   const mockHost = '192.168.1.100';
-  const mockPort = 9443;
+  const mockPort = 8443;
 
   beforeEach(() => {
     // Clear all mocks before each test
