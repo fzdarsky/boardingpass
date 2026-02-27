@@ -218,7 +218,7 @@ export function extractCommonName(dn: string): string {
  */
 export async function fetchCertificateMock(
   host: string,
-  port: number = 8443
+  _port: number = 8443
 ): Promise<RawCertificateData> {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 500));

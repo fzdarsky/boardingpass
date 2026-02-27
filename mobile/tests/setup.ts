@@ -12,7 +12,7 @@ jest.mock('expo-secure-store', () => ({
 }));
 
 jest.mock('expo-crypto', () => ({
-  digestStringAsync: jest.fn(),
+  digestStringAsync: jest.fn().mockResolvedValue('a'.repeat(64)),
   CryptoDigestAlgorithm: {
     SHA256: 'SHA256',
   },
@@ -39,16 +39,45 @@ jest.mock('react-native-zeroconf', () => ({
   })),
 }));
 
-// Mock axios
-jest.mock('axios');
+// Mock axios with a factory that returns a working instance
+jest.mock('axios', () => {
+  const mockAxiosInstance = {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    head: jest.fn(),
+    patch: jest.fn(),
+    request: jest.fn(),
+    interceptors: {
+      request: { use: jest.fn(), eject: jest.fn() },
+      response: { use: jest.fn(), eject: jest.fn() },
+    },
+    defaults: { headers: { common: {} } },
+  };
 
-// Mock secure-remote-password
+  return {
+    __esModule: true,
+    default: {
+      ...mockAxiosInstance,
+      create: jest.fn(() => ({ ...mockAxiosInstance })),
+      isAxiosError: jest.fn((err: unknown) => !!(err as Record<string, unknown>)?.isAxiosError),
+    },
+  };
+});
+
+// Mock secure-remote-password/client (used as: import * as srp from 'secure-remote-password/client')
 jest.mock('secure-remote-password/client', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => ({
-    generateEphemeral: jest.fn(),
-    deriveSession: jest.fn(),
+  generateEphemeral: jest.fn(() => ({
+    secret: 'mock-secret',
+    public: 'mock-public-A',
   })),
+  derivePrivateKey: jest.fn(() => 'mock-private-key'),
+  deriveSession: jest.fn(() => ({
+    key: 'mock-session-key',
+    proof: 'mock-client-proof-M1',
+  })),
+  verifySession: jest.fn(),
 }));
 
 // Silence console warnings in tests

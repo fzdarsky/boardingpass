@@ -8,7 +8,7 @@
  * 4. Certificate trust workflow
  */
 
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 import { useCertificateValidation } from '../../src/hooks/useCertificateValidation';
 import * as SecureStore from 'expo-secure-store';
 import { CertificateInfo } from '../../src/types/certificate';
@@ -64,17 +64,12 @@ describe('Certificate Pinning Integration', () => {
       // For now, this test demonstrates the expected behavior
 
       await act(async () => {
-        const validationResult = await result.current.validateCertificate(
-          mockDeviceId,
-          mockHost,
-          mockPort,
-          true
-        );
+        await result.current.validateCertificate(mockDeviceId, mockHost, mockPort, true);
 
-        // For mock cert, it's self-signed, but in real scenario:
-        // expect(validationResult.certificate.isSelfSigned).toBe(false);
-        // expect(validationResult.requiresUserTrust).toBe(false);
-        // expect(validationResult.isValid).toBe(true);
+        // For mock cert, it's self-signed, but in real scenario with CA-signed cert:
+        // certificate.isSelfSigned would be false
+        // requiresUserTrust would be false
+        // isValid would be true
       });
     });
   });
@@ -315,7 +310,7 @@ describe('Certificate Pinning Integration', () => {
     });
 
     it('should handle certificate fetch errors', async () => {
-      const { result } = renderHook(() => useCertificateValidation());
+      renderHook(() => useCertificateValidation());
 
       // Note: With useMock=false, this would test real certificate fetch errors
       // For now, mock version doesn't throw, but in production:
@@ -350,19 +345,15 @@ describe('Certificate Pinning Integration', () => {
     it('should track validation in progress', async () => {
       const { result } = renderHook(() => useCertificateValidation());
 
-      let validatingDuringFetch = false;
-
       await act(async () => {
         const promise = result.current.validateCertificate(mockDeviceId, mockHost, mockPort, true);
 
         // Check if validating flag is set during async operation
-        validatingDuringFetch = result.current.isValidating;
+        // Note: validating flag may not be observable synchronously in test env
+        void result.current.isValidating;
 
         await promise;
       });
-
-      // Validation flag should have been true during fetch
-      // expect(validatingDuringFetch).toBe(true);
 
       // And false after completion
       expect(result.current.isValidating).toBe(false);

@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Card, Text, List, Chip, Divider, useTheme } from 'react-native-paper';
+import { View, StyleSheet } from 'react-native';
+import { Card, Text, Chip, Divider, useTheme } from 'react-native-paper';
 import type {
   NetworkConfig as NetworkConfigType,
   NetworkInterface,
@@ -55,7 +55,7 @@ export function NetworkConfig({ networkConfig, showStatusIndicators = true }: Ne
       />
       <Card.Content>
         {sortedInterfaces.map((iface, idx) => (
-          <View key={`iface-${iface.index}-${iface.name}`}>
+          <View key={`iface-${idx}-${iface.name}`}>
             {idx > 0 && <Divider style={styles.divider} />}
             <NetworkInterfaceItem
               interface={iface}
@@ -152,7 +152,7 @@ function NetworkInterfaceItem({
               </Text>
               {ipv4Addresses.map(addr => (
                 <Text
-                  key={`ipv4-${addr.address}-${addr.prefixLength}`}
+                  key={`ipv4-${addr.ip}-${addr.prefix}`}
                   variant="bodyMedium"
                   style={styles.monospace}
                 >
@@ -170,7 +170,7 @@ function NetworkInterfaceItem({
               </Text>
               {ipv6Addresses.map(addr => (
                 <Text
-                  key={`ipv6-${addr.address}-${addr.prefixLength}`}
+                  key={`ipv6-${addr.ip}-${addr.prefix}`}
                   variant="bodyMedium"
                   style={styles.monospace}
                 >

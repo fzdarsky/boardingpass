@@ -19,13 +19,11 @@ export interface AppError {
   context?: Record<string, any>;
 }
 
-const MAX_MESSAGE_LENGTH = 150;
-
 /**
  * Convert technical error message to user-friendly message
  */
 export function getErrorMessage(error: AppError): string {
-  const { type, context } = error;
+  const { type } = error;
 
   switch (type) {
     case 'network':
@@ -307,32 +305,6 @@ function getValidationErrorMessage(error: AppError): string {
   }
 
   return 'Invalid input. Please check your entry and try again.';
-}
-
-/**
- * Sanitize error message to remove technical details
- */
-function sanitizeMessage(message: string): string {
-  if (!message) {
-    return 'An error occurred';
-  }
-
-  // Remove stack traces
-  message = message.split('\n')[0];
-
-  // Remove URLs and IPs
-  message = message.replace(/https?:\/\/[^\s]+/gi, '[URL]');
-  message = message.replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '[IP]');
-
-  // Remove technical error codes
-  message = message.replace(/\b(E[A-Z]+|ERR_[A-Z_]+)\b/g, '');
-
-  // Limit length
-  if (message.length > MAX_MESSAGE_LENGTH) {
-    message = message.substring(0, MAX_MESSAGE_LENGTH - 3) + '...';
-  }
-
-  return message.trim();
 }
 
 /**

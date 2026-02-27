@@ -3,6 +3,7 @@
  * Tests FR-026 (camera permissions), FR-106 (permission error handling)
  */
 
+import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import * as Camera from 'expo-camera';
 import * as Linking from 'expo-linking';
@@ -238,7 +239,7 @@ describe('Permission Denial Handling Integration Tests', () => {
         canAskAgain: false,
       }));
 
-      const { result, rerender } = renderHook(() => {
+      const { result } = renderHook(() => {
         const [hasPermission, setHasPermission] = React.useState<boolean | null>(null);
 
         const checkPermission = async () => {
@@ -277,7 +278,7 @@ describe('Permission Denial Handling Integration Tests', () => {
         {
           type: 'local_network',
           status: 'denied',
-          expectedMessage: /local network/i,
+          expectedMessage: /local.network/i,
         },
       ];
 

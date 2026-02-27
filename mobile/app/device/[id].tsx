@@ -18,7 +18,7 @@
  * - T095: Network interface status indicators
  */
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, View, StyleSheet, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Appbar, Text, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';

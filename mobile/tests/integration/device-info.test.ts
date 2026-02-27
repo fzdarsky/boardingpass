@@ -11,7 +11,7 @@
  * This test validates User Story 3 (Device Information Display) integration.
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 
 describe('Device Information Retrieval Integration', () => {
   describe('Successful Information Retrieval', () => {
@@ -334,7 +334,6 @@ describe('Device Information Retrieval Integration', () => {
   describe('Retry Mechanism (T092)', () => {
     it('should support manual retry on transient failures', async () => {
       let attemptCount = 0;
-      const maxRetries = 3;
 
       const mockFetch = () => {
         attemptCount++;
@@ -347,13 +346,13 @@ describe('Device Information Retrieval Integration', () => {
       // Simulate retries
       try {
         await mockFetch();
-      } catch (err) {
+      } catch {
         expect(attemptCount).toBe(1);
       }
 
       try {
         await mockFetch();
-      } catch (err) {
+      } catch {
         expect(attemptCount).toBe(2);
       }
 

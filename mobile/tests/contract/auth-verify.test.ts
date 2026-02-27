@@ -156,7 +156,7 @@ describe('POST /auth/srp/verify Contract', () => {
       };
 
       expect(errorResponse).toHaveProperty('error');
-      expect(errorResponse.message).toContain('locked');
+      expect(errorResponse.error).toContain('locked');
       // Account locked due to brute force protection
     });
 
