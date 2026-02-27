@@ -9,6 +9,7 @@
  */
 
 import Zeroconf from 'react-native-zeroconf';
+import { Platform } from 'react-native';
 import { Device } from '@/types/device';
 
 export interface MDNSService {
@@ -48,7 +49,18 @@ export class MDNSDiscoveryService {
       // eslint-disable-next-line no-console
       console.log(`Started mDNS scan for ${this.serviceType}`);
     } catch (error) {
+      // On iOS, mDNS may fail on simulator - handle gracefully
+      if (Platform.OS === 'ios') {
+        console.warn('mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.');
+        // Don't throw - allow app to continue with fallback discovery
+        this.isScanning = false;
+        return;
+      }
+
+      // Log error for non-iOS platforms
       console.error('Failed to start mDNS scan:', error);
+
+      // On other platforms, throw the error
       throw new Error('mDNS not available');
     }
   }

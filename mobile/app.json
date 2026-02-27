@@ -5,6 +5,11 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f3efe3"
+    },
     "userInterfaceStyle": "automatic",
     "scheme": "boardingpass",
     "assetBundlePatterns": [
@@ -12,7 +17,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.boardingpass.mobile",
+      "bundleIdentifier": "org.boardingpass-project.mobile",
       "deploymentTarget": "15.0",
       "infoPlist": {
         "NSCameraUsageDescription": "Camera access is required to scan QR codes for device connection",
@@ -23,7 +28,7 @@
       }
     },
     "android": {
-      "package": "com.boardingpass.mobile",
+      "package": "org.boardingpass-project.mobile",
       "compileSdkVersion": 34,
       "targetSdkVersion": 34,
       "minSdkVersion": 29,
@@ -43,7 +48,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Camera access is required to scan QR codes for device connection"
+          "cameraPermission": "Camera access is required to scan QR codes for device connection",
+          "microphonePermission": false
         }
       ],
       [

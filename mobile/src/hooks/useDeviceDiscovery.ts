@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Platform } from 'react-native';
 import { Device } from '@/types/device';
 import { getMDNSDiscoveryService } from '@/services/discovery/mdns';
 import { getFallbackIPService } from '@/services/discovery/fallback';
@@ -133,9 +134,19 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       const cleanupResolved = mdnsService.current.onDeviceResolved(addOrUpdateDevice);
       const cleanupRemoved = mdnsService.current.onDeviceRemoved(removeDevice);
       const cleanupError = mdnsService.current.onError(err => {
+        // On iOS, mDNS errors are expected on simulator - handle gracefully
+        if (Platform.OS === 'ios') {
+          console.warn('mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.');
+          // Don't show error to user - just stop scanning and clear any previous errors
+          setError(null);
+          setIsScanning(false);
+          return;
+        }
+
+        // Only log as error for non-iOS platforms (to avoid triggering React error boundary on simulator)
         console.error('mDNS error:', err);
 
-        // Convert to AppError with context
+        // Convert to AppError with context for other platforms
         const appError = toAppError(err, isNetworkError(err) ? 'network' : 'unknown');
         appError.context = {
           ...appError.context,
@@ -163,6 +174,16 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
         console.log('Discovery timeout reached');
       }, 10000);
     } catch (err) {
+      // On iOS, mDNS errors are expected on simulator - handle gracefully
+      if (Platform.OS === 'ios') {
+        console.warn('mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.');
+        setError(null); // Clear any previous errors
+        setIsScanning(false);
+        // Still check fallback IP
+        checkFallback();
+        return;
+      }
+
       const appError = toAppError(err, isNetworkError(err) ? 'network' : 'unknown');
       appError.context = {
         ...appError.context,

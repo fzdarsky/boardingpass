@@ -8,7 +8,8 @@
 .PHONY: test-e2e-service test-e2e-cli test-e2e-app-ios test-e2e-app-android test-e2e-app test-e2e-all
 .PHONY: test-contract-service test-contract-app test-contract-all
 .PHONY: test-service test-cli test-app test-all
-.PHONY: run-service run-cli run-app-ios run-app-android run-app
+.PHONY: run-service run-cli run-app-ios run-app-ios-device run-app-android run-app
+.PHONY: list-ios-devices
 .PHONY: clean-service clean-cli clean-cache-app clean-native-app clean-app clean-all
 .PHONY: clean-service-full clean-cli-full clean-app-full clean-all-full
 .PHONY: rebuild-app-ios rebuild-app-android fix-app
@@ -62,6 +63,14 @@ ifeq ($(UNAME_S),Darwin)
 else
 	DEFAULT_PLATFORM := android
 endif
+
+# iOS simulator default (can be overridden with IOS_DEVICE env var)
+IOS_DEVICE ?= iPhone 17 Pro
+
+# Physical iOS device name (can be overridden with IOS_PHYSICAL_DEVICE env var)
+# To find your device name, run: xcrun devicectl list devices
+# Use the exact name shown in the "Name" column
+IOS_PHYSICAL_DEVICE ?= a phone
 
 # ============================================================================
 # Default Target
@@ -123,9 +132,11 @@ help:
 	@echo "Running:"
 	@echo "  run-service             - Start BoardingPass service"
 	@echo "  run-cli                 - Run boarding CLI (interactive)"
-	@echo "  run-app-ios             - Run app on iOS simulator"
+	@echo "  run-app-ios             - Run app on iOS simulator (default: $(IOS_DEVICE))"
+	@echo "  run-app-ios-device      - Run app on physical iOS device (default: $(IOS_PHYSICAL_DEVICE))"
 	@echo "  run-app-android         - Run app on Android emulator"
 	@echo "  run-app                 - Run app on default platform ($(DEFAULT_PLATFORM))"
+	@echo "  list-ios-devices        - List all available iOS devices and simulators"
 	@echo ""
 	@echo "Cleaning (build artifacts only):"
 	@echo "  clean-service           - Remove service binary"
@@ -395,10 +406,29 @@ run-cli: build-cli
 	@echo "Running boarding CLI..."
 	@$(BIN_DIR)/$(CLI_BINARY_NAME)
 
-## run-app-ios: Run mobile app on iOS simulator
+## run-app-ios: Run mobile app on iOS simulator (default: $(IOS_DEVICE))
 run-app-ios:
-	@echo "Starting Metro bundler and running on iOS..."
-	@cd $(MOBILE_DIR) && npm run ios
+	@echo "Starting Metro bundler and running on $(IOS_DEVICE)..."
+	@cd $(MOBILE_DIR) && npx expo run:ios --device "$(IOS_DEVICE)"
+
+## run-app-ios-device: Run mobile app on connected physical iOS device
+run-app-ios-device:
+	@echo "Starting Metro bundler and running on iOS device: $(IOS_PHYSICAL_DEVICE)..."
+	@echo "To use a different device, run: make run-app-ios-device IOS_PHYSICAL_DEVICE='<device-name>'"
+	@echo "Or list devices with: make list-ios-devices"
+	@cd $(MOBILE_DIR) && npx expo run:ios --device "$(IOS_PHYSICAL_DEVICE)"
+
+## list-ios-devices: List all available iOS devices (simulators and physical)
+list-ios-devices:
+	@echo "=== Physical iOS Devices ==="
+	@xcrun devicectl list devices 2>&1 || echo "Error listing physical devices (devicectl may not be available)"
+	@echo ""
+	@echo "=== iOS Simulators ==="
+	@xcrun simctl list devices available | grep -E "^\s+" | grep -v "unavailable" || echo "No simulators found"
+	@echo ""
+	@echo "To run on a specific device, use:"
+	@echo "  make run-app-ios IOS_DEVICE='<simulator-name>'"
+	@echo "  make run-app-ios-device IOS_PHYSICAL_DEVICE='<device-name>'"
 
 ## run-app-android: Run mobile app on Android emulator
 run-app-android:

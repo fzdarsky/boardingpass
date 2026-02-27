@@ -5,7 +5,8 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "ios": "expo run:ios",
+    "ios": "expo run:ios --device \"iPhone 17 Pro\"",
+    "ios:device": "expo run:ios",
     "android": "expo run:android",
     "web": "expo start --web",
     "test": "jest",

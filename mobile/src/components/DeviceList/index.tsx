@@ -78,7 +78,7 @@ export function DeviceList({
         </View>
         {onStartScan && (
           <Button mode="contained" onPress={onStartScan} icon="radar" style={styles.scanButton}>
-            Start Scan
+            Scan Network
           </Button>
         )}
       </View>

@@ -2,60 +2,120 @@
  * Material Design Theme Configuration
  *
  * React Native Paper theme for the BoardingPass mobile app.
- * Based on Material Design 3 (Material You) guidelines.
+ * Colors generated with Material Theme Builder.
  */
 
-import { MD3LightTheme as DefaultTheme, configureFonts } from 'react-native-paper';
+import { configureFonts } from 'react-native-paper';
 import type { MD3Theme } from 'react-native-paper';
 
 /**
- * Color palette
- *
- * Based on Material Design color system with accessibility in mind (WCAG AA compliant)
+ * Light color palette — exported from Material Theme Builder
  */
-const colors = {
-  // Primary colors (blue - represents trust and security)
-  primary: '#1976D2', // Material Blue 700
+const lightColors = {
+  primary: '#2D628B',
   onPrimary: '#FFFFFF',
-  primaryContainer: '#BBDEFB', // Material Blue 100
-  onPrimaryContainer: '#01579B',
+  primaryContainer: '#CDE5FF',
+  onPrimaryContainer: '#0A4A72',
 
-  // Secondary colors (teal - represents technology)
-  secondary: '#00796B', // Material Teal 700
+  secondary: '#2D628C',
   onSecondary: '#FFFFFF',
-  secondaryContainer: '#B2DFDB', // Material Teal 100
-  onSecondaryContainer: '#004D40',
+  secondaryContainer: '#CDE5FF',
+  onSecondaryContainer: '#0A4A72',
 
-  // Tertiary colors (orange - for warnings/alerts)
-  tertiary: '#F57C00', // Material Orange 700
+  tertiary: '#715188',
   onTertiary: '#FFFFFF',
-  tertiaryContainer: '#FFE0B2', // Material Orange 100
-  onTertiaryContainer: '#E65100',
+  tertiaryContainer: '#F3DAFF',
+  onTertiaryContainer: '#583A6F',
 
-  // Error colors
-  error: '#D32F2F', // Material Red 700
+  error: '#BA1A1A',
   onError: '#FFFFFF',
-  errorContainer: '#FFCDD2', // Material Red 100
-  onErrorContainer: '#B71C1C',
+  errorContainer: '#FFDAD6',
+  onErrorContainer: '#93000A',
 
-  // Background colors
-  background: '#FFFFFF',
-  onBackground: '#1C1B1F',
+  background: '#F7F9FF',
+  onBackground: '#181C20',
 
-  // Surface colors
-  surface: '#FFFFFF',
-  onSurface: '#1C1B1F',
-  surfaceVariant: '#E7E0EC',
-  onSurfaceVariant: '#49454F',
+  surface: '#FDF9EC',
+  onSurface: '#1C1C14',
+  surfaceVariant: '#E7E3D1',
+  onSurfaceVariant: '#49473A',
 
-  // Outline
-  outline: '#79747E',
-  outlineVariant: '#CAC4D0',
+  outline: '#7A7768',
+  outlineVariant: '#CAC7B5',
 
-  // Additional colors
-  surfaceDisabled: '#1C1B1F1F', // 12% opacity
-  onSurfaceDisabled: '#1C1B1F61', // 38% opacity
-  backdrop: '#00000066', // 40% opacity
+  shadow: '#000000',
+  scrim: '#000000',
+  inverseSurface: '#323128',
+  inverseOnSurface: '#F5F1E3',
+  inversePrimary: '#9ACBFA',
+
+  surfaceDisabled: '#1C1C141F',
+  onSurfaceDisabled: '#1C1C1461',
+  backdrop: '#00000066',
+
+  elevation: {
+    level0: 'transparent',
+    level1: '#F8F4E6',
+    level2: '#F2EEE0',
+    level3: '#ECE8DA',
+    level4: '#EAE6D7',
+    level5: '#E6E2D3',
+  },
+};
+
+/**
+ * Dark color palette — exported from Material Theme Builder
+ */
+const darkColors = {
+  primary: '#9ACBFA',
+  onPrimary: '#003352',
+  primaryContainer: '#0A4A72',
+  onPrimaryContainer: '#CDE5FF',
+
+  secondary: '#9ACBFA',
+  onSecondary: '#003352',
+  secondaryContainer: '#0A4A72',
+  onSecondaryContainer: '#CDE5FF',
+
+  tertiary: '#DEB8F7',
+  onTertiary: '#412357',
+  tertiaryContainer: '#583A6F',
+  onTertiaryContainer: '#F3DAFF',
+
+  error: '#FFB4AB',
+  onError: '#690005',
+  errorContainer: '#93000A',
+  onErrorContainer: '#FFDAD6',
+
+  background: '#101418',
+  onBackground: '#E0E2E8',
+
+  surface: '#14140C',
+  onSurface: '#E6E2D5',
+  surfaceVariant: '#49473A',
+  onSurfaceVariant: '#CAC7B5',
+
+  outline: '#949181',
+  outlineVariant: '#49473A',
+
+  shadow: '#000000',
+  scrim: '#000000',
+  inverseSurface: '#E6E2D5',
+  inverseOnSurface: '#323128',
+  inversePrimary: '#2D628B',
+
+  surfaceDisabled: '#E6E2D51F',
+  onSurfaceDisabled: '#E6E2D561',
+  backdrop: '#00000066',
+
+  elevation: {
+    level0: 'transparent',
+    level1: '#1E1E15',
+    level2: '#23231C',
+    level3: '#282822',
+    level4: '#2A2A24',
+    level5: '#2D2D27',
+  },
 };
 
 /**
@@ -169,18 +229,32 @@ const fontConfig = {
   },
 };
 
-/**
- * Theme configuration
- */
-export const theme: MD3Theme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    ...colors,
-  },
-  fonts: configureFonts({ config: fontConfig }),
-  roundness: 12, // Rounded corners for cards and buttons
+const fonts = configureFonts({ config: fontConfig });
+
+const baseTheme = {
+  version: 3 as const,
+  isV3: true,
+  fonts,
+  roundness: 12,
+  animation: { scale: 1.0, defaultAnimationDuration: 220 },
 };
+
+export const lightTheme: MD3Theme = {
+  ...baseTheme,
+  dark: false,
+  mode: 'exact',
+  colors: lightColors,
+} as MD3Theme;
+
+export const darkTheme: MD3Theme = {
+  ...baseTheme,
+  dark: true,
+  mode: 'adaptive',
+  colors: darkColors,
+} as MD3Theme;
+
+/** Default theme (light) for static style references */
+export const theme = lightTheme;
 
 /**
  * Spacing scale (multiples of 4)

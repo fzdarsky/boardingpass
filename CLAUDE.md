@@ -202,6 +202,7 @@ make install-deps-app          # Install dependencies
 make generate-app              # Generate TypeScript types from OpenAPI spec
 make build-app-ios             # Generate iOS native project
 make run-app-ios               # Run on iOS simulator
+make run-app-ios-device        # Run on connected physical iOS device
 ```
 
 Or using npm directly:
@@ -237,7 +238,8 @@ mobile/
 ```bash
 # Development
 npm start                    # Start Metro bundler
-npm run ios                  # Run on iOS
+npm run ios                  # Run on iOS simulator (iPhone 17 Pro)
+npm run ios:device           # Run on connected physical iOS device (prompts for selection)
 npm run android              # Run on Android
 npm run web                  # Run in browser (limited functionality)
 
@@ -440,6 +442,56 @@ npm run ios
 ```
 
 If errors persist, manually patch `node_modules/expo-dev-menu/ios/DevMenuViewController.swift` to use `#if targetEnvironment(simulator)` instead of `TARGET_IPHONE_SIMULATOR`. See [mobile/README.md](mobile/README.md) for details.
+
+**Running on physical iOS device:**
+
+The default `make run-app-ios` targets a simulator. To run on a connected physical iOS device:
+
+```bash
+# First, list available devices to find your device name
+make list-ios-devices
+
+# Then run on your physical device (default: "a phone")
+make run-app-ios-device
+
+# Or specify a different device name
+make run-app-ios-device IOS_PHYSICAL_DEVICE='My iPhone'
+```
+
+Or using npm:
+
+```bash
+cd mobile
+npm run ios:device        # Uses default physical device name
+```
+
+The default physical device name is set in the Makefile as `IOS_PHYSICAL_DEVICE`. To permanently change it:
+
+1. Find your device name: `make list-ios-devices`
+2. Update the Makefile variable or set an environment variable:
+
+   ```bash
+   export IOS_PHYSICAL_DEVICE='My iPhone'
+   make run-app-ios-device
+   ```
+
+**Important - mDNS Limitation on Free Apple Developer Accounts:**
+
+The Multicast Networking entitlement required for mDNS device discovery is **NOT available** with free Apple Developer accounts (Personal Teams). This means:
+
+- ✅ The app works perfectly on physical devices with **manual IP entry**
+- ❌ Automatic mDNS device discovery is **disabled** (fallback option required)
+- ✅ To enable mDNS discovery: enroll in the paid **Apple Developer Program** ($99/year), then uncomment the multicast plugin in `mobile/app.json` and rebuild
+
+The multicast plugin line has been commented out by default to support free accounts. The app gracefully degrades to manual device entry when mDNS is unavailable.
+
+**Note**: If you see a warning about "Unexpected devicectl JSON version output", this may indicate a devicectl compatibility issue. The app should still run correctly. If deployment fails, ensure:
+
+- Your physical device is connected via USB and unlocked
+- You've trusted the computer on your iOS device
+- Xcode Command Line Tools are up to date: `xcode-select --install`
+- The device name matches exactly (check with `make list-ios-devices`)
+- You've configured code signing in Xcode with your Apple ID
 
 **Missing native modules (e.g., expo-haptics):**
 
