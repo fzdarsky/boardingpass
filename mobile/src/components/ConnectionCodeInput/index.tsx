@@ -24,8 +24,7 @@
 
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { TextInput, HelperText, IconButton } from 'react-native-paper';
-import { spacing } from '../../theme';
+import { TextInput, HelperText } from 'react-native-paper';
 import { validateAndSanitizeConnectionCode } from '../../utils/validation';
 
 /**
@@ -198,19 +197,6 @@ export default function ConnectionCodeInput({
       <HelperText type={hasError ? 'error' : 'info'} visible={Boolean(displayError || isFocused)}>
         {displayError || 'Enter the connection code displayed on the device'}
       </HelperText>
-
-      {/* Submit button (optional, for better UX on some devices) */}
-      {onSubmit && value.length > 0 && !disabled && (
-        <View style={styles.submitButtonContainer}>
-          <IconButton
-            icon="arrow-right-circle"
-            size={32}
-            onPress={handleSubmit}
-            accessibilityLabel="Submit connection code"
-            disabled={hasError}
-          />
-        </View>
-      )}
     </View>
   );
 }
@@ -222,10 +208,5 @@ const styles = StyleSheet.create({
   input: {
     fontSize: 16,
     fontFamily: 'monospace', // Use monospace font for codes
-  },
-  submitButtonContainer: {
-    position: 'absolute',
-    right: spacing.sm,
-    top: spacing.sm,
   },
 });

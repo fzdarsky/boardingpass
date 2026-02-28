@@ -1,3 +1,7 @@
+// Polyfill crypto.getRandomValues() for secure-remote-password library.
+// MUST be imported before any SRP/crypto code is loaded.
+import 'react-native-get-random-values';
+
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { useColorScheme } from 'react-native';

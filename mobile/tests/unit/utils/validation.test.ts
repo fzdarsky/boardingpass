@@ -15,6 +15,7 @@ import {
   isValidUUID,
   isValidDeviceName,
   sanitizeInput,
+  normalizeConnectionCode,
   validateAndSanitizeConnectionCode,
   parseAndValidateHostPort,
 } from '../../../src/utils/validation';
@@ -207,15 +208,36 @@ describe('Host:Port Parsing', () => {
 
 describe('Connection Code Validation', () => {
   describe('isValidConnectionCode', () => {
-    it('should validate correct connection codes', () => {
+    it('should validate base64 connection codes', () => {
       expect(isValidConnectionCode('YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwCg==')).toBe(
         true
       );
       expect(isValidConnectionCode('A'.repeat(32))).toBe(true);
     });
 
+    it('should validate MAC address connection codes (colon-separated)', () => {
+      expect(isValidConnectionCode('AA:BB:CC:DD:EE:FF')).toBe(true);
+      expect(isValidConnectionCode('00:11:22:33:44:55')).toBe(true);
+      expect(isValidConnectionCode('aa:bb:cc:dd:ee:ff')).toBe(true);
+      expect(isValidConnectionCode('  AA:BB:CC:DD:EE:FF  ')).toBe(true);
+    });
+
+    it('should validate MAC address connection codes (dash-separated)', () => {
+      expect(isValidConnectionCode('AA-BB-CC-DD-EE-FF')).toBe(true);
+      expect(isValidConnectionCode('00-11-22-33-44-55')).toBe(true);
+      expect(isValidConnectionCode('aa-bb-cc-dd-ee-ff')).toBe(true);
+    });
+
+    it('should validate bare hex MAC connection codes (barcode scans)', () => {
+      expect(isValidConnectionCode('94C691A818EA')).toBe(true);
+      expect(isValidConnectionCode('AABBCCDDEEFF')).toBe(true);
+      expect(isValidConnectionCode('001122334455')).toBe(true);
+      expect(isValidConnectionCode('aabbccddeeff')).toBe(true);
+    });
+
     it('should reject invalid connection codes', () => {
       expect(isValidConnectionCode('')).toBe(false);
+      expect(isValidConnectionCode('   ')).toBe(false);
       expect(isValidConnectionCode('short')).toBe(false);
       expect(isValidConnectionCode('invalid!chars@here#')).toBe(false);
     });
@@ -286,6 +308,45 @@ describe('Device Name Validation', () => {
   });
 });
 
+describe('Connection Code Normalization', () => {
+  describe('normalizeConnectionCode', () => {
+    it('should strip colons and lowercase (server MAC format)', () => {
+      expect(normalizeConnectionCode('94:c6:91:a8:18:ea')).toBe('94c691a818ea');
+      expect(normalizeConnectionCode('94:C6:91:A8:18:EA')).toBe('94c691a818ea');
+    });
+
+    it('should strip dashes and lowercase', () => {
+      expect(normalizeConnectionCode('94-C6-91-A8-18-EA')).toBe('94c691a818ea');
+    });
+
+    it('should lowercase bare hex (barcode scan format)', () => {
+      expect(normalizeConnectionCode('94C691A818EA')).toBe('94c691a818ea');
+    });
+
+    it('should strip spaces', () => {
+      expect(normalizeConnectionCode('94 C6 91 A8 18 EA')).toBe('94c691a818ea');
+    });
+
+    it('should be idempotent on already-normalized input', () => {
+      expect(normalizeConnectionCode('94c691a818ea')).toBe('94c691a818ea');
+    });
+
+    it('should produce identical output for all MAC formats', () => {
+      const colon = normalizeConnectionCode('94:C6:91:A8:18:EA');
+      const dash = normalizeConnectionCode('94-c6-91-a8-18-ea');
+      const bare = normalizeConnectionCode('94C691A818EA');
+      const spaced = normalizeConnectionCode('94 c6 91 a8 18 ea');
+      expect(colon).toBe(bare);
+      expect(dash).toBe(bare);
+      expect(spaced).toBe(bare);
+    });
+
+    it('should handle alphanumeric board serial', () => {
+      expect(normalizeConnectionCode('ABC123-DEF456')).toBe('abc123def456');
+    });
+  });
+});
+
 describe('Input Sanitization', () => {
   describe('sanitizeInput', () => {
     it('should remove control characters', () => {
@@ -305,12 +366,19 @@ describe('Input Sanitization', () => {
   });
 
   describe('validateAndSanitizeConnectionCode', () => {
-    it('should validate and sanitize valid codes', () => {
+    it('should validate and sanitize valid base64 codes', () => {
       const result = validateAndSanitizeConnectionCode(
         '  YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwCg==  '
       );
       expect(result.valid).toBe(true);
       expect(result.sanitized).toBe('YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwCg==');
+      expect(result.error).toBeUndefined();
+    });
+
+    it('should validate and sanitize MAC address codes', () => {
+      const result = validateAndSanitizeConnectionCode('  AA:BB:CC:DD:EE:FF  ');
+      expect(result.valid).toBe(true);
+      expect(result.sanitized).toBe('AA:BB:CC:DD:EE:FF');
       expect(result.error).toBeUndefined();
     });
 

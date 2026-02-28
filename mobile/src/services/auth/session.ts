@@ -274,11 +274,16 @@ export class SessionManager {
   /**
    * Get storage key for a device's session
    *
+   * SecureStore keys may only contain alphanumeric characters, '.', '-', and '_'.
+   * Device IDs use colons as separators (e.g., "manual:192.168.1.1:8443"),
+   * so we replace them with underscores.
+   *
    * @param deviceId - Device identifier
-   * @returns Secure storage key
+   * @returns Secure storage key safe for SecureStore
    */
   private getStorageKey(deviceId: string): string {
-    return `${SESSION_KEY_PREFIX}${deviceId}`;
+    const sanitized = deviceId.replace(/[^a-zA-Z0-9._-]/g, '_');
+    return `${SESSION_KEY_PREFIX}${sanitized}`;
   }
 }
 

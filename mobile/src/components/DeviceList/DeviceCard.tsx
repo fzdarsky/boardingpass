@@ -11,7 +11,7 @@
 
 import React, { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
-import { Card, Text, Badge, IconButton, Portal, Modal, useTheme } from 'react-native-paper';
+import { Card, Text, Badge, Button, IconButton, Portal, Modal, useTheme } from 'react-native-paper';
 import { Device, DeviceStatus } from '@/types/device';
 import { CertificateStatusIndicator } from '../CertificateInfo/StatusIndicator';
 import { CertificateInfoDisplay } from '../CertificateInfo';
@@ -162,7 +162,9 @@ export function DeviceCard({
         {/* Action Button */}
         {onPress && device.status === 'online' && (
           <Card.Actions>
-            <IconButton icon="login" mode="contained" onPress={onPress} />
+            <Button icon="login" mode="contained" onPress={onPress}>
+              Connect
+            </Button>
           </Card.Actions>
         )}
       </Card>
@@ -219,7 +221,7 @@ function getDiscoveryMethodColor(method: string): string {
     case 'fallback':
       return '#ff9800'; // Orange
     case 'manual':
-      return '#9c27b0'; // Purple
+      return '#2D628B'; // Primary (matches Refresh button)
     default:
       return '#9e9e9e'; // Grey
   }

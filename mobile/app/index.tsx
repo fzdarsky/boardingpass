@@ -69,8 +69,8 @@ export default function DeviceDiscoveryScreen() {
         params: {
           deviceId: device.id,
           deviceName: device.name,
-          deviceHost: device.host,
-          devicePort: device.port.toString(),
+          host: device.host,
+          port: device.port.toString(),
         },
       });
     }
@@ -123,7 +123,7 @@ export default function DeviceDiscoveryScreen() {
   const isAddButtonEnabled = addressInput.trim().length > 0 && !addressError;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
       {/* Device List with integrated features:
           - T044: DeviceCard component with status indicators
           - T045: DeviceList component
@@ -195,7 +195,12 @@ export default function DeviceDiscoveryScreen() {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={handleCloseAddDialog}>Cancel</Button>
-            <Button mode="contained" onPress={handleAddDevice} disabled={!isAddButtonEnabled}>
+            <Button
+              mode="contained"
+              onPress={handleAddDevice}
+              disabled={!isAddButtonEnabled}
+              contentStyle={styles.addDialogButton}
+            >
               Add
             </Button>
           </Dialog.Actions>
@@ -238,5 +243,8 @@ const styles = StyleSheet.create({
   },
   dialog: {
     borderRadius: 4,
+  },
+  addDialogButton: {
+    paddingHorizontal: 24,
   },
 });

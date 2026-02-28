@@ -23,6 +23,7 @@ import {
   isNetworkError,
   AppError,
 } from '../utils/error-messages';
+import { normalizeConnectionCode } from '../utils/validation';
 
 // Progressive delay thresholds (FR-038)
 const PROGRESSIVE_DELAYS = [1000, 2000, 5000, 60000]; // 1s, 2s, 5s, 60s
@@ -196,8 +197,12 @@ export function useAuth(deviceId: string): UseAuthResult {
         // Create fresh SRP service instance
         const srpService = createSRPService();
 
+        // Normalize connection code to canonical form (lowercase, no separators)
+        // Both client and server must apply the same normalization before SRP
+        const normalizedCode = normalizeConnectionCode(connectionCode);
+
         // Perform SRP-6a authentication
-        const result = await srpService.authenticate(apiClient, username, connectionCode);
+        const result = await srpService.authenticate(apiClient, username, normalizedCode);
 
         // Store session securely
         await sessionManager.storeSession(deviceId, result.sessionToken, result.expiresAt);

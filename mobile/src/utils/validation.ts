@@ -55,13 +55,31 @@ export function isValidPort(port: number): boolean {
 /**
  * Connection code validation
  *
- * Format: Base64-encoded string, minimum 32 characters
- * Exact format may vary - this is a permissive check
+ * Accepts common formats:
+ * - MAC address: XX:XX:XX:XX:XX:XX or XX-XX-XX-XX-XX-XX (typical device-generated code)
+ * - Bare hex MAC: XXXXXXXXXXXX (12 hex chars, as scanned from barcodes)
+ * - Base64 string: 32+ chars (alternative encoding)
+ *
+ * This is a permissive client-side gate; the server validates
+ * the actual credential during SRP-6a authentication.
  */
 export function isValidConnectionCode(code: string): boolean {
-  // Allow base64 characters: alphanumeric, +, /, =
-  const base64Pattern = /^[A-Za-z0-9+/=]{32,}$/;
-  return base64Pattern.test(code.trim());
+  const trimmed = code.trim();
+  if (trimmed.length === 0) return false;
+
+  // MAC address format (colon-separated hex pairs)
+  if (/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(trimmed)) return true;
+
+  // MAC address format (dash-separated hex pairs)
+  if (/^([0-9A-Fa-f]{2}-){5}[0-9A-Fa-f]{2}$/.test(trimmed)) return true;
+
+  // Bare hex MAC (12 hex characters, no separators — common from barcode scans)
+  if (/^[0-9A-Fa-f]{12}$/.test(trimmed)) return true;
+
+  // Base64-encoded string (32+ chars)
+  if (/^[A-Za-z0-9+/=]{32,}$/.test(trimmed)) return true;
+
+  return false;
 }
 
 /**
@@ -167,6 +185,24 @@ export function parseAndValidateHostPort(
   }
 
   return { valid: true, host, port };
+}
+
+/**
+ * Normalize a connection code to a canonical form for SRP authentication.
+ *
+ * Strips all non-alphanumeric characters (colons, dashes, spaces) and lowercases,
+ * producing a canonical representation regardless of input format.
+ *
+ * Examples:
+ *   "94:C6:91:A8:18:EA" → "94c691a818ea"
+ *   "94-c6-91-a8-18-ea" → "94c691a818ea"
+ *   "94C691A818EA"      → "94c691a818ea"
+ *
+ * Both the mobile app and the BoardingPass server MUST apply this normalization
+ * before SRP key derivation to ensure the same password bytes are used.
+ */
+export function normalizeConnectionCode(code: string): string {
+  return code.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
 }
 
 /**

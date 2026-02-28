@@ -28,14 +28,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, ScrollView, BackHandler } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import {
-  Surface,
-  Text,
-  Button,
-  SegmentedButtons,
-  ActivityIndicator,
-  Snackbar,
-} from 'react-native-paper';
+import { Text, Button, SegmentedButtons, ActivityIndicator, Snackbar } from 'react-native-paper';
 import { spacing, theme } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 import QRScanner from '@/components/QRScanner';
@@ -200,8 +193,10 @@ export default function AuthenticateScreen(): React.ReactElement {
   /**
    * Handle authentication attempt
    */
-  const handleAuthenticate = async () => {
-    if (!connectionCode || connectionCode.trim().length === 0) {
+  const handleAuthenticate = async (codeOverride?: string) => {
+    const code = codeOverride || connectionCode;
+
+    if (!code || code.trim().length === 0) {
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.log('[Authenticate] Authentication blocked - empty code');
@@ -223,7 +218,7 @@ export default function AuthenticateScreen(): React.ReactElement {
         deviceId,
         host,
         port: portNumber,
-        codeLength: connectionCode.length,
+        codeLength: code.length,
         note: 'Connection code value NEVER logged (FR-029)',
       });
     }
@@ -235,7 +230,7 @@ export default function AuthenticateScreen(): React.ReactElement {
       await authenticationStartFeedback();
 
       // Perform SRP-6a authentication
-      await authenticate(host, portNumber, connectionCode);
+      await authenticate(host, portNumber, code);
 
       if (__DEV__) {
         // eslint-disable-next-line no-console
@@ -308,9 +303,9 @@ export default function AuthenticateScreen(): React.ReactElement {
     setConnectionCode(code);
     setAuthMode('manual');
 
-    // Auto-submit after QR scan
+    // Auto-submit after QR scan — pass code directly to avoid stale closure
     setTimeout(() => {
-      handleAuthenticate();
+      handleAuthenticate(code);
     }, 300);
   };
 
@@ -381,83 +376,81 @@ export default function AuthenticateScreen(): React.ReactElement {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Surface style={styles.surface} elevation={2}>
-          {/* Device information */}
-          <View style={styles.deviceInfo}>
-            <Text variant="headlineSmall" style={styles.deviceName}>
-              {deviceName}
-            </Text>
-            <Text variant="bodyMedium" style={styles.deviceHost}>
-              {host}:{portNumber}
+        {/* Device information */}
+        <View style={styles.deviceInfo}>
+          <Text variant="headlineSmall" style={styles.deviceName}>
+            {deviceName}
+          </Text>
+          <Text variant="bodyMedium" style={styles.deviceHost}>
+            {host}:{portNumber}
+          </Text>
+        </View>
+
+        {/* Mode selector (T072) */}
+        <SegmentedButtons
+          value={authMode}
+          onValueChange={handleModeChange}
+          buttons={[
+            {
+              value: 'manual',
+              label: 'Manual Entry',
+              icon: 'keyboard',
+            },
+            {
+              value: 'qr',
+              label: 'Scan Code',
+              icon: 'barcode-scan',
+            },
+          ]}
+          style={styles.modeSelector}
+        />
+
+        {/* Instructions */}
+        <Text variant="bodyMedium" style={styles.instructions}>
+          Enter the connection code displayed on the device, or scan a code for faster
+          authentication.
+        </Text>
+
+        {/* Connection code input (T069, T071) */}
+        <ConnectionCodeInput
+          value={connectionCode}
+          onChangeText={setConnectionCode}
+          onSubmit={handleAuthenticate}
+          error={error?.message}
+          disabled={isAuthenticating || isDelaying}
+          liveValidation={false}
+        />
+
+        {/* Delay message (T074) */}
+        {isDelaying && (
+          <View style={styles.delayBanner}>
+            <Text variant="bodyMedium" style={styles.delayText}>
+              {getDelayMessage()}
             </Text>
           </View>
+        )}
 
-          {/* Mode selector (T072) */}
-          <SegmentedButtons
-            value={authMode}
-            onValueChange={handleModeChange}
-            buttons={[
-              {
-                value: 'manual',
-                label: 'Manual Entry',
-                icon: 'keyboard',
-              },
-              {
-                value: 'qr',
-                label: 'Scan QR Code',
-                icon: 'qrcode-scan',
-              },
-            ]}
-            style={styles.modeSelector}
-          />
+        {/* Authenticate button */}
+        <Button
+          mode="contained"
+          onPress={() => handleAuthenticate()}
+          loading={isAuthenticating}
+          disabled={isAuthenticating || isDelaying || !connectionCode}
+          style={styles.authenticateButton}
+          contentStyle={styles.authenticateButtonContent}
+        >
+          {isAuthenticating ? 'Authenticating...' : 'Authenticate'}
+        </Button>
 
-          {/* Instructions */}
-          <Text variant="bodyMedium" style={styles.instructions}>
-            Enter the connection code displayed on the device, or scan the QR code for faster
-            authentication.
-          </Text>
-
-          {/* Connection code input (T069, T071) */}
-          <ConnectionCodeInput
-            value={connectionCode}
-            onChangeText={setConnectionCode}
-            onSubmit={handleAuthenticate}
-            error={error?.message}
-            disabled={isAuthenticating || isDelaying}
-            liveValidation={false}
-          />
-
-          {/* Delay message (T074) */}
-          {isDelaying && (
-            <Surface style={styles.delayBanner} elevation={0}>
-              <Text variant="bodyMedium" style={styles.delayText}>
-                {getDelayMessage()}
-              </Text>
-            </Surface>
-          )}
-
-          {/* Authenticate button */}
-          <Button
-            mode="contained"
-            onPress={handleAuthenticate}
-            loading={isAuthenticating}
-            disabled={isAuthenticating || isDelaying || !connectionCode}
-            style={styles.authenticateButton}
-            contentStyle={styles.authenticateButtonContent}
-          >
-            {isAuthenticating ? 'Authenticating...' : 'Authenticate'}
-          </Button>
-
-          {/* Loading indicator */}
-          {isAuthenticating && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator animating={true} size="large" />
-              <Text variant="bodyMedium" style={styles.loadingText}>
-                Performing secure authentication...
-              </Text>
-            </View>
-          )}
-        </Surface>
+        {/* Loading indicator */}
+        {isAuthenticating && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator animating={true} size="large" />
+            <Text variant="bodyMedium" style={styles.loadingText}>
+              Performing secure authentication...
+            </Text>
+          </View>
+        )}
       </ScrollView>
 
       {/* Error/Success snackbar (T075) */}
@@ -485,11 +478,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: spacing.md,
-  },
-  surface: {
+    flexGrow: 1,
+    justifyContent: 'center' as const,
     padding: spacing.lg,
-    borderRadius: 12,
   },
   deviceInfo: {
     marginBottom: spacing.lg,
