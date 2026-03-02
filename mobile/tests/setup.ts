@@ -66,6 +66,23 @@ jest.mock('axios', () => {
   };
 });
 
+// Mock certificate-pinning native module
+jest.mock('../modules/certificate-pinning', () => ({
+  fetchServerCertificate: jest.fn().mockResolvedValue({
+    fingerprint: 'a'.repeat(64),
+    subject: 'CN=mock.local',
+    issuer: 'CN=mock.local',
+    isSelfSigned: true,
+    pemEncoded: '-----BEGIN CERTIFICATE-----\nmock\n-----END CERTIFICATE-----',
+    validFrom: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    validTo: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+  }),
+  pinCertificate: jest.fn(),
+  unpinCertificate: jest.fn(),
+  getPinnedFingerprint: jest.fn().mockReturnValue(null),
+  clearAllPins: jest.fn(),
+}));
+
 // Mock secure-remote-password/client (used as: import * as srp from 'secure-remote-password/client')
 jest.mock('secure-remote-password/client', () => ({
   generateEphemeral: jest.fn(() => ({

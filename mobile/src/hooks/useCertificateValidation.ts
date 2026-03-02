@@ -53,13 +53,12 @@ export function useCertificateValidation() {
     async (
       deviceId: string,
       host: string,
-      port: number = 8443,
-      useMock: boolean = true // Set to true for development until native cert fetching is implemented
+      port: number = 8443
     ): Promise<CertificateValidationResult> => {
       setState(prev => ({ ...prev, isValidating: true, error: null }));
 
       try {
-        const result = await validationService.validateCertificate(deviceId, host, port, useMock);
+        const result = await validationService.validateCertificate(deviceId, host, port);
 
         setState({
           isValidating: false,
@@ -90,9 +89,9 @@ export function useCertificateValidation() {
    * @param certificate - Certificate to trust
    */
   const trustCertificate = useCallback(
-    async (certificate: CertificateInfo): Promise<void> => {
+    async (certificate: CertificateInfo, host?: string, port?: number): Promise<void> => {
       try {
-        await validationService.pinCertificate(certificate);
+        await validationService.pinCertificate(certificate, host, port);
 
         setState(prev => ({
           ...prev,

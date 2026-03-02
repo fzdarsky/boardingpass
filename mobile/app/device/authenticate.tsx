@@ -31,8 +31,10 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Text, Button, SegmentedButtons, ActivityIndicator, Snackbar } from 'react-native-paper';
 import { spacing, theme } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
+import { useCertificateValidation } from '@/hooks/useCertificateValidation';
 import QRScanner from '@/components/QRScanner';
 import ConnectionCodeInput from '@/components/ConnectionCodeInput';
+import { CertificateInfoDisplay } from '@/components/CertificateInfo';
 import {
   authenticationStartFeedback,
   authenticationSuccessFeedback,
@@ -70,6 +72,19 @@ export default function AuthenticateScreen(): React.ReactElement {
 
   const { authenticate, isAuthenticating, error, clearError } = useAuth(deviceId);
 
+  // Certificate validation (TOFU)
+  const {
+    isValidating: isCertValidating,
+    certificate,
+    requiresTrust,
+    error: certError,
+    validateCertificate,
+    trustCertificate,
+  } = useCertificateValidation();
+
+  // Whether the certificate has been validated and trusted
+  const [certReady, setCertReady] = useState(false);
+
   // State
   const [authMode, setAuthMode] = useState<AuthMode>('manual');
   const [connectionCode, setConnectionCode] = useState('');
@@ -84,7 +99,7 @@ export default function AuthenticateScreen(): React.ReactElement {
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
-   * Log authentication screen mount
+   * Log authentication screen mount and run TOFU certificate check
    */
   useEffect(() => {
     if (__DEV__) {
@@ -96,6 +111,40 @@ export default function AuthenticateScreen(): React.ReactElement {
         port: portNumber,
         note: 'Connection code will NEVER be logged (FR-029)',
       });
+    }
+
+    // Run TOFU certificate validation on mount (best-effort, non-blocking)
+    if (host) {
+      validateCertificate(deviceId, host, portNumber)
+        .then(result => {
+          if (result.isValid && !result.requiresUserTrust) {
+            // Certificate is already trusted (pinned or CA-signed)
+            setCertReady(true);
+            if (__DEV__) {
+              // eslint-disable-next-line no-console
+              console.log('[Authenticate] Certificate already trusted', {
+                fingerprint: result.certificate.fingerprint.slice(0, 16) + '...',
+                trustStatus: result.certificate.trustStatus,
+              });
+            }
+          } else if (__DEV__) {
+            // eslint-disable-next-line no-console
+            console.log('[Authenticate] Certificate requires user trust', {
+              trustStatus: result.certificate.trustStatus,
+              isSelfSigned: result.certificate.isSelfSigned,
+            });
+          }
+        })
+        .catch(err => {
+          // Certificate fetch failed (device unreachable, timeout, etc.)
+          // Proceed anyway — the TLS override accepts unpinned certs (TOFU).
+          setCertReady(true);
+          if (__DEV__) {
+            console.warn('[Authenticate] Certificate validation failed, proceeding without TOFU', err);
+          }
+        });
+    } else {
+      setCertReady(true);
     }
 
     // Cleanup on unmount
@@ -116,7 +165,46 @@ export default function AuthenticateScreen(): React.ReactElement {
         clearInterval(countdownTimerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceId, deviceName, host, portNumber]);
+
+  /**
+   * Handle user trusting the certificate (TOFU)
+   */
+  const handleTrustCertificate = async () => {
+    if (!certificate) return;
+
+    try {
+      await trustCertificate(certificate, host, portNumber);
+      setCertReady(true);
+
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[Authenticate] Certificate trusted and pinned', {
+          fingerprint: certificate.fingerprint.slice(0, 16) + '...',
+          host,
+          port: portNumber,
+        });
+      }
+    } catch (err) {
+      if (__DEV__) {
+        console.error('[Authenticate] Failed to trust certificate', err);
+      }
+      setSnackbarMessage('Failed to trust certificate');
+      setShowSnackbar(true);
+    }
+  };
+
+  /**
+   * Handle user rejecting the certificate
+   */
+  const handleRejectCertificate = () => {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[Authenticate] Certificate rejected by user');
+    }
+    router.back();
+  };
 
   /**
    * Handle hardware back button (Android)
@@ -354,9 +442,118 @@ export default function AuthenticateScreen(): React.ReactElement {
   };
 
   /**
-   * Render QR scanner mode
+   * Render certificate validation loading state
    */
-  if (authMode === 'qr') {
+  if (isCertValidating) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator animating={true} size="large" />
+        <Text variant="bodyMedium" style={styles.loadingText}>
+          Verifying device certificate...
+        </Text>
+      </View>
+    );
+  }
+
+  /**
+   * Render certificate error state
+   */
+  if (certError && !requiresTrust && !certReady) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text variant="headlineSmall" style={styles.deviceName}>
+          Connection Failed
+        </Text>
+        <Text variant="bodyMedium" style={[styles.instructions, { marginTop: spacing.md }]}>
+          {certError}
+        </Text>
+        <Button mode="contained" onPress={() => router.back()} style={styles.authenticateButton}>
+          Go Back
+        </Button>
+      </View>
+    );
+  }
+
+  /**
+   * Render certificate trust screen (TOFU)
+   * Rendered inline (not as a Portal dialog) so it stays within the navigation stack.
+   */
+  if (requiresTrust && certificate) {
+    const isCertChanged = certificate.trustStatus === 'changed';
+
+    return (
+      <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.trustContent}
+        >
+          {/* Header */}
+          <View style={styles.trustHeader}>
+            <Text variant="headlineSmall" style={isCertChanged ? styles.errorText : styles.deviceName}>
+              {isCertChanged ? 'Certificate Changed' : 'Trust Certificate?'}
+            </Text>
+          </View>
+
+          {/* Warning for changed certificates */}
+          {isCertChanged && (
+            <View style={styles.warningBox}>
+              <Text variant="bodyMedium" style={styles.warningText}>
+                The certificate for this device has changed since your last connection.
+                This could indicate a security issue or that the device was reconfigured.
+              </Text>
+            </View>
+          )}
+
+          {/* Info for new self-signed certificates */}
+          {!isCertChanged && certificate.isSelfSigned && (
+            <View style={styles.infoBox}>
+              <Text variant="bodyMedium" style={styles.infoText}>
+                This device uses a self-signed certificate. Verify the fingerprint
+                matches the device before trusting it.
+              </Text>
+            </View>
+          )}
+
+          {/* Certificate details */}
+          <CertificateInfoDisplay certificate={certificate} compact={false} />
+
+          {/* Security notice */}
+          <View style={styles.securityNotice}>
+            <Text variant="labelMedium" style={styles.securityTitle}>Security Notice:</Text>
+            <Text variant="bodySmall" style={styles.securityText}>
+              {isCertChanged
+                ? 'Only trust this certificate if you know the device was recently reconfigured. If unexpected, reject and contact your administrator.'
+                : 'Trusting this certificate allows secure connections to this device. The certificate will be pinned to detect future changes.'}
+            </Text>
+          </View>
+
+          {/* Action buttons */}
+          <View style={styles.trustActions}>
+            <Button
+              mode="outlined"
+              onPress={handleRejectCertificate}
+              style={styles.trustButton}
+            >
+              {isCertChanged ? 'Reject' : 'Cancel'}
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleTrustCertificate}
+              style={styles.trustButton}
+              buttonColor={isCertChanged ? theme.colors.error : undefined}
+            >
+              {isCertChanged ? 'Trust Anyway' : 'Trust Certificate'}
+            </Button>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  /**
+   * Render QR scanner mode (only after certificate is trusted)
+   */
+  if (certReady && authMode === 'qr') {
     return (
       <QRScanner
         onCodeScanned={handleCodeScanned}
@@ -367,7 +564,7 @@ export default function AuthenticateScreen(): React.ReactElement {
   }
 
   /**
-   * Render manual entry mode
+   * Render manual entry mode (only after certificate is trusted)
    */
   return (
     <View style={styles.container}>
@@ -474,6 +671,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  centerContent: {
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: spacing.lg,
+  },
   scrollView: {
     flex: 1,
   },
@@ -526,5 +728,58 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: spacing.md,
     color: theme.colors.onSurfaceVariant,
+  },
+  trustContent: {
+    flexGrow: 1,
+    padding: spacing.lg,
+  },
+  trustHeader: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  errorText: {
+    fontWeight: 'bold',
+    color: theme.colors.error,
+  },
+  warningBox: {
+    padding: spacing.md,
+    borderRadius: 8,
+    backgroundColor: theme.colors.errorContainer,
+    marginBottom: spacing.md,
+  },
+  warningText: {
+    color: theme.colors.onErrorContainer,
+    fontWeight: '600',
+  },
+  infoBox: {
+    padding: spacing.md,
+    borderRadius: 8,
+    backgroundColor: theme.colors.secondaryContainer,
+    marginBottom: spacing.md,
+  },
+  infoText: {
+    color: theme.colors.onSecondaryContainer,
+  },
+  securityNotice: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    backgroundColor: theme.colors.surfaceVariant,
+    borderRadius: 8,
+  },
+  securityTitle: {
+    marginBottom: spacing.xs,
+    fontWeight: '600',
+  },
+  securityText: {
+    lineHeight: 20,
+  },
+  trustActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+  },
+  trustButton: {
+    flex: 1,
   },
 });

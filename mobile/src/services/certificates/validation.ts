@@ -14,6 +14,10 @@ import {
   isCertificateExpired,
   fetchCertificateMock,
 } from './utils';
+import {
+  pinCertificate as nativePinCertificate,
+  unpinCertificate as nativeUnpinCertificate,
+} from '../../../modules/certificate-pinning';
 
 export interface CertificateValidationResult {
   certificate: CertificateInfo;
@@ -140,7 +144,7 @@ export class CertificateValidationService {
    *
    * @param certificate - Certificate to pin
    */
-  async pinCertificate(certificate: CertificateInfo): Promise<void> {
+  async pinCertificate(certificate: CertificateInfo, host?: string, port?: number): Promise<void> {
     try {
       // Update trust status if self-signed
       const pinnedCert: CertificateInfo = {
@@ -153,9 +157,15 @@ export class CertificateValidationService {
         userConfirmedAt: certificate.isSelfSigned ? new Date() : certificate.userConfirmedAt,
       };
 
-      // Store in secure storage
+      // Store full certificate metadata in SecureStore (for JS-level display)
       const storageKey = STORAGE_KEYS.certificatePin(certificate.deviceId);
       await this.storage.saveJSON(storageKey, this.serializeCertificate(pinnedCert));
+
+      // Sync fingerprint to native pin store (for TLS override)
+      if (host) {
+        const hostKey = port ? `${host}:${port}` : host;
+        nativePinCertificate(hostKey, certificate.fingerprint);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to pin certificate: ${errorMessage}`);
@@ -190,10 +200,16 @@ export class CertificateValidationService {
    *
    * @param deviceId - Device identifier
    */
-  async removePinnedCertificate(deviceId: string): Promise<void> {
+  async removePinnedCertificate(deviceId: string, host?: string, port?: number): Promise<void> {
     try {
       const storageKey = STORAGE_KEYS.certificatePin(deviceId);
       await this.storage.deleteItem(storageKey);
+
+      // Sync removal to native pin store
+      if (host) {
+        const hostKey = port ? `${host}:${port}` : host;
+        nativeUnpinCertificate(hostKey);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to remove pinned certificate: ${errorMessage}`);

@@ -7,6 +7,7 @@
 
 import { computeCertificateFingerprint, isValidSHA256 } from '../../utils/crypto';
 import { CertificateInfo, TrustStatus } from '../../types/certificate';
+import { fetchServerCertificate } from '../../../modules/certificate-pinning';
 
 /**
  * Raw certificate data from TLS handshake
@@ -20,14 +21,10 @@ export interface RawCertificateData {
 }
 
 /**
- * Fetch certificate from HTTPS endpoint
+ * Fetch certificate from HTTPS endpoint via native TLS handshake.
  *
- * NOTE: In React Native, fetching certificates requires platform-specific code.
- * This function needs to be implemented using:
- * - Native module (iOS: URLSession, Android: OkHttp)
- * - Or a library like react-native-ssl-pinning
- *
- * For now, this is a placeholder that demonstrates the expected interface.
+ * Uses the CertificatePinning native module to perform a TLS handshake,
+ * capture the server's certificate (even self-signed), and return its metadata.
  *
  * @param host - Server hostname or IP
  * @param port - Server port (default 8443)
@@ -35,26 +32,18 @@ export interface RawCertificateData {
  * @throws Error if certificate cannot be fetched
  */
 export async function fetchCertificate(
-  _host: string,
-  _port: number = 8443
+  host: string,
+  port: number = 8443
 ): Promise<RawCertificateData> {
-  // TODO: Implement platform-specific certificate fetching
-  // This will require a native module or library that can:
-  // 1. Perform TLS handshake
-  // 2. Extract certificate from connection
-  // 3. Parse certificate details
-  //
-  // Possible approaches:
-  // - Create custom native module using URLSession (iOS) / OkHttp (Android)
-  // - Use react-native-ssl-pinning or similar library
-  // - Use Expo config plugin to add native functionality
-  //
-  // For testing/development, you can:
-  // - Use a mock certificate
-  // - Or fetch from a custom API endpoint that returns cert info
-  throw new Error(
-    'fetchCertificate not implemented - requires native module for certificate extraction'
-  );
+  const cert = await fetchServerCertificate(host, port);
+
+  return {
+    pemEncoded: cert.pemEncoded,
+    subject: cert.subject,
+    issuer: cert.issuer,
+    validFrom: cert.validFrom || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+    validTo: cert.validTo || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+  };
 }
 
 /**
