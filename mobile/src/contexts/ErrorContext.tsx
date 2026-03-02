@@ -5,6 +5,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { StyleSheet } from 'react-native';
 import { Snackbar, Portal, Dialog, Button, Text } from 'react-native-paper';
 import { AppError, getErrorMessage, getErrorTitle, getErrorAction } from '../utils/error-messages';
 
@@ -106,7 +107,7 @@ export const ErrorProvider: React.FC<ErrorProviderProps> = ({ children }) => {
             label: 'Dismiss',
             onPress: dismissToast,
           }}
-          style={{ backgroundColor: '#D32F2F' }}
+          style={styles.errorSnackbar}
         >
           {toastMessage}
         </Snackbar>
@@ -134,5 +135,11 @@ export const useErrorContext = (): ErrorContextValue => {
   }
   return context;
 };
+
+const styles = StyleSheet.create({
+  errorSnackbar: {
+    backgroundColor: '#D32F2F',
+  },
+});
 
 export default ErrorProvider;

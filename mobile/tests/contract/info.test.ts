@@ -64,15 +64,15 @@ describe('GET /info Contract', () => {
         os: {
           distribution: 'Red Hat Enterprise Linux',
           version: '9.3',
+          fips_enabled: true,
         },
-        fips_mode: true,
       };
 
       expect(response).toHaveProperty('tpm');
       expect(response).toHaveProperty('board');
       expect(response).toHaveProperty('cpu');
       expect(response).toHaveProperty('os');
-      expect(response).toHaveProperty('fips_mode');
+      expect(response.os).toHaveProperty('fips_enabled');
     });
 
     it('should validate TPMInfo structure', () => {
@@ -152,22 +152,24 @@ describe('GET /info Contract', () => {
       expect(typeof os.version).toBe('string');
     });
 
-    it('should validate FIPS mode as boolean', () => {
-      const fipsModeValues = [true, false];
+    it('should validate OS fips_enabled as boolean', () => {
+      const fipsValues = [true, false];
 
-      fipsModeValues.forEach(value => {
-        const response = {
-          fips_mode: value,
+      fipsValues.forEach(value => {
+        const os = {
+          distribution: 'RHEL',
+          version: '9.3',
+          fips_enabled: value,
         };
 
-        expect(typeof response.fips_mode).toBe('boolean');
+        expect(typeof os.fips_enabled).toBe('boolean');
       });
     });
 
     it('should reject response missing required fields', () => {
       const incompleteResponse = {
         tpm: { present: true },
-        // Missing: board, cpu, os, fips_mode
+        // Missing: board, cpu, os
       };
 
       expect(incompleteResponse).toHaveProperty('tpm');
@@ -296,11 +298,10 @@ describe('GET /info Contract', () => {
         tpm: { present: true },
         board: { manufacturer: 'Test', model: 'Test', serial: '123' },
         cpu: { architecture: 'x86_64' },
-        os: { distribution: 'RHEL', version: '9.3' },
-        fips_mode: true,
+        os: { distribution: 'RHEL', version: '9.3', fips_enabled: true },
       };
 
-      expect(fipsEnabledResponse.fips_mode).toBe(true);
+      expect(fipsEnabledResponse.os.fips_enabled).toBe(true);
       // Implementation should display FIPS indicator badge
     });
 
@@ -309,11 +310,10 @@ describe('GET /info Contract', () => {
         tpm: { present: false },
         board: { manufacturer: 'Test', model: 'Test', serial: '123' },
         cpu: { architecture: 'aarch64' },
-        os: { distribution: 'Ubuntu', version: '22.04' },
-        fips_mode: false,
+        os: { distribution: 'Ubuntu', version: '22.04', fips_enabled: false },
       };
 
-      expect(nonFipsResponse.fips_mode).toBe(false);
+      expect(nonFipsResponse.os.fips_enabled).toBe(false);
       // Implementation should NOT display FIPS indicator badge
     });
   });

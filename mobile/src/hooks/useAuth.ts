@@ -175,6 +175,7 @@ export function useAuth(deviceId: string): UseAuthResult {
         const delay = PROGRESSIVE_DELAYS[delayIndex];
 
         if (__DEV__) {
+          // eslint-disable-next-line no-console
           console.log(
             `[useAuth] Applying progressive delay: ${delay}ms (attempt ${state.failureCount + 1})`
           );

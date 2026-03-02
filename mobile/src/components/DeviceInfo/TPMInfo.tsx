@@ -34,9 +34,9 @@ export function TPMInfo({ tpmInfo }: TPMInfoProps) {
         title="TPM Information"
         titleVariant="titleLarge"
         subtitle="Trusted Platform Module"
-        left={props => (
+        // eslint-disable-next-line react/no-unstable-nested-components
+        left={() => (
           <Icon
-            {...props}
             source={hasTPM ? 'shield-check' : 'shield-off'}
             size={24}
             color={hasTPM ? theme.colors.primary : theme.colors.onSurfaceVariant}

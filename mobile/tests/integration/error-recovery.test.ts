@@ -16,6 +16,7 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 // actual implementation (e.g. useAuth requires deviceId, authenticate takes host/port
 // not a Device object, useDeviceInfo takes APIClient not string args). They need to
 // be rewritten to match the actual hook signatures.
+// eslint-disable-next-line jest/no-disabled-tests
 describe.skip('Network Error Recovery Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -139,7 +140,6 @@ describe.skip('Network Error Recovery Integration Tests', () => {
     });
 
     it('should implement progressive delay on authentication failures', async () => {
-      const startTime = Date.now();
       let attemptCount = 0;
 
       mockedAxios.post.mockRejectedValue({
@@ -171,7 +171,6 @@ describe.skip('Network Error Recovery Integration Tests', () => {
       await result.current.authenticate(device, 'wrong-code-3');
       attemptCount++;
 
-      void (Date.now() - startTime); // elapsed time not asserted in skipped test
       expect(attemptCount).toBe(3);
       expect(result.current.failureCount).toBeGreaterThanOrEqual(3);
     });

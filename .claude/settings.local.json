@@ -15,7 +15,9 @@
       "Bash(npx expo-modules-autolinking search)",
       "Bash(npx expo-modules-autolinking resolve --platform ios)",
       "Bash(make test-unit-app)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(log stream --predicate 'process == \"\"BoardingPass\"\"' --timeout 5)",
+      "Bash(make lint-all)"
     ]
   }
 }

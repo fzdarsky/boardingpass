@@ -19,6 +19,34 @@ import * as srp from 'secure-remote-password/client';
 import { APIClient } from '../api/client';
 
 /**
+ * Encoding conversion utilities.
+ *
+ * The `secure-remote-password` library uses hex encoding for all SRP values
+ * (A, B, salt, M1, M2, private keys), while the BoardingPass server API uses
+ * base64 encoding. These functions bridge the two at the API boundary.
+ */
+
+function hexToBase64(hex: string): string {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  // Convert bytes to binary string, then base64
+  let binary = '';
+  bytes.forEach(b => (binary += String.fromCharCode(b)));
+  return btoa(binary);
+}
+
+function base64ToHex(b64: string): string {
+  const binary = atob(b64);
+  let hex = '';
+  for (let i = 0; i < binary.length; i++) {
+    hex += binary.charCodeAt(i).toString(16).padStart(2, '0');
+  }
+  return hex;
+}
+
+/**
  * SRP Configuration Constants
  *
  * CRITICAL: These values MUST match the BoardingPass server configuration
@@ -63,9 +91,11 @@ interface SRPInitRequest {
 interface SRPInitResponse {
   salt: string; // Server's salt (Base64)
   B: string; // Server's ephemeral public key (Base64)
+  session_id: string; // Session ID for verify step
 }
 
 interface SRPVerifyRequest {
+  session_id: string; // Session ID from init step
   M1: string; // Client proof (Base64)
 }
 
@@ -378,18 +408,18 @@ export class SRPAuthService {
       // Generate ephemeral keypair (a, A)
       const publicKey = this.generateEphemeral();
 
-      // Prepare init request
+      // Prepare init request — convert A from hex (library) to base64 (server API)
       const request: SRPInitRequest = {
         username,
-        A: publicKey,
+        A: hexToBase64(publicKey),
       };
 
       // Send init request to server
       const response = await apiClient.post<SRPInitResponse>('/auth/srp/init', request);
 
       // Validate response structure
-      if (!response.salt || !response.B) {
-        throw new Error('Invalid init response: missing salt or B');
+      if (!response.salt || !response.B || !response.session_id) {
+        throw new Error('Invalid init response: missing salt, B, or session_id');
       }
 
       if (__DEV__) {
@@ -424,6 +454,7 @@ export class SRPAuthService {
    * @param password - Device password (connection code)
    * @param salt - Salt from init response
    * @param serverPublicKey - Server's ephemeral public key B from init response
+   * @param sessionId - Session ID from init response (correlates init/verify on server)
    * @returns Authentication result with session token and expiry
    * @throws Error if verify request fails, server proof is invalid, or response is malformed
    */
@@ -432,7 +463,8 @@ export class SRPAuthService {
     username: string,
     password: string,
     salt: string,
-    serverPublicKey: string
+    serverPublicKey: string,
+    sessionId: string
   ): Promise<AuthenticationResult> {
     if (__DEV__) {
       // eslint-disable-next-line no-console
@@ -444,12 +476,17 @@ export class SRPAuthService {
     }
 
     try {
-      // Derive session and compute client proof M1
-      const clientProof = this.deriveSession(username, password, salt, serverPublicKey);
+      // Convert server response values from base64 (server API) to hex (library)
+      const saltHex = base64ToHex(salt);
+      const serverPublicKeyHex = base64ToHex(serverPublicKey);
 
-      // Prepare verify request
+      // Derive session and compute client proof M1 (returns hex)
+      const clientProofHex = this.deriveSession(username, password, saltHex, serverPublicKeyHex);
+
+      // Prepare verify request — convert M1 from hex (library) to base64 (server API)
       const request: SRPVerifyRequest = {
-        M1: clientProof,
+        session_id: sessionId,
+        M1: hexToBase64(clientProofHex),
       };
 
       // Send verify request to server
@@ -460,8 +497,8 @@ export class SRPAuthService {
         throw new Error('Invalid verify response: missing M2 or session_token');
       }
 
-      // Validate server proof M2
-      this.validateServerProof(response.M2);
+      // Validate server proof M2 — convert from base64 (server API) to hex (library)
+      this.validateServerProof(base64ToHex(response.M2));
 
       if (__DEV__) {
         // eslint-disable-next-line no-console
@@ -529,7 +566,8 @@ export class SRPAuthService {
         username,
         password,
         initResponse.salt,
-        initResponse.B
+        initResponse.B,
+        initResponse.session_id
       );
 
       if (__DEV__) {

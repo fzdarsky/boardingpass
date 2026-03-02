@@ -413,7 +413,6 @@ components:
         - board
         - cpu
         - os
-        - fips_mode
       properties:
         tpm:
           $ref: '#/components/schemas/TPMInfo'
@@ -423,10 +422,6 @@ components:
           $ref: '#/components/schemas/CPUInfo'
         os:
           $ref: '#/components/schemas/OSInfo'
-        fips_mode:
-          type: boolean
-          description: Whether FIPS 140-3 mode is enabled
-          example: true
 
     TPMInfo:
       type: object
@@ -492,6 +487,7 @@ components:
       required:
         - distribution
         - version
+        - fips_enabled
       properties:
         distribution:
           type: string
@@ -501,6 +497,10 @@ components:
           type: string
           description: Distribution version
           example: "9.3"
+        fips_enabled:
+          type: boolean
+          description: Whether FIPS 140-3 mode is enabled on the OS
+          example: true
 
     NetworkConfig:
       type: object

@@ -18,13 +18,14 @@
  * - T095: Network interface status indicators
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ScrollView, View, StyleSheet, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Appbar, Text, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';
 import { SystemInfo, NetworkConfig, TPMInfo, BoardInfo } from '../../src/components/DeviceInfo';
 import { useDeviceInfo, useDeviceInfoAvailability } from '../../src/hooks/useDeviceInfo';
 import { createAPIClient } from '../../src/services/api/client';
+import { sessionManager } from '../../src/services/auth/session';
 import { spacing } from '../../src/theme';
 import { SkeletonDeviceDetail } from '../../src/components/Skeleton';
 
@@ -32,18 +33,31 @@ import { SkeletonDeviceDetail } from '../../src/components/Skeleton';
  * Device Detail Screen Component
  *
  * Route: /device/[id]
- * Params: id (device ID), host, port, token (session token)
+ * Params: id (device ID), host, port
+ * Token is loaded from secure storage (never passed via URL params)
  */
 export default function DeviceDetailScreen() {
-  const { id, host, port, token } = useLocalSearchParams<{
+  const { id, host, port } = useLocalSearchParams<{
     id: string;
     host: string;
     port: string;
-    token: string;
   }>();
 
   const router = useRouter();
   const theme = useTheme();
+
+  // Load session token from secure storage (never passed via URL params)
+  const [token, setToken] = useState<string | null>(null);
+  const [tokenLoading, setTokenLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+
+    sessionManager.getValidToken(id).then(t => {
+      setToken(t);
+      setTokenLoading(false);
+    });
+  }, [id]);
 
   // Create API client with authentication token
   const client = useMemo(() => {
@@ -60,13 +74,14 @@ export default function DeviceDetailScreen() {
   const deviceInfo = useDeviceInfo(client);
   const availability = useDeviceInfoAvailability(deviceInfo);
 
-  // Handle missing parameters
-  if (!id || !host || !port || !token) {
+  // Handle missing route parameters
+  if (!id || !host || !port) {
     return (
       <View style={styles.container}>
         <Stack.Screen
           options={{
             title: 'Device Details',
+            // eslint-disable-next-line react/no-unstable-nested-components
             headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
           }}
         />
@@ -85,12 +100,61 @@ export default function DeviceDetailScreen() {
     );
   }
 
+  // Show loading while token is being retrieved from secure storage
+  if (tokenLoading) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: 'Device Details',
+            // eslint-disable-next-line react/no-unstable-nested-components
+            headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+          }}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" animating={true} />
+          <Text variant="bodyMedium" style={styles.loadingText}>
+            Loading session...
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Handle missing/expired token
+  if (!token) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: 'Device Details',
+            // eslint-disable-next-line react/no-unstable-nested-components
+            headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+          }}
+        />
+        <View style={styles.errorContainer}>
+          <Text variant="headlineSmall" style={styles.errorTitle}>
+            Session Expired
+          </Text>
+          <Text variant="bodyMedium" style={styles.errorMessage}>
+            Your session has expired. Please authenticate again.
+          </Text>
+          <Button mode="contained" onPress={() => router.back()} style={styles.errorButton}>
+            Go Back
+          </Button>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: `Device: ${id}`,
+          title: `${host}:${port}`,
+          // eslint-disable-next-line react/no-unstable-nested-components
           headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+          // eslint-disable-next-line react/no-unstable-nested-components
           headerRight: () => (
             <Appbar.Action
               icon="refresh"

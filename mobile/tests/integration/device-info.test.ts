@@ -73,8 +73,8 @@ describe('Device Information Retrieval Integration', () => {
         os: {
           distribution: 'Red Hat Enterprise Linux',
           version: '9.3',
+          fips_enabled: true,
         },
-        fips_mode: true,
       };
 
       // Validate response structure
@@ -82,10 +82,10 @@ describe('Device Information Retrieval Integration', () => {
       expect(mockResponse).toHaveProperty('board');
       expect(mockResponse).toHaveProperty('cpu');
       expect(mockResponse).toHaveProperty('os');
-      expect(mockResponse).toHaveProperty('fips_mode');
+      expect(mockResponse.os).toHaveProperty('fips_enabled');
 
       // Validate data types
-      expect(typeof mockResponse.fips_mode).toBe('boolean');
+      expect(typeof mockResponse.os.fips_enabled).toBe('boolean');
       expect(typeof mockResponse.board.serial).toBe('string');
       expect(typeof mockResponse.cpu.architecture).toBe('string');
     });
@@ -251,7 +251,7 @@ describe('Device Information Retrieval Integration', () => {
     it('should handle missing required fields in response', async () => {
       const incompleteResponse = {
         tpm: { present: true },
-        // Missing: board, cpu, os, fips_mode
+        // Missing: board, cpu, os
       };
 
       expect(incompleteResponse).toHaveProperty('tpm');
@@ -268,8 +268,7 @@ describe('Device Information Retrieval Integration', () => {
           tpm: { present: true },
           board: { manufacturer: 'Test', model: 'Test', serial: '123' },
           cpu: { architecture: 'x86_64' },
-          os: { distribution: 'RHEL', version: '9.3' },
-          fips_mode: true,
+          os: { distribution: 'RHEL', version: '9.3', fips_enabled: true },
         },
       };
 

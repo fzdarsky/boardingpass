@@ -30,7 +30,7 @@ export type OSInfo = components['schemas']['OSInfo'];
  * client.setAuthToken(sessionToken);
  *
  * const systemInfo = await getSystemInfo(client);
- * console.log('FIPS Mode:', systemInfo.fips_mode);
+ * console.log('FIPS Enabled:', systemInfo.os.fips_enabled);
  * console.log('Architecture:', systemInfo.cpu.architecture);
  * ```
  */
@@ -90,10 +90,6 @@ function validateSystemInfo(data: unknown): asserts data is SystemInfo {
     throw new Error('Invalid response: missing or invalid os field');
   }
 
-  if (typeof info.fips_mode !== 'boolean') {
-    throw new Error('Invalid response: missing or invalid fips_mode field');
-  }
-
   // Validate TPM structure
   const tpm = info.tpm as Record<string, unknown>;
   if (typeof tpm.present !== 'boolean') {
@@ -132,6 +128,9 @@ function validateSystemInfo(data: unknown): asserts data is SystemInfo {
   if (typeof os.version !== 'string') {
     throw new Error('Invalid response: OS version must be string');
   }
+  if (typeof os.fips_enabled !== 'boolean') {
+    throw new Error('Invalid response: OS fips_enabled field must be boolean');
+  }
 }
 
 /**
@@ -143,7 +142,7 @@ function validateSystemInfo(data: unknown): asserts data is SystemInfo {
  * @returns true if FIPS mode is enabled, false otherwise
  */
 export function isFIPSEnabled(systemInfo: SystemInfo): boolean {
-  return systemInfo.fips_mode === true;
+  return systemInfo.os.fips_enabled === true;
 }
 
 /**

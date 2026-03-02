@@ -183,7 +183,7 @@ export default function QRScanner({ onCodeScanned, onClose }: QRScannerProps): R
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text variant="bodyLarge" style={{ color: '#FFFFFF' }}>
+          <Text variant="bodyLarge" style={styles.loadingText}>
             Requesting camera permission...
           </Text>
         </View>
@@ -343,6 +343,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.xl,
     backgroundColor: '#000000',
+  },
+  loadingText: {
+    color: '#FFFFFF',
   },
   errorContainer: {
     flex: 1,

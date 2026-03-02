@@ -38,17 +38,14 @@ func TestGetGroupParameters(t *testing.T) {
 		t.Error("expected N to be odd")
 	}
 
-	// Verify k = H(N | g)
+	// Verify k = H(N, g) where g is hashed at its natural length (not padded)
 	hash := sha256.New()
-	nBytes := N.Bytes()
-	gBytes := make([]byte, len(nBytes))
-	copy(gBytes[len(gBytes)-1:], g.Bytes())
-	hash.Write(nBytes)
-	hash.Write(gBytes)
+	hash.Write(N.Bytes())
+	hash.Write(g.Bytes())
 	expectedK := new(big.Int).SetBytes(hash.Sum(nil))
 
 	if k.Cmp(expectedK) != 0 {
-		t.Error("k does not match H(N | g)")
+		t.Error("k does not match H(N, g)")
 	}
 }
 

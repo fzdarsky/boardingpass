@@ -108,7 +108,7 @@ export const HapticFeedback = {
  * Haptic-enabled button press handler
  * Wraps a button onPress handler with haptic feedback
  */
-export function withHapticFeedback<T extends any[]>(
+export function withHapticFeedback<T extends unknown[]>(
   handler: (...args: T) => void | Promise<void>,
   feedbackType: keyof typeof HapticFeedback = 'light'
 ): (...args: T) => Promise<void> {

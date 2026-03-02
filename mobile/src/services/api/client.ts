@@ -6,6 +6,8 @@
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
+import { Platform } from 'react-native';
+import { nativeAdapter } from './nativeAdapter';
 
 const DEFAULT_TIMEOUT = 30000; // 30 seconds (matches spec)
 const DEFAULT_PORT = 8443;
@@ -16,12 +18,39 @@ export interface APIClientConfig {
   rejectUnauthorized?: boolean; // Set to false for self-signed certs after user confirms
 }
 
+/**
+ * Custom error class that preserves network error details through the error chain.
+ * Carries the original error code (ERR_NETWORK, ECONNREFUSED, ECONNABORTED, etc.)
+ * and the underlying cause message so downstream error handling can distinguish
+ * between routing failures, TLS rejections, timeouts, and HTTP errors.
+ */
+export class APIError extends Error {
+  code: string;
+  status?: number;
+
+  constructor(message: string, code: string, status?: number) {
+    super(message);
+    this.name = 'APIError';
+    this.code = code;
+    this.status = status;
+  }
+}
+
 export class APIClient {
   private client: AxiosInstance;
   private authToken: string | null = null;
 
   constructor(host: string, port: number = DEFAULT_PORT, config: APIClientConfig = {}) {
     const baseURL = config.baseURL || `https://${host}:${port}`;
+
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[APIClient] Creating client', {
+        platform: Platform.OS,
+        useNativeAdapter: Platform.OS === 'ios',
+        nativeAdapterDefined: typeof nativeAdapter === 'function',
+      });
+    }
 
     this.client = axios.create({
       baseURL,
@@ -30,9 +59,20 @@ export class APIClient {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      // For self-signed certificates, we'll need to handle this at the native level
-      // React Native doesn't support the Node.js rejectUnauthorized option
+      // On iOS, route HTTPS requests through our native module's URLSession
+      // which has a proper TOFU delegate for self-signed certificates.
+      // RCTHTTPRequestHandler's session ignores dynamically injected TLS
+      // challenge handlers, so we bypass it entirely.
+      ...(Platform.OS === 'ios' ? { adapter: nativeAdapter } : {}),
     });
+
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[APIClient] Client created', {
+        adapterSet: typeof this.client.defaults.adapter,
+        baseURL,
+      });
+    }
 
     // Request interceptor to add auth token
     this.client.interceptors.request.use(
@@ -49,35 +89,27 @@ export class APIClient {
     this.client.interceptors.response.use(
       response => response,
       (error: AxiosError) => {
-        // Map axios errors to application errors
         if (error.response) {
-          // Server responded with error status
+          // Server responded with error status — we reached the server
           const status = error.response.status;
-          const data = error.response.data as { error?: string };
-
-          if (status === 401) {
-            throw new Error('Authentication required');
-          } else if (status === 403) {
-            throw new Error('Access forbidden');
-          } else if (status === 404) {
-            throw new Error('Resource not found');
-          } else if (status >= 500) {
-            throw new Error(`Server error: ${data?.error || 'Unknown error'}`);
-          } else {
-            throw new Error(data?.error || `Request failed with status ${status}`);
-          }
+          const data = error.response.data as { error?: string; message?: string };
+          // Prefer the descriptive 'message' field, fall back to 'error' code
+          const serverMsg = data?.message || data?.error || `HTTP ${status}`;
+          throw new APIError(serverMsg, `HTTP_${status}`, status);
         } else if (error.request) {
-          // Request made but no response received
-          if (error.code === 'ECONNABORTED') {
-            throw new Error('Request timeout');
-          } else if (error.code === 'ERR_NETWORK') {
-            throw new Error('Network error - cannot reach device');
-          } else {
-            throw new Error('No response from device');
+          // Request made but no response — network/TLS level failure
+          const code = error.code || 'UNKNOWN';
+          const cause = error.message || 'Unknown cause';
+
+          if (__DEV__) {
+            console.warn(`[APIClient] Request failed: code=${code}, cause=${cause}`);
           }
+
+          // Preserve the original error code and cause message so downstream
+          // error handling can distinguish failure modes
+          throw new APIError(`${describeNetworkError(code)}: ${cause}`, code);
         } else {
-          // Something else happened
-          throw new Error(error.message || 'Unknown error');
+          throw new APIError(error.message || 'Request setup failed', 'ERR_SETUP');
         }
       }
     );
@@ -148,6 +180,33 @@ export class APIClient {
    */
   setBaseURL(host: string, port: number = DEFAULT_PORT): void {
     this.client.defaults.baseURL = `https://${host}:${port}`;
+  }
+}
+
+/**
+ * Map axios error codes to human-readable descriptions.
+ * The original cause message is appended separately for full context.
+ */
+function describeNetworkError(code: string): string {
+  switch (code) {
+    case 'ECONNABORTED':
+      return 'Request timed out';
+    case 'ECONNREFUSED':
+      return 'Connection refused (device may not be running)';
+    case 'ECONNRESET':
+      return 'Connection reset by device';
+    case 'ENOTFOUND':
+      return 'Device not found (DNS resolution failed)';
+    case 'EHOSTUNREACH':
+      return 'Device unreachable (no route to host)';
+    case 'ENETUNREACH':
+      return 'Network unreachable';
+    case 'ETIMEDOUT':
+      return 'Connection timed out';
+    case 'ERR_NETWORK':
+      return 'Network error (possible TLS rejection or connectivity issue)';
+    default:
+      return `Network error (${code})`;
   }
 }
 

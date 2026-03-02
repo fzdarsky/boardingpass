@@ -6,17 +6,17 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { StyleSheet, View, Animated } from 'react-native';
+import { StyleSheet, View, Animated, ViewStyle } from 'react-native';
 import { spacing } from '@/theme';
 
 /**
  * Skeleton Base Props
  */
 interface SkeletonBaseProps {
-  width?: number | string;
+  width?: ViewStyle['width'];
   height?: number;
   borderRadius?: number;
-  style?: any;
+  style?: Animated.WithAnimatedValue<ViewStyle>;
 }
 
 /**

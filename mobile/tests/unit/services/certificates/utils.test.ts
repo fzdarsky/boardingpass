@@ -40,6 +40,7 @@ describe('Certificate Utilities', () => {
 
   describe('parseCertificate', () => {
     const mockRawCert: RawCertificateData = {
+      fingerprint: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
       pemEncoded: '-----BEGIN CERTIFICATE-----\nMIID...test\n-----END CERTIFICATE-----',
       subject: 'CN=device.local,O=BoardingPass,C=US',
       issuer: 'CN=device.local,O=BoardingPass,C=US', // Self-signed

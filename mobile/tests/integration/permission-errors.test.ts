@@ -6,6 +6,7 @@
 import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react-native';
 import * as Camera from 'expo-camera';
+import { PermissionStatus } from 'expo-camera';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 
@@ -213,8 +214,8 @@ describe('Permission Denial Handling Integration Tests', () => {
           (async () => {
             try {
               await fetch('https://192.168.1.100:8443/info');
-            } catch (err: any) {
-              setError(err);
+            } catch (err: unknown) {
+              setError(err instanceof Error ? err : new Error(String(err)));
             }
           })();
         }, []);
@@ -233,7 +234,7 @@ describe('Permission Denial Handling Integration Tests', () => {
       let permissionStatus = 'denied';
 
       mockedCamera.Camera.getCameraPermissionsAsync.mockImplementation(async () => ({
-        status: permissionStatus as any,
+        status: permissionStatus as PermissionStatus,
         expires: 'never',
         granted: permissionStatus === 'granted',
         canAskAgain: false,

@@ -24,6 +24,12 @@ func NewServerConfig(certPath, keyPath string) (*tls.Config, error) {
 		// FIPS-compliant ciphers by default when built with FIPS mode.
 		CipherSuites: nil, // Use defaults for TLS 1.3
 
+		// Disable HTTP/2: BoardingPass is a simple bootstrap service where
+		// sequential API calls don't benefit from H2 multiplexing. iOS
+		// clients experience H2 RST_STREAM errors when the Go HTTP/2 stack
+		// encounters incomplete body reads from json.Decoder.
+		NextProtos: []string{"http/1.1"},
+
 		// Prefer server cipher suites
 		PreferServerCipherSuites: true,
 

@@ -39,7 +39,8 @@ export function BoardInfo({ boardInfo, formatSerial = true }: BoardInfoProps) {
         title="Board Information"
         titleVariant="titleLarge"
         subtitle="Hardware details"
-        left={props => <Icon {...props} source="chip" size={24} color={theme.colors.primary} />}
+        // eslint-disable-next-line react/no-unstable-nested-components
+        left={() => <Icon source="chip" size={24} color={theme.colors.primary} />}
       />
       <Card.Content>
         {/* Manufacturer */}

@@ -42,6 +42,7 @@ import {
   qrCodeScannedFeedback,
   HapticFeedback,
 } from '@/utils/haptics';
+import { isTLSOverrideActive, invalidateHTTPSession } from '../../modules/certificate-pinning';
 
 /**
  * Authentication mode
@@ -102,6 +103,20 @@ export default function AuthenticateScreen(): React.ReactElement {
    * Log authentication screen mount and run TOFU certificate check
    */
   useEffect(() => {
+    // Check TLS override status — critical for self-signed certificate support
+    try {
+      const tlsActive = isTLSOverrideActive();
+      // eslint-disable-next-line no-console
+      console.log('[Authenticate] TLS override active:', tlsActive);
+      if (!tlsActive) {
+        console.warn(
+          '[Authenticate] TLS override NOT active — HTTPS requests to self-signed servers will fail'
+        );
+      }
+    } catch (e) {
+      console.warn('[Authenticate] Failed to check TLS override status:', e);
+    }
+
     if (__DEV__) {
       // eslint-disable-next-line no-console
       console.log('[Authenticate] Screen mounted', {
@@ -140,7 +155,10 @@ export default function AuthenticateScreen(): React.ReactElement {
           // Proceed anyway — the TLS override accepts unpinned certs (TOFU).
           setCertReady(true);
           if (__DEV__) {
-            console.warn('[Authenticate] Certificate validation failed, proceeding without TOFU', err);
+            console.warn(
+              '[Authenticate] Certificate validation failed, proceeding without TOFU',
+              err
+            );
           }
         });
     } else {
@@ -176,6 +194,20 @@ export default function AuthenticateScreen(): React.ReactElement {
 
     try {
       await trustCertificate(certificate, host, portNumber);
+
+      // Invalidate RCTHTTPRequestHandler's cached NSURLSession so the next
+      // HTTPS request creates a fresh session that recognises our TOFU
+      // challenge handler and the newly pinned fingerprint.
+      try {
+        const sessionResult = invalidateHTTPSession();
+        if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.log('[Authenticate] HTTP session invalidated:', JSON.stringify(sessionResult));
+        }
+      } catch (e) {
+        console.warn('[Authenticate] Failed to invalidate HTTP session:', e);
+      }
+
       setCertReady(true);
 
       if (__DEV__) {
@@ -318,6 +350,8 @@ export default function AuthenticateScreen(): React.ReactElement {
       await authenticationStartFeedback();
 
       // Perform SRP-6a authentication
+      // (requests route through nativeAdapter on iOS, which uses its own
+      // URLSession with TOFU delegate for self-signed certificate support)
       await authenticate(host, portNumber, code);
 
       if (__DEV__) {
@@ -342,13 +376,26 @@ export default function AuthenticateScreen(): React.ReactElement {
       setShowSnackbar(true);
 
       // Navigate to device detail screen (T076)
+      // Token is retrieved from secure storage by the detail screen — never passed via URL params
       setTimeout(() => {
-        router.replace(`/device/${deviceId}` as any);
+        /* eslint-disable @typescript-eslint/no-explicit-any */
+        router.replace({
+          pathname: '/device/[id]',
+          params: {
+            id: deviceId,
+            host,
+            port: String(portNumber),
+          },
+        } as any);
+        /* eslint-enable @typescript-eslint/no-explicit-any */
       }, 500);
-    } catch (err) {
+    } catch (err: unknown) {
+      const errObj = err instanceof Error ? err : new Error(String(err));
       if (__DEV__) {
         console.error('[Authenticate] Authentication failed', {
-          error: err instanceof Error ? err.message : 'Unknown error',
+          message: errObj.message,
+          code: (err as { code?: string }).code,
+          type: (err as { type?: string }).type,
           deviceId,
         });
       }
@@ -366,9 +413,8 @@ export default function AuthenticateScreen(): React.ReactElement {
       // Apply progressive delay (FR-038)
       applyFailureDelay(newFailureCount);
 
-      // Show error snackbar
-      const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
-      setSnackbarMessage(errorMessage);
+      // Show error snackbar — now includes specific error details
+      setSnackbarMessage(errObj.message || 'Authentication failed');
       setShowSnackbar(true);
     }
   };
@@ -483,13 +529,13 @@ export default function AuthenticateScreen(): React.ReactElement {
 
     return (
       <View style={styles.container}>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.trustContent}
-        >
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.trustContent}>
           {/* Header */}
           <View style={styles.trustHeader}>
-            <Text variant="headlineSmall" style={isCertChanged ? styles.errorText : styles.deviceName}>
+            <Text
+              variant="headlineSmall"
+              style={isCertChanged ? styles.errorText : styles.deviceName}
+            >
               {isCertChanged ? 'Certificate Changed' : 'Trust Certificate?'}
             </Text>
           </View>
@@ -498,8 +544,8 @@ export default function AuthenticateScreen(): React.ReactElement {
           {isCertChanged && (
             <View style={styles.warningBox}>
               <Text variant="bodyMedium" style={styles.warningText}>
-                The certificate for this device has changed since your last connection.
-                This could indicate a security issue or that the device was reconfigured.
+                The certificate for this device has changed since your last connection. This could
+                indicate a security issue or that the device was reconfigured.
               </Text>
             </View>
           )}
@@ -508,8 +554,8 @@ export default function AuthenticateScreen(): React.ReactElement {
           {!isCertChanged && certificate.isSelfSigned && (
             <View style={styles.infoBox}>
               <Text variant="bodyMedium" style={styles.infoText}>
-                This device uses a self-signed certificate. Verify the fingerprint
-                matches the device before trusting it.
+                This device uses a self-signed certificate. Verify the fingerprint matches the
+                device before trusting it.
               </Text>
             </View>
           )}
@@ -519,7 +565,9 @@ export default function AuthenticateScreen(): React.ReactElement {
 
           {/* Security notice */}
           <View style={styles.securityNotice}>
-            <Text variant="labelMedium" style={styles.securityTitle}>Security Notice:</Text>
+            <Text variant="labelMedium" style={styles.securityTitle}>
+              Security Notice:
+            </Text>
             <Text variant="bodySmall" style={styles.securityText}>
               {isCertChanged
                 ? 'Only trust this certificate if you know the device was recently reconfigured. If unexpected, reject and contact your administrator.'
@@ -529,11 +577,7 @@ export default function AuthenticateScreen(): React.ReactElement {
 
           {/* Action buttons */}
           <View style={styles.trustActions}>
-            <Button
-              mode="outlined"
-              onPress={handleRejectCertificate}
-              style={styles.trustButton}
-            >
+            <Button mode="outlined" onPress={handleRejectCertificate} style={styles.trustButton}>
               {isCertChanged ? 'Reject' : 'Cancel'}
             </Button>
             <Button

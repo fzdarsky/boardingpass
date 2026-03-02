@@ -5,7 +5,7 @@
  * Implements certificate pinning for self-signed certificates.
  */
 
-import { computeCertificateFingerprint, isValidSHA256 } from '../../utils/crypto';
+import { isValidSHA256 } from '../../utils/crypto';
 import { CertificateInfo, TrustStatus } from '../../types/certificate';
 import { fetchServerCertificate } from '../../../modules/certificate-pinning';
 
@@ -13,6 +13,7 @@ import { fetchServerCertificate } from '../../../modules/certificate-pinning';
  * Raw certificate data from TLS handshake
  */
 export interface RawCertificateData {
+  fingerprint: string; // SHA-256 of DER bytes (computed by native module)
   pemEncoded: string; // PEM-encoded certificate
   subject: string; // X.509 subject DN
   issuer: string; // X.509 issuer DN
@@ -38,6 +39,7 @@ export async function fetchCertificate(
   const cert = await fetchServerCertificate(host, port);
 
   return {
+    fingerprint: cert.fingerprint,
     pemEncoded: cert.pemEncoded,
     subject: cert.subject,
     issuer: cert.issuer,
@@ -59,8 +61,10 @@ export async function parseCertificate(
   rawCert: RawCertificateData,
   existingPin?: CertificateInfo
 ): Promise<CertificateInfo> {
-  // Compute fingerprint
-  const fingerprint = await computeCertificateFingerprint(rawCert.pemEncoded);
+  // Use the native-computed fingerprint (SHA-256 of DER bytes).
+  // The native module computes this during the TLS handshake, ensuring
+  // consistency with the native TLS override's pin matching logic.
+  const fingerprint = rawCert.fingerprint;
 
   // Validate fingerprint format
   if (!isValidSHA256(fingerprint)) {
@@ -214,6 +218,7 @@ export async function fetchCertificateMock(
 
   // Return mock self-signed certificate
   return {
+    fingerprint: 'a'.repeat(64), // Mock SHA-256 fingerprint
     pemEncoded: `-----BEGIN CERTIFICATE-----
 MIIDXTCCAkWgAwIBAgIJAKJ5qG5wqH5fMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
 BAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBX

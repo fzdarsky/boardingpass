@@ -132,7 +132,7 @@ This document defines the core entities, their relationships, and JSON schemas f
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "SystemInfo",
   "type": "object",
-  "required": ["tpm", "board", "cpu", "os", "fips_mode"],
+  "required": ["tpm", "board", "cpu", "os"],
   "properties": {
     "tpm": {
       "type": "object",
@@ -198,7 +198,7 @@ This document defines the core entities, their relationships, and JSON schemas f
     "os": {
       "type": "object",
       "description": "Operating system information",
-      "required": ["distribution", "version"],
+      "required": ["distribution", "version", "fips_enabled"],
       "properties": {
         "distribution": {
           "type": "string",
@@ -209,13 +209,13 @@ This document defines the core entities, their relationships, and JSON schemas f
           "type": "string",
           "description": "Distribution version",
           "example": "9.3"
+        },
+        "fips_enabled": {
+          "type": "boolean",
+          "description": "Whether FIPS 140-3 mode is enabled on the OS",
+          "example": true
         }
       }
-    },
-    "fips_mode": {
-      "type": "boolean",
-      "description": "Whether FIPS 140-3 mode is enabled",
-      "example": true
     }
   }
 }
@@ -241,9 +241,9 @@ This document defines the core entities, their relationships, and JSON schemas f
   },
   "os": {
     "distribution": "Red Hat Enterprise Linux",
-    "version": "9.3"
-  },
-  "fips_mode": true
+    "version": "9.3",
+    "fips_enabled": true
+  }
 }
 ```
 
@@ -267,9 +267,9 @@ This document defines the core entities, their relationships, and JSON schemas f
   },
   "os": {
     "distribution": "Ubuntu",
-    "version": "22.04"
-  },
-  "fips_mode": false
+    "version": "22.04",
+    "fips_enabled": false
+  }
 }
 ```
 
@@ -920,11 +920,10 @@ type Session struct {
 
 // internal/inventory/info.go
 type SystemInfo struct {
-    TPM      TPMInfo      `json:"tpm"`
-    Board    BoardInfo    `json:"board"`
-    CPU      CPUInfo      `json:"cpu"`
-    OS       OSInfo       `json:"os"`
-    FIPSMode bool         `json:"fips_mode"`
+    TPM   TPMInfo   `json:"tpm"`
+    Board BoardInfo `json:"board"`
+    CPU   CPUInfo   `json:"cpu"`
+    OS    OSInfo    `json:"os"`
 }
 
 type TPMInfo struct {
@@ -947,6 +946,7 @@ type CPUInfo struct {
 type OSInfo struct {
     Distribution string `json:"distribution"`
     Version      string `json:"version"`
+    FIPSEnabled  bool   `json:"fips_enabled"`
 }
 
 // internal/network/interfaces.go

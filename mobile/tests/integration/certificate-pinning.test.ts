@@ -350,7 +350,8 @@ describe('Certificate Pinning Integration', () => {
 
         // Check if validating flag is set during async operation
         // Note: validating flag may not be observable synchronously in test env
-        void result.current.isValidating;
+        const _isValidating = result.current.isValidating;
+        expect(_isValidating).toBeDefined();
 
         await promise;
       });

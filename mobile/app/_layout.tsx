@@ -55,7 +55,6 @@ export default function RootLayout() {
             name="device/authenticate"
             options={{
               title: 'Authenticate',
-              presentation: 'modal',
             }}
           />
         </Stack>

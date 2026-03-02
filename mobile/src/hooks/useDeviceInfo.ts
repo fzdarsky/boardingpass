@@ -159,61 +159,42 @@ export function useDeviceInfo(
     ]);
 
     // Process results
-    const newState: Partial<DeviceInfoState> = {
-      isLoading: false,
-      loadingStates: {
-        info: false,
-        network: false,
-      },
-    };
-
-    // Process /info result
-    if (infoResult.status === 'fulfilled') {
-      newState.systemInfo = infoResult.value;
-      newState.errors = { ...state.errors, info: null };
-    } else {
-      newState.errors = { ...state.errors, info: infoResult.reason };
-    }
-
-    // Process /network result
-    if (networkResult.status === 'fulfilled') {
-      newState.networkConfig = networkResult.value;
-      newState.errors = { ...newState.errors, network: null };
-    } else {
-      newState.errors = { ...newState.errors, network: networkResult.reason };
-    }
-
-    // Determine overall state
     const hasSystemInfo = infoResult.status === 'fulfilled';
     const hasNetworkConfig = networkResult.status === 'fulfilled';
 
-    newState.hasData = hasSystemInfo || hasNetworkConfig;
-    newState.hasPartialData = hasSystemInfo !== hasNetworkConfig; // One succeeded, one failed
+    setState(prev => {
+      // Build new errors from previous state
+      const errors: ErrorState = {
+        info: hasSystemInfo ? null : infoResult.reason,
+        network: hasNetworkConfig ? null : networkResult.reason,
+      };
 
-    // Set overall error (combined message if both failed, or null if at least one succeeded)
-    if (!hasSystemInfo && !hasNetworkConfig) {
-      // Both failed - create combined error
-      const infoError = newState.errors?.info?.message || 'Unknown error';
-      const networkError = newState.errors?.network?.message || 'Unknown error';
-      newState.error = new Error(
-        `Failed to fetch device information. System info: ${infoError}. Network config: ${networkError}`
-      );
-    } else if (!hasSystemInfo) {
-      // Only /info failed
-      newState.error = new Error(
-        `Failed to fetch system information: ${newState.errors?.info?.message}`
-      );
-    } else if (!hasNetworkConfig) {
-      // Only /network failed
-      newState.error = new Error(
-        `Failed to fetch network configuration: ${newState.errors?.network?.message}`
-      );
-    } else {
-      // Both succeeded
-      newState.error = null;
-    }
+      // Determine overall error
+      let error: Error | null = null;
+      if (!hasSystemInfo && !hasNetworkConfig) {
+        const infoError = errors.info?.message || 'Unknown error';
+        const networkError = errors.network?.message || 'Unknown error';
+        error = new Error(
+          `Failed to fetch device information. System info: ${infoError}. Network config: ${networkError}`
+        );
+      } else if (!hasSystemInfo) {
+        error = new Error(`Failed to fetch system information: ${errors.info?.message}`);
+      } else if (!hasNetworkConfig) {
+        error = new Error(`Failed to fetch network configuration: ${errors.network?.message}`);
+      }
 
-    setState(prev => ({ ...prev, ...newState }));
+      return {
+        ...prev,
+        isLoading: false,
+        loadingStates: { info: false, network: false },
+        systemInfo: hasSystemInfo ? infoResult.value : prev.systemInfo,
+        networkConfig: hasNetworkConfig ? networkResult.value : prev.networkConfig,
+        errors,
+        error,
+        hasData: hasSystemInfo || hasNetworkConfig,
+        hasPartialData: hasSystemInfo !== hasNetworkConfig,
+      };
+    });
   }, [client]);
 
   /**

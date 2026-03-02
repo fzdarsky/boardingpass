@@ -47,7 +47,7 @@ export function CertificateChangeAlert({
   return (
     <Banner
       visible={visible}
-      icon={({ size }) => <AlertIcon size={size} color={theme.colors.error} />}
+      icon={({ size }: { size: number }) => AlertIcon({ size, color: theme.colors.error })}
       actions={[
         {
           label: 'View Details',

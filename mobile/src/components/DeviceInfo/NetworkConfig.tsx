@@ -41,8 +41,6 @@ export interface NetworkConfigProps {
  * Shows link state indicators, MAC addresses, and IP addresses formatted for readability.
  */
 export function NetworkConfig({ networkConfig, showStatusIndicators = true }: NetworkConfigProps) {
-  const theme = useTheme();
-
   // Sort interfaces by priority (physical first, loopback last, up before down)
   const sortedInterfaces = sortInterfacesByPriority(networkConfig.interfaces);
 
@@ -57,11 +55,7 @@ export function NetworkConfig({ networkConfig, showStatusIndicators = true }: Ne
         {sortedInterfaces.map((iface, idx) => (
           <View key={`iface-${idx}-${iface.name}`}>
             {idx > 0 && <Divider style={styles.divider} />}
-            <NetworkInterfaceItem
-              interface={iface}
-              showStatusIndicator={showStatusIndicators}
-              theme={theme}
-            />
+            <NetworkInterfaceItem interface={iface} showStatusIndicator={showStatusIndicators} />
           </View>
         ))}
 
@@ -78,7 +72,6 @@ export function NetworkConfig({ networkConfig, showStatusIndicators = true }: Ne
 interface NetworkInterfaceItemProps {
   interface: NetworkInterface;
   showStatusIndicator: boolean;
-  theme: any;
 }
 
 /**
@@ -89,8 +82,8 @@ interface NetworkInterfaceItemProps {
 function NetworkInterfaceItem({
   interface: iface,
   showStatusIndicator,
-  theme,
 }: NetworkInterfaceItemProps) {
+  const theme = useTheme();
   const isUp = isInterfaceUp(iface);
   const statusColor = isUp ? '#4CAF50' : '#F44336'; // Green : Red (T095)
   const typeHint = getInterfaceTypeHint(iface.name);

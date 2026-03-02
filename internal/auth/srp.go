@@ -39,18 +39,27 @@ func initN() *big.Int {
 	return n
 }
 
-// computeK computes the SRP-6a multiplier k = H(N | g)
+// padToN returns v's byte representation zero-padded to N's byte length.
+// SRP-6a requires consistent padding of big integer hash inputs to ensure
+// interoperability between implementations.
+func padToN(v *big.Int) []byte {
+	nLen := len(srpN.Bytes())
+	vBytes := v.Bytes()
+	if len(vBytes) >= nLen {
+		return vBytes
+	}
+	padded := make([]byte, nLen)
+	copy(padded[nLen-len(vBytes):], vBytes)
+	return padded
+}
+
+// computeK computes the SRP-6a multiplier k = H(N, g).
+// Note: g is hashed at its natural length (not padded to N), matching the
+// secure-remote-password JS library behavior.
 func computeK(N, g *big.Int) *big.Int {
 	hash := sha256.New()
-
-	// Pad N and g to same length for consistent hashing
-	nBytes := N.Bytes()
-	gBytes := make([]byte, len(nBytes))
-	copy(gBytes[len(gBytes)-1:], g.Bytes())
-
-	hash.Write(nBytes)
-	hash.Write(gBytes)
-
+	hash.Write(N.Bytes())
+	hash.Write(g.Bytes())
 	return new(big.Int).SetBytes(hash.Sum(nil))
 }
 
@@ -123,9 +132,10 @@ func (s *SRPServer) Init(ABase64 string) (saltBase64, BBase64 string, err error)
 		return "", "", fmt.Errorf("invalid B: B mod N == 0 (regenerate b)")
 	}
 
-	// Encode salt and B for response
+	// Encode salt and B for response (pad B to N's byte length for consistent
+	// client-side hashing in u and M1 computations)
 	saltBase64 = base64.StdEncoding.EncodeToString(s.Salt)
-	BBase64 = base64.StdEncoding.EncodeToString(s.B.Bytes())
+	BBase64 = base64.StdEncoding.EncodeToString(padToN(s.B))
 
 	return saltBase64, BBase64, nil
 }
@@ -183,9 +193,9 @@ func (s *SRPServer) computeSharedSecret() error {
 	// Step 3: (A * v^u)^b % N
 	s.S = new(big.Int).Exp(avu, s.b, N)
 
-	// Compute session key K = H(S)
+	// Compute session key K = H(S) — pad S to N's byte length
 	hash := sha256.New()
-	hash.Write(s.S.Bytes())
+	hash.Write(padToN(s.S))
 	s.K = hash.Sum(nil)
 
 	return nil
@@ -193,23 +203,9 @@ func (s *SRPServer) computeSharedSecret() error {
 
 // computeU computes the scrambling parameter u = H(A | B)
 func (s *SRPServer) computeU() *big.Int {
-	N, _, _ := GetGroupParameters()
 	hash := sha256.New()
-
-	// Pad A and B to same length for consistent hashing
-	maxLen := len(N.Bytes())
-	ABytes := make([]byte, maxLen)
-	BBytes := make([]byte, maxLen)
-
-	ACopy := s.A.Bytes()
-	BCopy := s.B.Bytes()
-
-	copy(ABytes[maxLen-len(ACopy):], ACopy)
-	copy(BBytes[maxLen-len(BCopy):], BCopy)
-
-	hash.Write(ABytes)
-	hash.Write(BBytes)
-
+	hash.Write(padToN(s.A))
+	hash.Write(padToN(s.B))
 	return new(big.Int).SetBytes(hash.Sum(nil))
 }
 
@@ -233,12 +229,13 @@ func (s *SRPServer) computeM1() []byte {
 	hashUsername := sha256.Sum256([]byte(s.Username))
 
 	// Compute M1 = H(H(N) XOR H(g) | H(username) | salt | A | B | K)
+	// A and B are padded to N's byte length to match the JS library's behavior
 	hash := sha256.New()
 	hash.Write(hashNXorG)
 	hash.Write(hashUsername[:])
 	hash.Write(s.Salt)
-	hash.Write(s.A.Bytes())
-	hash.Write(s.B.Bytes())
+	hash.Write(padToN(s.A))
+	hash.Write(padToN(s.B))
 	hash.Write(s.K)
 
 	return hash.Sum(nil)
@@ -247,7 +244,7 @@ func (s *SRPServer) computeM1() []byte {
 // computeM2 computes the server proof M2 = H(A | M1 | K)
 func (s *SRPServer) computeM2(M1 []byte) []byte {
 	hash := sha256.New()
-	hash.Write(s.A.Bytes())
+	hash.Write(padToN(s.A))
 	hash.Write(M1)
 	hash.Write(s.K)
 

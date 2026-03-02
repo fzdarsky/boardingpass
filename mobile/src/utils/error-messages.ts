@@ -16,6 +16,7 @@ export interface AppError {
   type: ErrorType;
   message: string;
   code?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context?: Record<string, any>;
 }
 
@@ -184,27 +185,38 @@ export function getErrorHelpText(error: AppError): string | null {
 
 function getNetworkErrorMessage(error: AppError): string {
   const { code, context } = error;
+  const deviceName = context?.deviceName;
 
-  if (code === 'ECONNREFUSED' || code === 'ECONNRESET') {
-    const deviceName = context?.deviceName || 'the device';
-    return `Unable to connect to ${deviceName}. Make sure it's powered on and connected to the same network.`;
-  }
-
-  if (code === 'ENOTFOUND') {
-    return 'Device not found on the network. It may have disconnected or changed IP address.';
-  }
-
-  if (code === 'NETWORK_ERROR' || error.message.includes('Network request failed')) {
-    return 'Network connection failed. Check your WiFi or mobile data connection.';
+  // Code-specific messages — user-friendly, no technical details leaked
+  switch (code) {
+    case 'ECONNREFUSED':
+      return deviceName
+        ? `Unable to connect to ${deviceName}. The device may not be running or the port may be blocked.`
+        : 'Unable to connect — connection refused. The device may not be running or the port may be blocked.';
+    case 'ECONNRESET':
+      return deviceName
+        ? `Connection to ${deviceName} was reset. It may have rejected the TLS handshake.`
+        : 'Connection reset by device. It may have rejected the TLS handshake.';
+    case 'ENOTFOUND':
+      return 'Device not found on the network. Check the IP address or hostname.';
+    case 'EHOSTUNREACH':
+      return 'Device unreachable. No network route to host — check your WiFi connection.';
+    case 'ENETUNREACH':
+      return 'Network unreachable. Check your WiFi or mobile data connection.';
+    case 'ERR_NETWORK':
+      return deviceName
+        ? `Unable to connect to ${deviceName}. Possible TLS certificate rejection or connectivity issue.`
+        : 'Network error. Possible TLS certificate rejection or connectivity issue.';
+    default:
+      break;
   }
 
   if (context?.service === 'mdns') {
     return 'Unable to discover devices. Check if local network access is allowed.';
   }
 
-  // Include device name in generic message if available
-  if (context?.deviceName) {
-    return `Unable to connect to ${context.deviceName}. Check your network connection and try again.`;
+  if (deviceName) {
+    return `Unable to connect to ${deviceName}. Check your network connection and try again.`;
   }
 
   return 'Unable to connect. Check your network connection and try again.';
@@ -312,13 +324,14 @@ function getValidationErrorMessage(error: AppError): string {
  */
 export function toAppError(error: unknown, type: ErrorType = 'unknown'): AppError {
   if (typeof error === 'object' && error !== null) {
-    const err = error as any;
+    const err = error as Record<string, unknown>;
 
     return {
-      type: err.type || type,
-      message: err.message || 'An error occurred',
-      code: err.code || err.status?.toString(),
-      context: err.context || {},
+      type: (err.type as ErrorType) || type,
+      message: (err.message as string) || 'An error occurred',
+      code: (err.code as string) || (err.status as number)?.toString(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      context: (err.context as Record<string, any>) || {},
     };
   }
 
@@ -328,23 +341,27 @@ export function toAppError(error: unknown, type: ErrorType = 'unknown'): AppErro
   };
 }
 
+const NETWORK_CODES = new Set([
+  'ERR_NETWORK',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ENOTFOUND',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'NETWORK_ERROR',
+]);
+
+const TIMEOUT_CODES = new Set(['ECONNABORTED', 'ETIMEDOUT']);
+
 /**
  * Check if error is a network error
  */
 export function isNetworkError(error: unknown): boolean {
   if (typeof error === 'object' && error !== null) {
-    const err = error as any;
-    const code = err.code || '';
-    const message = err.message || '';
-
-    return (
-      code.startsWith('E') ||
-      message.includes('Network') ||
-      message.includes('network') ||
-      code === 'NETWORK_ERROR'
-    );
+    const err = error as Record<string, unknown>;
+    const code = (err.code as string) || '';
+    return NETWORK_CODES.has(code) || err.name === 'APIError';
   }
-
   return false;
 }
 
@@ -353,18 +370,10 @@ export function isNetworkError(error: unknown): boolean {
  */
 export function isTimeoutError(error: unknown): boolean {
   if (typeof error === 'object' && error !== null) {
-    const err = error as any;
-    const code = err.code || '';
-    const message = err.message || '';
-
-    return (
-      code === 'ECONNABORTED' ||
-      code === 'ETIMEDOUT' ||
-      message.includes('timeout') ||
-      message.includes('timed out')
-    );
+    const err = error as Record<string, unknown>;
+    const code = (err.code as string) || '';
+    return TIMEOUT_CODES.has(code);
   }
-
   return false;
 }
 
@@ -373,11 +382,17 @@ export function isTimeoutError(error: unknown): boolean {
  */
 export function isAuthError(error: unknown): boolean {
   if (typeof error === 'object' && error !== null) {
-    const err = error as any;
-    const status = err.status || err.response?.status;
-
-    return status === 401 || status === 403 || err.type === 'auth';
+    const err = error as Record<string, unknown>;
+    const response = err.response as Record<string, unknown> | undefined;
+    const status = (err.status as number) || (response?.status as number);
+    const code = (err.code as string) || '';
+    return (
+      status === 401 ||
+      status === 403 ||
+      code === 'HTTP_401' ||
+      code === 'HTTP_403' ||
+      err.type === 'auth'
+    );
   }
-
   return false;
 }
