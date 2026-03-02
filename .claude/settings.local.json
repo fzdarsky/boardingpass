@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(npm test)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run typecheck)",
+      "Bash(git rev-parse:*)",
+      "Bash(oc get:*)",
+      "Bash(make lint-app)",
+      "Bash(go test -v ./internal/auth/)",
+      "Bash(make clean-native-app)",
+      "Bash(make build-app-ios)",
+      "Bash(npx expo-modules-autolinking resolve)",
+      "Bash(npx expo-modules-autolinking search)",
+      "Bash(npx expo-modules-autolinking resolve --platform ios)",
+      "Bash(make test-unit-app)",
+      "WebSearch"
+    ]
+  }
+}
