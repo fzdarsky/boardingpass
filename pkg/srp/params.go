@@ -35,19 +35,28 @@ func initN() *big.Int {
 	return n
 }
 
-// computeK computes the SRP-6a multiplier k = H(N | g)
+// padToN returns v's byte representation zero-padded to N's byte length.
+// SRP-6a requires consistent padding of big integer hash inputs to ensure
+// interoperability between implementations.
+func padToN(v *big.Int) []byte {
+	nLen := len(N.Bytes())
+	vBytes := v.Bytes()
+	if len(vBytes) >= nLen {
+		return vBytes
+	}
+	padded := make([]byte, nLen)
+	copy(padded[nLen-len(vBytes):], vBytes)
+	return padded
+}
+
+// computeK computes the SRP-6a multiplier k = H(N, g).
+// Note: g is hashed at its natural length (not padded to N), matching the
+// secure-remote-password JS library behavior.
 //
 //nolint:gocritic // N is capitalized per RFC 5054 SRP-6a specification
 func computeK(N, g *big.Int) *big.Int {
 	hash := sha256.New()
-
-	// Pad N and g to same length for consistent hashing
-	nBytes := N.Bytes()
-	gBytes := make([]byte, len(nBytes))
-	copy(gBytes[len(gBytes)-1:], g.Bytes())
-
-	hash.Write(nBytes)
-	hash.Write(gBytes)
-
+	hash.Write(N.Bytes())
+	hash.Write(g.Bytes())
 	return new(big.Int).SetBytes(hash.Sum(nil))
 }

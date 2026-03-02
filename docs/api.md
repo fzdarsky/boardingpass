@@ -114,9 +114,9 @@ Query device system information.
   },
   "os": {
     "distribution": "Red Hat Enterprise Linux",
-    "version": "9.3"
-  },
-  "fips_mode": true
+    "version": "9.3",
+    "fips_enabled": true
+  }
 }
 ```
 

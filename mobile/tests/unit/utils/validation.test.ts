@@ -1,0 +1,397 @@
+/**
+ * Validation Utilities Tests
+ */
+
+import {
+  isValidIPv4,
+  isValidIPv6,
+  isValidIPAddress,
+  isValidHostname,
+  isValidHost,
+  isValidPort,
+  isValidConnectionCode,
+  isValidFingerprint,
+  isValidMACAddress,
+  isValidUUID,
+  isValidDeviceName,
+  sanitizeInput,
+  normalizeConnectionCode,
+  validateAndSanitizeConnectionCode,
+  parseAndValidateHostPort,
+} from '../../../src/utils/validation';
+
+describe('IP Address Validation', () => {
+  describe('isValidIPv4', () => {
+    it('should validate correct IPv4 addresses', () => {
+      expect(isValidIPv4('192.168.1.1')).toBe(true);
+      expect(isValidIPv4('10.0.0.1')).toBe(true);
+      expect(isValidIPv4('172.16.0.1')).toBe(true);
+      expect(isValidIPv4('255.255.255.255')).toBe(true);
+      expect(isValidIPv4('0.0.0.0')).toBe(true);
+    });
+
+    it('should reject invalid IPv4 addresses', () => {
+      expect(isValidIPv4('256.1.1.1')).toBe(false);
+      expect(isValidIPv4('192.168.1')).toBe(false);
+      expect(isValidIPv4('192.168.1.1.1')).toBe(false);
+      expect(isValidIPv4('192.168.-1.1')).toBe(false);
+      expect(isValidIPv4('not.an.ip.address')).toBe(false);
+      expect(isValidIPv4('')).toBe(false);
+    });
+  });
+
+  describe('isValidIPv6', () => {
+    it('should validate correct IPv6 addresses', () => {
+      expect(isValidIPv6('2001:0db8:85a3:0000:0000:8a2e:0370:7334')).toBe(true);
+      expect(isValidIPv6('2001:db8:85a3::8a2e:370:7334')).toBe(true);
+      expect(isValidIPv6('::1')).toBe(true);
+      expect(isValidIPv6('fe80::1')).toBe(true);
+    });
+
+    it('should reject invalid IPv6 addresses', () => {
+      expect(isValidIPv6('192.168.1.1')).toBe(false);
+      expect(isValidIPv6('gggg::1')).toBe(false);
+      expect(isValidIPv6('')).toBe(false);
+    });
+  });
+
+  describe('isValidIPAddress', () => {
+    it('should validate both IPv4 and IPv6', () => {
+      expect(isValidIPAddress('192.168.1.1')).toBe(true);
+      expect(isValidIPAddress('::1')).toBe(true);
+      expect(isValidIPAddress('invalid')).toBe(false);
+    });
+  });
+});
+
+describe('Hostname Validation', () => {
+  describe('isValidHostname', () => {
+    it('should validate correct hostnames', () => {
+      expect(isValidHostname('example.com')).toBe(true);
+      expect(isValidHostname('sub.example.com')).toBe(true);
+      expect(isValidHostname('device')).toBe(true);
+      expect(isValidHostname('device-1')).toBe(true);
+      expect(isValidHostname('my-device.local')).toBe(true);
+    });
+
+    it('should reject invalid hostnames', () => {
+      expect(isValidHostname('-example.com')).toBe(false);
+      expect(isValidHostname('example-.com')).toBe(false);
+      expect(isValidHostname('example..com')).toBe(false);
+      expect(isValidHostname('')).toBe(false);
+      expect(isValidHostname('a'.repeat(64))).toBe(false); // Label too long
+    });
+  });
+
+  describe('isValidHost', () => {
+    it('should validate both IP addresses and hostnames', () => {
+      expect(isValidHost('192.168.1.1')).toBe(true);
+      expect(isValidHost('example.com')).toBe(true);
+      expect(isValidHost('::1')).toBe(true);
+      expect(isValidHost('invalid!')).toBe(false);
+    });
+  });
+});
+
+describe('Port Validation', () => {
+  describe('isValidPort', () => {
+    it('should validate correct ports', () => {
+      expect(isValidPort(1)).toBe(true);
+      expect(isValidPort(8443)).toBe(true);
+      expect(isValidPort(65535)).toBe(true);
+    });
+
+    it('should reject invalid ports', () => {
+      expect(isValidPort(0)).toBe(false);
+      expect(isValidPort(65536)).toBe(false);
+      expect(isValidPort(-1)).toBe(false);
+      expect(isValidPort(1.5)).toBe(false);
+    });
+  });
+});
+
+describe('Host:Port Parsing', () => {
+  describe('parseAndValidateHostPort', () => {
+    it('should parse IPv4 address without port (default 8443)', () => {
+      const result = parseAndValidateHostPort('192.168.1.100');
+      expect(result.valid).toBe(true);
+      expect(result.host).toBe('192.168.1.100');
+      expect(result.port).toBe(8443);
+    });
+
+    it('should parse IPv4 address with port', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:9443');
+      expect(result.valid).toBe(true);
+      expect(result.host).toBe('192.168.1.100');
+      expect(result.port).toBe(9443);
+    });
+
+    it('should accept custom default port', () => {
+      const result = parseAndValidateHostPort('192.168.1.100', 443);
+      expect(result.valid).toBe(true);
+      expect(result.port).toBe(443);
+    });
+
+    it('should reject empty input', () => {
+      const result = parseAndValidateHostPort('');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Address cannot be empty');
+    });
+
+    it('should reject whitespace-only input', () => {
+      const result = parseAndValidateHostPort('   ');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Address cannot be empty');
+    });
+
+    it('should reject invalid IPv4 format', () => {
+      expect(parseAndValidateHostPort('192').valid).toBe(false);
+      expect(parseAndValidateHostPort('192.168').valid).toBe(false);
+      expect(parseAndValidateHostPort('192.168.1').valid).toBe(false);
+      expect(parseAndValidateHostPort('192.168.1.1.1').valid).toBe(false);
+      expect(parseAndValidateHostPort('256.1.1.1').valid).toBe(false);
+      expect(parseAndValidateHostPort('invalid!host').valid).toBe(false);
+      expect(parseAndValidateHostPort('mydevice.local').valid).toBe(false);
+    });
+
+    it('should reject out-of-range port', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:99999');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Port must be between 1 and 65535');
+    });
+
+    it('should reject port 0', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:0');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Port must be between 1 and 65535');
+    });
+
+    it('should handle whitespace around input', () => {
+      const result = parseAndValidateHostPort('  192.168.1.100  ');
+      expect(result.valid).toBe(true);
+      expect(result.host).toBe('192.168.1.100');
+    });
+
+    it('should reject trailing colon with no port', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Invalid IPv4 address format');
+    });
+
+    it('should reject non-numeric port', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:abc');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Invalid IPv4 address format');
+    });
+
+    it('should accept port 1 (minimum)', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:1');
+      expect(result.valid).toBe(true);
+      expect(result.port).toBe(1);
+    });
+
+    it('should accept port 65535 (maximum)', () => {
+      const result = parseAndValidateHostPort('192.168.1.100:65535');
+      expect(result.valid).toBe(true);
+      expect(result.port).toBe(65535);
+    });
+
+    it('should validate various valid IPv4 addresses', () => {
+      expect(parseAndValidateHostPort('10.0.0.1').valid).toBe(true);
+      expect(parseAndValidateHostPort('172.16.0.1').valid).toBe(true);
+      expect(parseAndValidateHostPort('255.255.255.255').valid).toBe(true);
+      expect(parseAndValidateHostPort('0.0.0.0').valid).toBe(true);
+      expect(parseAndValidateHostPort('1.1.1.1').valid).toBe(true);
+    });
+  });
+});
+
+describe('Connection Code Validation', () => {
+  describe('isValidConnectionCode', () => {
+    it('should validate base64 connection codes', () => {
+      expect(isValidConnectionCode('YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwCg==')).toBe(
+        true
+      );
+      expect(isValidConnectionCode('A'.repeat(32))).toBe(true);
+    });
+
+    it('should validate MAC address connection codes (colon-separated)', () => {
+      expect(isValidConnectionCode('AA:BB:CC:DD:EE:FF')).toBe(true);
+      expect(isValidConnectionCode('00:11:22:33:44:55')).toBe(true);
+      expect(isValidConnectionCode('aa:bb:cc:dd:ee:ff')).toBe(true);
+      expect(isValidConnectionCode('  AA:BB:CC:DD:EE:FF  ')).toBe(true);
+    });
+
+    it('should validate MAC address connection codes (dash-separated)', () => {
+      expect(isValidConnectionCode('AA-BB-CC-DD-EE-FF')).toBe(true);
+      expect(isValidConnectionCode('00-11-22-33-44-55')).toBe(true);
+      expect(isValidConnectionCode('aa-bb-cc-dd-ee-ff')).toBe(true);
+    });
+
+    it('should validate bare hex MAC connection codes (barcode scans)', () => {
+      expect(isValidConnectionCode('94C691A818EA')).toBe(true);
+      expect(isValidConnectionCode('AABBCCDDEEFF')).toBe(true);
+      expect(isValidConnectionCode('001122334455')).toBe(true);
+      expect(isValidConnectionCode('aabbccddeeff')).toBe(true);
+    });
+
+    it('should reject invalid connection codes', () => {
+      expect(isValidConnectionCode('')).toBe(false);
+      expect(isValidConnectionCode('   ')).toBe(false);
+      expect(isValidConnectionCode('short')).toBe(false);
+      expect(isValidConnectionCode('invalid!chars@here#')).toBe(false);
+    });
+  });
+});
+
+describe('Certificate Fingerprint Validation', () => {
+  describe('isValidFingerprint', () => {
+    it('should validate correct SHA-256 fingerprints', () => {
+      expect(isValidFingerprint('a'.repeat(64))).toBe(true);
+      expect(isValidFingerprint('0123456789abcdef'.repeat(4))).toBe(true);
+    });
+
+    it('should reject invalid fingerprints', () => {
+      expect(isValidFingerprint('a'.repeat(63))).toBe(false);
+      expect(isValidFingerprint('a'.repeat(65))).toBe(false);
+      expect(isValidFingerprint('g'.repeat(64))).toBe(false);
+      expect(isValidFingerprint('')).toBe(false);
+    });
+  });
+});
+
+describe('MAC Address Validation', () => {
+  describe('isValidMACAddress', () => {
+    it('should validate correct MAC addresses', () => {
+      expect(isValidMACAddress('00:11:22:33:44:55')).toBe(true);
+      expect(isValidMACAddress('AA:BB:CC:DD:EE:FF')).toBe(true);
+      expect(isValidMACAddress('aa:bb:cc:dd:ee:ff')).toBe(true);
+    });
+
+    it('should reject invalid MAC addresses', () => {
+      expect(isValidMACAddress('00:11:22:33:44')).toBe(false);
+      expect(isValidMACAddress('00-11-22-33-44-55')).toBe(false);
+      expect(isValidMACAddress('gg:hh:ii:jj:kk:ll')).toBe(false);
+      expect(isValidMACAddress('')).toBe(false);
+    });
+  });
+});
+
+describe('UUID Validation', () => {
+  describe('isValidUUID', () => {
+    it('should validate correct UUIDs', () => {
+      expect(isValidUUID('123e4567-e89b-12d3-a456-426614174000')).toBe(true);
+      expect(isValidUUID('00000000-0000-0000-0000-000000000000')).toBe(true);
+    });
+
+    it('should reject invalid UUIDs', () => {
+      expect(isValidUUID('123e4567-e89b-12d3-a456')).toBe(false);
+      expect(isValidUUID('not-a-uuid')).toBe(false);
+      expect(isValidUUID('')).toBe(false);
+    });
+  });
+});
+
+describe('Device Name Validation', () => {
+  describe('isValidDeviceName', () => {
+    it('should validate correct device names', () => {
+      expect(isValidDeviceName('Device 1')).toBe(true);
+      expect(isValidDeviceName('My Device')).toBe(true);
+      expect(isValidDeviceName('a'.repeat(255))).toBe(true);
+    });
+
+    it('should reject invalid device names', () => {
+      expect(isValidDeviceName('')).toBe(false);
+      expect(isValidDeviceName('   ')).toBe(false);
+      expect(isValidDeviceName('a'.repeat(256))).toBe(false);
+    });
+  });
+});
+
+describe('Connection Code Normalization', () => {
+  describe('normalizeConnectionCode', () => {
+    it('should strip colons and lowercase (server MAC format)', () => {
+      expect(normalizeConnectionCode('94:c6:91:a8:18:ea')).toBe('94c691a818ea');
+      expect(normalizeConnectionCode('94:C6:91:A8:18:EA')).toBe('94c691a818ea');
+    });
+
+    it('should strip dashes and lowercase', () => {
+      expect(normalizeConnectionCode('94-C6-91-A8-18-EA')).toBe('94c691a818ea');
+    });
+
+    it('should lowercase bare hex (barcode scan format)', () => {
+      expect(normalizeConnectionCode('94C691A818EA')).toBe('94c691a818ea');
+    });
+
+    it('should strip spaces', () => {
+      expect(normalizeConnectionCode('94 C6 91 A8 18 EA')).toBe('94c691a818ea');
+    });
+
+    it('should be idempotent on already-normalized input', () => {
+      expect(normalizeConnectionCode('94c691a818ea')).toBe('94c691a818ea');
+    });
+
+    it('should produce identical output for all MAC formats', () => {
+      const colon = normalizeConnectionCode('94:C6:91:A8:18:EA');
+      const dash = normalizeConnectionCode('94-c6-91-a8-18-ea');
+      const bare = normalizeConnectionCode('94C691A818EA');
+      const spaced = normalizeConnectionCode('94 c6 91 a8 18 ea');
+      expect(colon).toBe(bare);
+      expect(dash).toBe(bare);
+      expect(spaced).toBe(bare);
+    });
+
+    it('should handle alphanumeric board serial', () => {
+      expect(normalizeConnectionCode('ABC123-DEF456')).toBe('abc123def456');
+    });
+  });
+});
+
+describe('Input Sanitization', () => {
+  describe('sanitizeInput', () => {
+    it('should remove control characters', () => {
+      expect(sanitizeInput('hello\x00world')).toBe('helloworld');
+      expect(sanitizeInput('test\x1Fdata')).toBe('testdata');
+    });
+
+    it('should trim whitespace', () => {
+      expect(sanitizeInput('  hello  ')).toBe('hello');
+      expect(sanitizeInput('\n\ttest\n\t')).toBe('test');
+    });
+
+    it('should handle normal text', () => {
+      expect(sanitizeInput('normal text')).toBe('normal text');
+      expect(sanitizeInput('code-123')).toBe('code-123');
+    });
+  });
+
+  describe('validateAndSanitizeConnectionCode', () => {
+    it('should validate and sanitize valid base64 codes', () => {
+      const result = validateAndSanitizeConnectionCode(
+        '  YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwCg==  '
+      );
+      expect(result.valid).toBe(true);
+      expect(result.sanitized).toBe('YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwCg==');
+      expect(result.error).toBeUndefined();
+    });
+
+    it('should validate and sanitize MAC address codes', () => {
+      const result = validateAndSanitizeConnectionCode('  AA:BB:CC:DD:EE:FF  ');
+      expect(result.valid).toBe(true);
+      expect(result.sanitized).toBe('AA:BB:CC:DD:EE:FF');
+      expect(result.error).toBeUndefined();
+    });
+
+    it('should reject empty codes', () => {
+      const result = validateAndSanitizeConnectionCode('   ');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Connection code cannot be empty');
+    });
+
+    it('should reject invalid codes', () => {
+      const result = validateAndSanitizeConnectionCode('short');
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe('Invalid connection code format');
+    });
+  });
+});

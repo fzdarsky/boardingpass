@@ -1,0 +1,29 @@
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Generated files
+src/types/api.ts
+
+# Native directories
+ios/
+android/
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+
+# Metro
+.metro-health-check*
+
+# Minified files
+*.min.js
+
+# Test coverage
+coverage/
+.nyc_output/

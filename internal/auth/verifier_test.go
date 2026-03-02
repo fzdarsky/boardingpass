@@ -352,6 +352,92 @@ func TestComputeVerifierFromConfig_GeneratorFails(t *testing.T) {
 	}
 }
 
+func TestNormalizePassword(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "MAC with colons lowercase",
+			input:    "94:c6:91:a8:18:ea",
+			expected: "94c691a818ea",
+		},
+		{
+			name:     "MAC with colons uppercase",
+			input:    "94:C6:91:A8:18:EA",
+			expected: "94c691a818ea",
+		},
+		{
+			name:     "MAC with dashes",
+			input:    "94-C6-91-A8-18-EA",
+			expected: "94c691a818ea",
+		},
+		{
+			name:     "bare hex uppercase",
+			input:    "94C691A818EA",
+			expected: "94c691a818ea",
+		},
+		{
+			name:     "bare hex lowercase",
+			input:    "94c691a818ea",
+			expected: "94c691a818ea",
+		},
+		{
+			name:     "with spaces",
+			input:    "94 C6 91 A8 18 EA",
+			expected: "94c691a818ea",
+		},
+		{
+			name:     "board serial alphanumeric",
+			input:    "ABC123-DEF456",
+			expected: "abc123def456",
+		},
+		{
+			name:     "already normalized",
+			input:    "abc123",
+			expected: "abc123",
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := auth.NormalizePassword(tt.input)
+			if result != tt.expected {
+				t.Errorf("NormalizePassword(%q) = %q, want %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestComputeVerifierFromConfig_NormalizesPassword(t *testing.T) {
+	// The same MAC address in different formats should produce the same verifier
+	N, g, _ := auth.GetGroupParameters()
+	salt := base64.StdEncoding.EncodeToString([]byte("testsalt12345678"))
+
+	// Compute verifier with colon-separated MAC (what the server generator produces)
+	v1, err := auth.ComputeVerifier("boardingpass", salt, auth.NormalizePassword("94:c6:91:a8:18:ea"), N, g)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Compute verifier with bare hex MAC (what the barcode scanner produces)
+	v2, err := auth.ComputeVerifier("boardingpass", salt, auth.NormalizePassword("94C691A818EA"), N, g)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Both should produce the same verifier
+	if v1.Cmp(v2) != 0 {
+		t.Error("normalized MAC formats should produce identical verifiers")
+	}
+}
+
 // Helper function to check if a string contains a substring
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||

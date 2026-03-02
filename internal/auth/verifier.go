@@ -77,6 +77,22 @@ func GeneratePassword(generatorPath string) (string, error) {
 	return password, nil
 }
 
+// NormalizePassword strips all non-alphanumeric characters and lowercases,
+// producing a canonical form for SRP key derivation. Both the mobile app and
+// the service MUST apply this normalization before SRP to ensure identical
+// password bytes regardless of input format (e.g. "94:C6:91:A8:18:EA",
+// "94-c6-91-a8-18-ea", and "94C691A818EA" all normalize to "94c691a818ea").
+func NormalizePassword(password string) string {
+	var b strings.Builder
+	b.Grow(len(password))
+	for _, r := range password {
+		if (r >= '0' && r <= '9') || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+			b.WriteRune(r)
+		}
+	}
+	return strings.ToLower(b.String())
+}
+
 // ComputeVerifier computes the SRP-6a verifier value: v = g^x % N
 // where x = H(salt | H(username | ":" | password))
 //
@@ -126,6 +142,10 @@ func ComputeVerifierFromConfig(config *SRPVerifierConfig, N, g *big.Int) (*big.I
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate password: %w", err)
 	}
+
+	// Normalize password to canonical form (lowercase, no separators)
+	// Both client and server must apply the same normalization before SRP
+	password = NormalizePassword(password)
 
 	// Compute verifier
 	verifier, err := ComputeVerifier(config.Username, config.Salt, password, N, g)

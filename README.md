@@ -101,6 +101,7 @@ lifecycle:
 ### Usage
 
 1. **Start the service** (if not already running):
+
    ```bash
    sudo systemctl start boardingpass
    ```

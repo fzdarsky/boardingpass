@@ -116,9 +116,9 @@ func (c *Client) ComputeSharedSecret() error {
 	// Step 6: (B - k*g^x)^(a + u*x) mod N
 	c.S = new(big.Int).Exp(base, exponent, N)
 
-	// Compute session key K = H(S)
+	// Compute session key K = H(S) — pad S to N's byte length
 	hash := sha256.New()
-	hash.Write(c.S.Bytes())
+	hash.Write(padToN(c.S))
 	c.K = hash.Sum(nil)
 
 	return nil
@@ -141,21 +141,8 @@ func (c *Client) derivePrivateKey() *big.Int {
 // computeU computes the scrambling parameter u = H(A | B)
 func (c *Client) computeU() *big.Int {
 	hash := sha256.New()
-
-	// Pad A and B to same length for consistent hashing
-	maxLen := len(N.Bytes())
-	ABytes := make([]byte, maxLen)
-	BBytes := make([]byte, maxLen)
-
-	ACopy := c.A.Bytes()
-	BCopy := c.B.Bytes()
-
-	copy(ABytes[maxLen-len(ACopy):], ACopy)
-	copy(BBytes[maxLen-len(BCopy):], BCopy)
-
-	hash.Write(ABytes)
-	hash.Write(BBytes)
-
+	hash.Write(padToN(c.A))
+	hash.Write(padToN(c.B))
 	return new(big.Int).SetBytes(hash.Sum(nil))
 }
 
@@ -182,12 +169,13 @@ func (c *Client) ComputeClientProof() (string, error) {
 	hashUsername := sha256.Sum256([]byte(c.Username))
 
 	// Compute M1 = H(H(N) XOR H(g) | H(username) | salt | A | B | K)
+	// A and B are padded to N's byte length for interoperability
 	hash := sha256.New()
 	hash.Write(hashNXorG)
 	hash.Write(hashUsername[:])
 	hash.Write(c.Salt)
-	hash.Write(c.A.Bytes())
-	hash.Write(c.B.Bytes())
+	hash.Write(padToN(c.A))
+	hash.Write(padToN(c.B))
 	hash.Write(c.K)
 
 	c.M1 = hash.Sum(nil)
@@ -215,7 +203,7 @@ func (c *Client) VerifyServerProof(M2Base64 string) error {
 
 	// Compute expected M2 = H(A | M1 | K)
 	hash := sha256.New()
-	hash.Write(c.A.Bytes())
+	hash.Write(padToN(c.A))
 	hash.Write(c.M1)
 	hash.Write(c.K)
 	expectedM2 := hash.Sum(nil)
@@ -331,12 +319,13 @@ func ComputeClientProofWithEphemeral(username, password, saltBase64 string, a, A
 	exponent := new(big.Int).Add(a, ux)
 	S := new(big.Int).Exp(base, exponent, N)
 
-	// Compute session key K = H(S)
+	// Compute session key K = H(S) — pad S to N's byte length
 	kHash := sha256.New()
-	kHash.Write(S.Bytes())
+	kHash.Write(padToN(S))
 	sessionKey := kHash.Sum(nil)
 
 	// Compute M1 = H(H(N) XOR H(g) | H(username) | salt | A | B | K)
+	// A and B are padded to N's byte length for interoperability
 	hashN := sha256.Sum256(N.Bytes())
 	hashG := sha256.Sum256(G.Bytes())
 	hashNXorG := make([]byte, len(hashN))
@@ -349,8 +338,8 @@ func ComputeClientProofWithEphemeral(username, password, saltBase64 string, a, A
 	m1Hash.Write(hashNXorG)
 	m1Hash.Write(hashUsername[:])
 	m1Hash.Write(salt)
-	m1Hash.Write(A.Bytes())
-	m1Hash.Write(B.Bytes())
+	m1Hash.Write(padToN(A))
+	m1Hash.Write(padToN(B))
 	m1Hash.Write(sessionKey)
 
 	return m1Hash.Sum(nil), nil

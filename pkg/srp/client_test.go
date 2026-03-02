@@ -428,8 +428,14 @@ func TestClient_FullAuthenticationFlow(t *testing.T) {
 	assert.NotEmpty(t, M1Base64)
 
 	// Step 5: Verify server proof M2 (mock)
+	// M2 = H(A | M1 | K), where A must be padded to N's byte length
+	nLen := len(srp.N.Bytes())
+	ABytes := make([]byte, nLen)
+	aRaw := client.A.Bytes()
+	copy(ABytes[nLen-len(aRaw):], aRaw)
+
 	hash := sha256.New()
-	hash.Write(client.A.Bytes())
+	hash.Write(ABytes)
 	hash.Write(client.M1)
 	hash.Write(client.K)
 	M2 := hash.Sum(nil)
