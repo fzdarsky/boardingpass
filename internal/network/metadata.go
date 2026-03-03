@@ -86,14 +86,35 @@ func GetInterfaceDriver(name string) string {
 	return filepath.Base(target)
 }
 
-// GetInterfaceVendor returns the PCI vendor ID (e.g. "0x8086") from sysfs.
+// GetInterfaceVendor returns the hardware vendor name for a network interface.
+// Returns the human-readable name from hwdata if available (e.g. "Intel Corporation"),
+// otherwise the raw PCI vendor ID (e.g. "0x8086"). Empty for virtual interfaces.
 func GetInterfaceVendor(name string) string {
-	return readSysfsString(filepath.Join(sysClassNet, name, "device", "vendor"))
+	raw := readSysfsString(filepath.Join(sysClassNet, name, "device", "vendor"))
+	if raw == "" {
+		return ""
+	}
+	if resolved := LookupVendor(raw); resolved != "" {
+		return resolved
+	}
+	return FormatPCIID(raw)
 }
 
-// GetInterfaceModel returns the PCI device ID (e.g. "0x1533") from sysfs.
+// GetInterfaceModel returns the hardware model name for a network interface.
+// Returns the human-readable name from hwdata if available (e.g. "I210 Gigabit Network Connection"),
+// otherwise the raw PCI device ID (e.g. "0x1533"). Empty for virtual interfaces.
 func GetInterfaceModel(name string) string {
-	return readSysfsString(filepath.Join(sysClassNet, name, "device", "device"))
+	vendorRaw := readSysfsString(filepath.Join(sysClassNet, name, "device", "vendor"))
+	deviceRaw := readSysfsString(filepath.Join(sysClassNet, name, "device", "device"))
+	if deviceRaw == "" {
+		return ""
+	}
+	if vendorRaw != "" {
+		if resolved := LookupDevice(vendorRaw, deviceRaw); resolved != "" {
+			return resolved
+		}
+	}
+	return FormatPCIID(deviceRaw)
 }
 
 // readSysfsString reads a single-line value from a sysfs file.
