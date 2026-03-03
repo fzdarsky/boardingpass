@@ -25,10 +25,18 @@
  * ```
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, ScrollView, BackHandler } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Text, Button, SegmentedButtons, ActivityIndicator, Snackbar } from 'react-native-paper';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { StyleSheet, View, ScrollView, BackHandler, Pressable } from 'react-native';
+import { useRouter, useLocalSearchParams, useNavigation } from 'expo-router';
+import {
+  Text,
+  Button,
+  SegmentedButtons,
+  ActivityIndicator,
+  Snackbar,
+  useTheme,
+} from 'react-native-paper';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { spacing, theme } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useCertificateValidation } from '@/hooks/useCertificateValidation';
@@ -70,6 +78,25 @@ export default function AuthenticateScreen(): React.ReactElement {
 
   const { deviceId, deviceName, host, port } = params;
   const portNumber = port ? parseInt(port, 10) : 8443;
+
+  const navigation = useNavigation();
+  const paperTheme = useTheme();
+
+  // Custom back icon matching device detail header style
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      // eslint-disable-next-line react/no-unstable-nested-components
+      headerLeft: () => (
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.headerIcon}
+          accessibilityLabel="Go back"
+        >
+          <MaterialCommunityIcons name="arrow-left" size={22} color={paperTheme.colors.onPrimary} />
+        </Pressable>
+      ),
+    });
+  }, [navigation, router, paperTheme.colors.onPrimary]);
 
   const { authenticate, isAuthenticating, error, clearError } = useAuth(deviceId);
 
@@ -825,5 +852,8 @@ const styles = StyleSheet.create({
   },
   trustButton: {
     flex: 1,
+  },
+  headerIcon: {
+    padding: 4,
   },
 });

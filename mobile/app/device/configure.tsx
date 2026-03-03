@@ -8,9 +8,10 @@
  */
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Appbar, Text, ActivityIndicator, Button } from 'react-native-paper';
+import { Text, ActivityIndicator, Button, useTheme } from 'react-native-paper';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { WizardProvider } from '../../src/contexts/WizardContext';
 import WizardContainer from '../../src/components/ConfigWizard/WizardContainer';
 import { createAPIClient } from '../../src/services/api/client';
@@ -32,6 +33,7 @@ export default function ConfigureScreen() {
   }>();
 
   const router = useRouter();
+  const theme = useTheme();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,7 +129,19 @@ export default function ConfigureScreen() {
           options={{
             title: 'Configure Device',
             // eslint-disable-next-line react/no-unstable-nested-components
-            headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={styles.headerIcon}
+                accessibilityLabel="Go back"
+              >
+                <MaterialCommunityIcons
+                  name="arrow-left"
+                  size={22}
+                  color={theme.colors.onPrimary}
+                />
+              </Pressable>
+            ),
           }}
         />
         <View style={styles.centerContent}>
@@ -151,7 +165,19 @@ export default function ConfigureScreen() {
           options={{
             title: 'Configure Device',
             // eslint-disable-next-line react/no-unstable-nested-components
-            headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={styles.headerIcon}
+                accessibilityLabel="Go back"
+              >
+                <MaterialCommunityIcons
+                  name="arrow-left"
+                  size={22}
+                  color={theme.colors.onPrimary}
+                />
+              </Pressable>
+            ),
           }}
         />
         <View style={styles.centerContent}>
@@ -172,7 +198,19 @@ export default function ConfigureScreen() {
           options={{
             title: 'Configure Device',
             // eslint-disable-next-line react/no-unstable-nested-components
-            headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={styles.headerIcon}
+                accessibilityLabel="Go back"
+              >
+                <MaterialCommunityIcons
+                  name="arrow-left"
+                  size={22}
+                  color={theme.colors.onPrimary}
+                />
+              </Pressable>
+            ),
           }}
         />
         <View style={styles.centerContent}>
@@ -194,16 +232,20 @@ export default function ConfigureScreen() {
         options={{
           title: `Configure ${host}`,
           // eslint-disable-next-line react/no-unstable-nested-components
-          headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={styles.headerIcon}
+              accessibilityLabel="Go back"
+            >
+              <MaterialCommunityIcons name="arrow-left" size={22} color={theme.colors.onPrimary} />
+            </Pressable>
+          ),
         }}
       />
 
       <WizardProvider initialState={initialWizardState}>
-        <WizardContainer
-          interfaces={networkConfig?.interfaces || []}
-          serviceInterfaceName={serviceInterfaceName}
-          onComplete={handleComplete}
-        />
+        <WizardContainer interfaces={networkConfig?.interfaces || []} onComplete={handleComplete} />
       </WizardProvider>
     </View>
   );
@@ -227,5 +269,8 @@ const styles = StyleSheet.create({
     marginVertical: spacing.md,
     textAlign: 'center',
     opacity: 0.7,
+  },
+  headerIcon: {
+    padding: 4,
   },
 });

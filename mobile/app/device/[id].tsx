@@ -19,10 +19,11 @@
  */
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { ScrollView, View, StyleSheet, RefreshControl } from 'react-native';
+import { ScrollView, View, StyleSheet, RefreshControl, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { Appbar, Text, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';
-import { SystemInfo, NetworkConfig, TPMInfo, BoardInfo } from '../../src/components/DeviceInfo';
+import { Text, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { SystemInformationCard, NetworkConfig } from '../../src/components/DeviceInfo';
 import { useDeviceInfo, useDeviceInfoAvailability } from '../../src/hooks/useDeviceInfo';
 import { createAPIClient } from '../../src/services/api/client';
 import { sessionManager } from '../../src/services/auth/session';
@@ -74,6 +75,15 @@ export default function DeviceDetailScreen() {
   const deviceInfo = useDeviceInfo(client);
   const availability = useDeviceInfoAvailability(deviceInfo);
 
+  // Detect server-side session invalidation and clear local session
+  useEffect(() => {
+    const msg = deviceInfo.error?.message ?? '';
+    if (msg.includes('Invalid session token') && id) {
+      sessionManager.clearSession(id);
+      router.back();
+    }
+  }, [deviceInfo.error, id, router]);
+
   // Handle missing route parameters
   if (!id || !host || !port) {
     return (
@@ -82,7 +92,19 @@ export default function DeviceDetailScreen() {
           options={{
             title: 'Device Details',
             // eslint-disable-next-line react/no-unstable-nested-components
-            headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={styles.headerIcon}
+                accessibilityLabel="Go back"
+              >
+                <MaterialCommunityIcons
+                  name="arrow-left"
+                  size={22}
+                  color={theme.colors.onPrimary}
+                />
+              </Pressable>
+            ),
           }}
         />
         <View style={styles.errorContainer}>
@@ -108,7 +130,19 @@ export default function DeviceDetailScreen() {
           options={{
             title: 'Device Details',
             // eslint-disable-next-line react/no-unstable-nested-components
-            headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={styles.headerIcon}
+                accessibilityLabel="Go back"
+              >
+                <MaterialCommunityIcons
+                  name="arrow-left"
+                  size={22}
+                  color={theme.colors.onPrimary}
+                />
+              </Pressable>
+            ),
           }}
         />
         <View style={styles.loadingContainer}>
@@ -129,7 +163,19 @@ export default function DeviceDetailScreen() {
           options={{
             title: 'Device Details',
             // eslint-disable-next-line react/no-unstable-nested-components
-            headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={styles.headerIcon}
+                accessibilityLabel="Go back"
+              >
+                <MaterialCommunityIcons
+                  name="arrow-left"
+                  size={22}
+                  color={theme.colors.onPrimary}
+                />
+              </Pressable>
+            ),
           }}
         />
         <View style={styles.errorContainer}>
@@ -153,14 +199,45 @@ export default function DeviceDetailScreen() {
         options={{
           title: `${host}:${port}`,
           // eslint-disable-next-line react/no-unstable-nested-components
-          headerLeft: () => <Appbar.BackAction onPress={() => router.back()} />,
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              style={styles.headerIcon}
+              accessibilityLabel="Go back"
+            >
+              <MaterialCommunityIcons name="arrow-left" size={22} color={theme.colors.onPrimary} />
+            </Pressable>
+          ),
           // eslint-disable-next-line react/no-unstable-nested-components
           headerRight: () => (
-            <Appbar.Action
-              icon="refresh"
-              onPress={deviceInfo.refetch}
-              disabled={deviceInfo.isLoading}
-            />
+            <View style={styles.headerRight}>
+              <Pressable
+                onPress={deviceInfo.refetch}
+                disabled={deviceInfo.isLoading}
+                style={styles.headerIcon}
+                accessibilityLabel="Refresh"
+              >
+                <MaterialCommunityIcons
+                  name="refresh"
+                  size={22}
+                  color={
+                    deviceInfo.isLoading ? theme.colors.onPrimary + '66' : theme.colors.onPrimary
+                  }
+                />
+              </Pressable>
+              <Pressable
+                onPress={() =>
+                  router.push({
+                    pathname: '/device/configure',
+                    params: { id, host, port },
+                  })
+                }
+                style={styles.headerIcon}
+                accessibilityLabel="Configure device"
+              >
+                <MaterialCommunityIcons name="cog" size={22} color={theme.colors.onPrimary} />
+              </Pressable>
+            </View>
           ),
         }}
       />
@@ -221,23 +298,7 @@ export default function DeviceDetailScreen() {
         )}
 
         {/* System Information (if available) */}
-        {deviceInfo.systemInfo && (
-          <>
-            <SystemInfo
-              systemInfo={deviceInfo.systemInfo}
-              showFIPSIndicator={true} // T094
-            />
-
-            {/* TPM Information (nested from system info) */}
-            <TPMInfo tpmInfo={deviceInfo.systemInfo.tpm} />
-
-            {/* Board Information (nested from system info) */}
-            <BoardInfo
-              boardInfo={deviceInfo.systemInfo.board}
-              formatSerial={true} // T089
-            />
-          </>
-        )}
+        {deviceInfo.systemInfo && <SystemInformationCard systemInfo={deviceInfo.systemInfo} />}
 
         {/* Loading Indicator for System Info (if loading individually) */}
         {deviceInfo.loadingStates.info && !deviceInfo.systemInfo && (
@@ -290,31 +351,6 @@ export default function DeviceDetailScreen() {
             </Text>
           </View>
         )}
-
-        {/* Configure Button */}
-        {availability.hasAnyData && (
-          <Button
-            mode="contained"
-            icon="cog"
-            onPress={() =>
-              router.push({
-                pathname: '/device/configure',
-                params: { id, host, port },
-              })
-            }
-            style={styles.configureButton}
-            accessibilityLabel="Configure device"
-          >
-            Configure
-          </Button>
-        )}
-
-        {/* Device Connection Info */}
-        <View style={styles.connectionInfo}>
-          <Text variant="bodySmall" style={styles.connectionInfoText}>
-            Connected to {host}:{port}
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );
@@ -379,19 +415,12 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     color: '#C62828',
   },
-  configureButton: {
-    marginTop: spacing.lg,
-    marginHorizontal: spacing.md,
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
   },
-  connectionInfo: {
-    marginTop: spacing.xl,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  connectionInfoText: {
-    textAlign: 'center',
-    opacity: 0.5,
-    fontFamily: 'monospace',
+  headerIcon: {
+    padding: 4,
   },
 });

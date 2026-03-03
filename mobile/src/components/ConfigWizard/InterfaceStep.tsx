@@ -3,20 +3,11 @@
  *
  * Displays a DataTable of network interfaces (name, type, MAC, vendor, model,
  * speed, state/carrier) with radio selection and optional VLAN ID input.
- * Highlights the service interface (the one the app is connected through).
  */
 
 import React, { useCallback, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import {
-  Text,
-  RadioButton,
-  TextInput,
-  HelperText,
-  DataTable,
-  useTheme,
-  Chip,
-} from 'react-native-paper';
+import { Text, RadioButton, TextInput, HelperText, DataTable, useTheme } from 'react-native-paper';
 import { useWizard } from '../../contexts/WizardContext';
 import type { components } from '../../types/api';
 import { spacing } from '../../theme';
@@ -25,10 +16,9 @@ type NetworkInterface = components['schemas']['NetworkInterface'];
 
 interface InterfaceStepProps {
   interfaces: NetworkInterface[];
-  serviceInterfaceName: string | null;
 }
 
-export default function InterfaceStep({ interfaces, serviceInterfaceName }: InterfaceStepProps) {
+export default function InterfaceStep({ interfaces }: InterfaceStepProps) {
   const { state, updateInterface } = useWizard();
   const theme = useTheme();
   const [showVlan, setShowVlan] = useState(state.networkInterface.vlanId !== null);
@@ -107,16 +97,12 @@ export default function InterfaceStep({ interfaces, serviceInterfaceName }: Inte
 
           {selectableInterfaces.map(iface => {
             const isSelected = state.networkInterface.interfaceName === iface.name;
-            const isService = iface.name === serviceInterfaceName;
 
             return (
               <DataTable.Row
                 key={iface.name}
                 onPress={() => handleSelect(iface)}
-                style={[
-                  isSelected && { backgroundColor: theme.colors.primaryContainer },
-                  isService && styles.serviceRow,
-                ]}
+                style={isSelected ? { backgroundColor: theme.colors.primaryContainer } : undefined}
               >
                 <DataTable.Cell style={styles.radioCol}>
                   <RadioButton
@@ -126,14 +112,7 @@ export default function InterfaceStep({ interfaces, serviceInterfaceName }: Inte
                   />
                 </DataTable.Cell>
                 <DataTable.Cell style={styles.nameCol}>
-                  <View style={styles.nameCell}>
-                    <Text variant="bodySmall">{iface.name}</Text>
-                    {isService && (
-                      <Chip compact textStyle={styles.chipText} style={styles.serviceChip}>
-                        Service
-                      </Chip>
-                    )}
-                  </View>
+                  <Text variant="bodySmall">{iface.name}</Text>
                 </DataTable.Cell>
                 <DataTable.Cell style={styles.typeCol}>{iface.type}</DataTable.Cell>
                 <DataTable.Cell style={styles.macCol}>
@@ -211,21 +190,6 @@ const styles = StyleSheet.create({
   vendorCol: { width: 140 },
   speedCol: { width: 90 },
   stateCol: { width: 100 },
-  nameCell: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  serviceRow: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#FF9800',
-  },
-  serviceChip: {
-    height: 20,
-  },
-  chipText: {
-    fontSize: 9,
-  },
   monoText: {
     fontFamily: 'monospace',
     fontSize: 11,

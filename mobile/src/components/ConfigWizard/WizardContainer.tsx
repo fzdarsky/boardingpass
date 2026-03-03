@@ -23,15 +23,10 @@ type NetworkInterface = components['schemas']['NetworkInterface'];
 
 interface WizardContainerProps {
   interfaces: NetworkInterface[];
-  serviceInterfaceName: string | null;
   onComplete?: () => void;
 }
 
-export default function WizardContainer({
-  interfaces,
-  serviceInterfaceName,
-  onComplete,
-}: WizardContainerProps) {
+export default function WizardContainer({ interfaces, onComplete }: WizardContainerProps) {
   const wizard = useConfigWizard();
   const theme = useTheme();
   const [errors, setErrors] = useState<string[]>([]);
@@ -67,9 +62,7 @@ export default function WizardContainer({
       case WIZARD_STEPS.HOSTNAME:
         return <HostnameStep />;
       case WIZARD_STEPS.INTERFACE:
-        return (
-          <InterfaceStep interfaces={interfaces} serviceInterfaceName={serviceInterfaceName} />
-        );
+        return <InterfaceStep interfaces={interfaces} />;
       case WIZARD_STEPS.ADDRESSING:
         return <AddressingStep />;
       case WIZARD_STEPS.SERVICES:

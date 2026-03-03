@@ -182,7 +182,7 @@ export function getTPMVersion(systemInfo: SystemInfo): string | null {
  */
 export function getArchitectureDisplayName(architecture: CPUInfo['architecture']): string {
   const displayNames: Record<CPUInfo['architecture'], string> = {
-    x86_64: 'x86-64 (64-bit Intel/AMD)',
+    x86_64: 'Intel/AMD 64-bit (x86_64)',
     aarch64: 'ARM 64-bit (aarch64)',
     armv7l: 'ARM 32-bit (armv7l)',
   };
