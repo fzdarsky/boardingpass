@@ -38,7 +38,7 @@ func TestSystemInfo_JSON(t *testing.T) {
 					FIPSEnabled:  true,
 				},
 			},
-			expected: `{"tpm":{"present":true,"manufacturer":"STMicroelectronics","model":"ST33HTPH2E32","version":"2.0"},"board":{"manufacturer":"Raspberry Pi Foundation","model":"Raspberry Pi 4 Model B","serial":"10000000abcdef01"},"cpu":{"architecture":"aarch64"},"os":{"distribution":"Red Hat Enterprise Linux","version":"9.3","fips_enabled":true}}`,
+			expected: `{"hostname":"","tpm":{"present":true,"manufacturer":"STMicroelectronics","model":"ST33HTPH2E32","version":"2.0"},"board":{"manufacturer":"Raspberry Pi Foundation","model":"Raspberry Pi 4 Model B","serial":"10000000abcdef01"},"cpu":{"architecture":"aarch64"},"os":{"distribution":"Red Hat Enterprise Linux","version":"9.3","fips_enabled":true}}`,
 		},
 		{
 			name: "without TPM",
@@ -63,7 +63,7 @@ func TestSystemInfo_JSON(t *testing.T) {
 					FIPSEnabled:  false,
 				},
 			},
-			expected: `{"tpm":{"present":false,"manufacturer":null,"model":null,"version":null},"board":{"manufacturer":"Dell Inc.","model":"OptiPlex 7090","serial":"ABC123DEF456"},"cpu":{"architecture":"x86_64"},"os":{"distribution":"Ubuntu","version":"22.04","fips_enabled":false}}`,
+			expected: `{"hostname":"","tpm":{"present":false,"manufacturer":null,"model":null,"version":null},"board":{"manufacturer":"Dell Inc.","model":"OptiPlex 7090","serial":"ABC123DEF456"},"cpu":{"architecture":"x86_64"},"os":{"distribution":"Ubuntu","version":"22.04","fips_enabled":false}}`,
 		},
 	}
 
@@ -116,7 +116,7 @@ func TestNetworkConfig_JSON(t *testing.T) {
 					},
 				},
 			},
-			expected: `{"interfaces":[{"name":"eth0","mac_address":"dc:a6:32:12:34:56","link_state":"up","ip_addresses":[{"ip":"192.168.1.100","prefix":24,"family":"ipv4"},{"ip":"fe80::dea6:32ff:fe12:3456","prefix":64,"family":"ipv6"}]},{"name":"wlan0","mac_address":"b8:27:eb:98:76:54","link_state":"down","ip_addresses":[]}]}`,
+			expected: `{"interfaces":[{"name":"eth0","mac_address":"dc:a6:32:12:34:56","link_state":"up","ip_addresses":[{"ip":"192.168.1.100","prefix":24,"family":"ipv4"},{"ip":"fe80::dea6:32ff:fe12:3456","prefix":64,"family":"ipv6"}],"type":"","speed":0,"carrier":false,"driver":"","vendor":"","model":""},{"name":"wlan0","mac_address":"b8:27:eb:98:76:54","link_state":"down","ip_addresses":[],"type":"","speed":0,"carrier":false,"driver":"","vendor":"","model":""}]}`,
 		},
 	}
 

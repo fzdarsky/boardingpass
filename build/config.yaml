@@ -1,0 +1,67 @@
+# BoardingPass service configuration
+# Install to: /etc/boardingpass/config.yaml
+
+service:
+  inactivity_timeout: "10m"
+  session_ttl: "30m"
+  sentinel_file: "/etc/boardingpass/issued"
+
+transports:
+  ethernet:
+    enabled: true
+    interfaces: []
+    address: ""
+    port: 8443
+    tls_cert: "/var/lib/boardingpass/tls/server.crt"
+    tls_key: "/var/lib/boardingpass/tls/server.key"
+
+# Command allow-list
+# max_params: 0 means no parameters accepted (default)
+# max_params: N means up to N positional parameters can be passed
+commands:
+  - id: "set-hostname"
+    path: "/usr/lib/boardingpass/scripts/set-hostname.sh"
+    args: []
+    max_params: 1
+
+  - id: "set-ip"
+    path: "/usr/lib/boardingpass/scripts/set-ip.sh"
+    args: []
+    max_params: 4
+
+  - id: "set-dns"
+    path: "/usr/lib/boardingpass/scripts/set-dns.sh"
+    args: []
+    max_params: 3
+
+  - id: "set-ntp"
+    path: "/usr/lib/boardingpass/scripts/set-ntp.sh"
+    args: []
+    max_params: 1
+
+  - id: "show-status"
+    path: "/usr/lib/boardingpass/scripts/show-status.sh"
+    args: []
+    max_params: 0
+
+  - id: "restart-networkmanager"
+    path: "/usr/bin/systemctl"
+    args: ["restart", "NetworkManager"]
+    max_params: 0
+
+  - id: "restart-chronyd"
+    path: "/usr/bin/systemctl"
+    args: ["restart", "chronyd"]
+    max_params: 0
+
+paths:
+  allow_list:
+    - "/etc/systemd/"
+    - "/etc/NetworkManager/"
+    - "/etc/chrony.conf"
+    - "/etc/chrony.d/"
+    - "/etc/hostname"
+
+logging:
+  level: "info"
+  format: "human"

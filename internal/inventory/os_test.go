@@ -1,6 +1,7 @@
 package inventory_test
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/fzdarsky/boardingpass/internal/inventory"
@@ -8,6 +9,10 @@ import (
 )
 
 func TestGetOSInfo(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("skipping: /etc/os-release is Linux-specific (running on %s)", runtime.GOOS)
+	}
+
 	info, err := inventory.GetOSInfo()
 
 	assert.NoError(t, err, "GetOSInfo should not return an error")

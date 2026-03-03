@@ -11,11 +11,17 @@
 Defaults:boardingpass !requiretty
 
 # Allow boardingpass user to execute allow-listed commands
-# These are example commands - actual commands are configured via config.yaml
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl reboot --force
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart NetworkManager
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart chronyd
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/chronyc makestep
+
+# Allow boardingpass helper scripts (enrollment flow)
+boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/set-hostname.sh
+boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/set-ip.sh
+boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/set-dns.sh
+boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/set-ntp.sh
+boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/show-status.sh
 
 # Explicitly deny all other commands
 boardingpass ALL=(ALL) !/usr/bin/su

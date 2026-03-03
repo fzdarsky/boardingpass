@@ -50,9 +50,10 @@ type EthernetTransport struct {
 
 // CommandDefinition defines an allow-listed command.
 type CommandDefinition struct {
-	ID   string   `yaml:"id"`
-	Path string   `yaml:"path"`
-	Args []string `yaml:"args"`
+	ID        string   `yaml:"id"`
+	Path      string   `yaml:"path"`
+	Args      []string `yaml:"args"`
+	MaxParams int      `yaml:"max_params"` // 0 means no params accepted
 }
 
 // LoggingSettings contains logging configuration.

@@ -17,7 +17,11 @@
       "Bash(make test-unit-app)",
       "WebSearch",
       "Bash(log stream --predicate 'process == \"\"BoardingPass\"\"' --timeout 5)",
-      "Bash(make lint-all)"
+      "Bash(make lint-all)",
+      "WebFetch",
+      "Bash(go build ./...)",
+      "Bash(go test ./*)",
+      "Bash(make test-service)"
     ]
   }
 }

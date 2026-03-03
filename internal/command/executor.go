@@ -16,7 +16,7 @@ import (
 //
 //nolint:revive // Name is intentionally CommandExecutor for clarity in handler context
 type CommandExecutor interface {
-	Execute(ctx context.Context, cmd *config.CommandDefinition, runUsingSudo bool) (*protocol.CommandResponse, error)
+	Execute(ctx context.Context, cmd *config.CommandDefinition, runUsingSudo bool, params []string) (*protocol.CommandResponse, error)
 }
 
 // Executor executes commands via sudo with output capture.
@@ -40,27 +40,37 @@ func NewExecutor() (*Executor, error) {
 // Execute runs a command from the allow-list, optionally with sudo privileges.
 // It captures stdout, stderr, and the exit code.
 //
-// If runUsingSudo is true, the command is executed as: sudo <path> <args...>
-// If runUsingSudo is false, the command is executed as: <path> <args...>
+// If runUsingSudo is true, the command is executed as: sudo <path> <args...> [-- <params...>]
+// If runUsingSudo is false, the command is executed as: <path> <args...> [-- <params...>]
+// When params is non-empty, a "--" separator is inserted before the params to prevent
+// option injection attacks.
 // Context cancellation will terminate the command process.
-func (e *Executor) Execute(ctx context.Context, cmd *config.CommandDefinition, runUsingSudo bool) (*protocol.CommandResponse, error) {
+func (e *Executor) Execute(ctx context.Context, cmd *config.CommandDefinition, runUsingSudo bool, params []string) (*protocol.CommandResponse, error) {
 	if cmd == nil {
 		return nil, fmt.Errorf("command definition cannot be nil")
+	}
+
+	// Build the full argument list: <cmd.Args> [-- <params...>]
+	fullArgs := make([]string, 0, len(cmd.Args)+len(params)+1)
+	fullArgs = append(fullArgs, cmd.Args...)
+	if len(params) > 0 {
+		fullArgs = append(fullArgs, "--")
+		fullArgs = append(fullArgs, params...)
 	}
 
 	var command *exec.Cmd
 
 	if runUsingSudo {
-		// Build command arguments: sudo <path> <args...>
-		args := make([]string, 0, len(cmd.Args)+1)
+		// Build command arguments: sudo <path> <fullArgs...>
+		args := make([]string, 0, len(fullArgs)+1)
 		args = append(args, cmd.Path)
-		args = append(args, cmd.Args...)
+		args = append(args, fullArgs...)
 		//nolint:gosec // G204: Command execution with allow-listed commands is by design
 		command = exec.CommandContext(ctx, e.sudoPath, args...)
 	} else {
 		// Run command directly without sudo
 		//nolint:gosec // G204: Command execution with allow-listed commands is by design
-		command = exec.CommandContext(ctx, cmd.Path, cmd.Args...)
+		command = exec.CommandContext(ctx, cmd.Path, fullArgs...)
 	}
 
 	// Capture stdout and stderr

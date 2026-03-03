@@ -19,9 +19,9 @@
 
 **Purpose**: Update API contract, regenerate types, prepare project scaffolding
 
-- [ ] T001 Update OpenAPI spec: fix `/configure` description (remove sentinel mention), extend `SystemInfo` with `hostname`, extend `NetworkInterface` with `type`/`speed`/`carrier`/`driver`/`vendor`/`model`, extend `CommandRequest` with `params`, add `CompleteRequest` schema, extend `CompleteResponse` status enum in `specs/001-boardingpass-api/contracts/openapi.yaml`
-- [ ] T002 Regenerate TypeScript types from updated OpenAPI spec via `make generate-app`
-- [ ] T003 Create mobile app scaffold directories: `mobile/src/components/ConfigWizard/`, `mobile/src/services/api/` (if not existing), `mobile/src/utils/`, `mobile/src/types/`
+- [X] T001 Update OpenAPI spec: fix `/configure` description (remove sentinel mention), extend `SystemInfo` with `hostname`, extend `NetworkInterface` with `type`/`speed`/`carrier`/`driver`/`vendor`/`model`, extend `CommandRequest` with `params`, add `CompleteRequest` schema, extend `CompleteResponse` status enum in `specs/001-boardingpass-api/contracts/openapi.yaml`
+- [X] T002 Regenerate TypeScript types from updated OpenAPI spec via `make generate-app`
+- [X] T003 Create mobile app scaffold directories: `mobile/src/components/ConfigWizard/`, `mobile/src/services/api/` (if not existing), `mobile/src/utils/`, `mobile/src/types/`
 
 ---
 
@@ -33,82 +33,82 @@
 
 ### Protocol types
 
-- [ ] T004 Extend `CommandRequest` with `Params []string` field, add `CompleteRequest` struct with `Reboot bool`, extend `CompleteResponse.Status` enum to include `"rebooting"`, add `Hostname string` to `SystemInfo`, add `Type`/`Speed`/`Carrier`/`Driver`/`Vendor`/`Model` fields to `NetworkInterface` in `pkg/protocol/types.go`
+- [X] T004 Extend `CommandRequest` with `Params []string` field, add `CompleteRequest` struct with `Reboot bool`, extend `CompleteResponse.Status` enum to include `"rebooting"`, add `Hostname string` to `SystemInfo`, add `Type`/`Speed`/`Carrier`/`Driver`/`Vendor`/`Model` fields to `NetworkInterface` in `pkg/protocol/types.go`
 
 ### Tests: Hostname in /info
 
-- [ ] T005 [P] Write unit test for `GetHostname()` in `internal/inventory/hostname_test.go`
-- [ ] T006 [P] Write integration test for `/info` endpoint verifying `hostname` field is present in response in `tests/integration/info_test.go`
+- [X] T005 [P] Write unit test for `GetHostname()` in `internal/inventory/hostname_test.go`
+- [X] T006 [P] Write integration test for `/info` endpoint verifying `hostname` field is present in response in `tests/integration/info_test.go`
 
 ### Implementation: Hostname in /info
 
-- [ ] T007 [P] Create `internal/inventory/hostname.go` with `GetHostname() (string, error)` using `os.Hostname()`
-- [ ] T008 Modify `/info` handler to include hostname from `GetHostname()` in `SystemInfo` response in `internal/api/handlers/info.go`
+- [X] T007 [P] Create `internal/inventory/hostname.go` with `GetHostname() (string, error)` using `os.Hostname()`
+- [X] T008 Modify `/info` handler to include hostname from `GetHostname()` in `SystemInfo` response in `internal/api/handlers/info.go`
 
 ### Tests: Network interface metadata
 
-- [ ] T009 [P] Write unit tests for sysfs-based interface type detection, speed, carrier, driver, vendor, and model reading (including hwdata pci.ids lookup when available and hex ID fallback) in `internal/network/interfaces_test.go`
+- [X] T009 [P] Write unit tests for sysfs-based interface type detection, speed, carrier, driver, vendor, and model reading (including hwdata pci.ids lookup when available and hex ID fallback) in `internal/network/interfaces_test.go`
 
 ### Implementation: Network interface metadata
 
-- [ ] T010 Extend `ListInterfaces()` to read sysfs for each interface: detect type (`/sys/class/net/<name>/wireless/`, `/sys/class/net/<name>/bridge/`, etc.), read speed (`/sys/class/net/<name>/speed`), read carrier (`/sys/class/net/<name>/carrier`), read driver (symlink basename of `/sys/class/net/<name>/device/driver`), read vendor/device PCI IDs from `/sys/class/net/<name>/device/vendor` and `/sys/class/net/<name>/device/device`, look up human-readable names in `/usr/share/hwdata/pci.ids` if present (fall back to hex IDs) in `internal/network/interfaces.go`
+- [X] T010 Extend `ListInterfaces()` to read sysfs for each interface: detect type (`/sys/class/net/<name>/wireless/`, `/sys/class/net/<name>/bridge/`, etc.), read speed (`/sys/class/net/<name>/speed`), read carrier (`/sys/class/net/<name>/carrier`), read driver (symlink basename of `/sys/class/net/<name>/device/driver`), read vendor/device PCI IDs from `/sys/class/net/<name>/device/vendor` and `/sys/class/net/<name>/device/device`, look up human-readable names in `/usr/share/hwdata/pci.ids` if present (fall back to hex IDs) in `internal/network/interfaces.go`
 
 ### Tests: Command parameter support
 
-- [ ] T011 [P] Write unit tests for `max_params` validation: reject if `len(params) > max_params`, reject empty param strings, enforce 1024-char max per param in `internal/command/allowlist_test.go`
-- [ ] T012 [P] Write unit tests for executor appending `--` separator followed by params in `internal/command/executor_test.go`
-- [ ] T013 [P] Write integration test for `/command` endpoint with params in `tests/integration/command_test.go`
+- [X] T011 [P] Write unit tests for `max_params` validation: reject if `len(params) > max_params`, reject empty param strings, enforce 1024-char max per param in `internal/command/allowlist_test.go`
+- [X] T012 [P] Write unit tests for executor appending `--` separator followed by params in `internal/command/executor_test.go`
+- [X] T013 [P] Write integration test for `/command` endpoint with params in `tests/integration/command_test.go`
 
 ### Implementation: Command parameter support
 
-- [ ] T014 [P] Add `MaxParams int` field to `CommandDefinition` in `internal/config/config.go`
-- [ ] T015 Add `max_params` validation to allowlist lookup in `internal/command/allowlist.go`
-- [ ] T016 Modify executor to append `--` separator followed by params to the command args in `internal/command/executor.go`
-- [ ] T017 Modify `/command` handler to parse `params` from `CommandRequest` and pass to executor in `internal/api/handlers/command.go`
+- [X] T014 [P] Add `MaxParams int` field to `CommandDefinition` in `internal/config/config.go`
+- [X] T015 Add `max_params` validation to allowlist lookup in `internal/command/allowlist.go`
+- [X] T016 Modify executor to append `--` separator followed by params to the command args in `internal/command/executor.go`
+- [X] T017 Modify `/command` handler to parse `params` from `CommandRequest` and pass to executor in `internal/api/handlers/command.go`
 
 ### Tests: Complete with reboot
 
-- [ ] T018 [P] Write unit test for `ScheduleReboot(delay)` in `internal/lifecycle/reboot_test.go`
-- [ ] T019 [P] Write integration test for `/complete` with `reboot: true` returning `"rebooting"` status in `tests/integration/complete_test.go`
+- [X] T018 [P] Write unit test for `ScheduleReboot(delay)` in `internal/lifecycle/reboot_test.go`
+- [X] T019 [P] Write integration test for `/complete` with `reboot: true` returning `"rebooting"` status in `tests/integration/complete_test.go`
 
 ### Implementation: Complete with reboot
 
-- [ ] T020 [P] Create `internal/lifecycle/reboot.go` with `ScheduleReboot(delay time.Duration)` that execs `systemctl reboot` after delay
-- [ ] T021 Modify `/complete` handler to accept optional `CompleteRequest` body, return `"rebooting"` status when `reboot: true`, call `ScheduleReboot(3s)` after sending response in `internal/api/handlers/complete.go`
+- [X] T020 [P] Create `internal/lifecycle/reboot.go` with `ScheduleReboot(delay time.Duration)` that execs `systemctl reboot` after delay
+- [X] T021 Modify `/complete` handler to accept optional `CompleteRequest` body, return `"rebooting"` status when `reboot: true`, call `ScheduleReboot(3s)` after sending response in `internal/api/handlers/complete.go`
 
 ### Regenerate mocks
 
-- [ ] T022 Regenerate Go mocks via `make generate-service` (if any interfaces changed)
+- [X] T022 Regenerate Go mocks via `make generate-service` (if any interfaces changed)
 
 ### CLI updates
 
-- [ ] T023 Update CLI `info` command to display `hostname` field in output in `internal/cli/commands/info.go`
-- [ ] T024 [P] Update CLI `connections` command to display `type`, `speed`, `carrier`, `driver`, `vendor`, `model` columns in output in `internal/cli/commands/connections.go`
-- [ ] T025 [P] Update CLI `command` subcommand to accept and send `params` (as positional args after command ID) in `internal/cli/commands/command.go`
-- [ ] T026 [P] Update CLI `complete` subcommand to accept `--reboot` flag and send `CompleteRequest` body in `internal/cli/commands/complete.go`
+- [X] T023 Update CLI `info` command to display `hostname` field in output in `internal/cli/commands/info.go`
+- [X] T024 [P] Update CLI `connections` command to display `type`, `speed`, `carrier`, `driver`, `vendor`, `model` columns in output in `internal/cli/commands/connections.go`
+- [X] T025 [P] Update CLI `command` subcommand to accept and send `params` (as positional args after command ID) in `internal/cli/commands/command.go`
+- [X] T026 [P] Update CLI `complete` subcommand to accept `--reboot` flag and send `CompleteRequest` body in `internal/cli/commands/complete.go`
 
 ### Helper scripts
 
-- [ ] T027 [P] Create `build/scripts/wifi-scan.sh` — nmcli wrapper that outputs JSON array of WiFi networks (device, ssid, bssid, signal, security, channel, frequency, rate)
-- [ ] T028 [P] Create `build/scripts/reload-connection.sh` — takes connection name as param, runs `nmcli connection reload` then `nmcli connection up <name>`
-- [ ] T029 [P] Create `build/scripts/connectivity-test.sh` — takes interface name and gateway IP as params, tests IP assignment + gateway ping + DNS resolution + internet reachability, outputs JSON result
-- [ ] T030 [P] Create `build/scripts/enroll-insights.sh` — reads `/etc/boardingpass/staging/insights.json`, runs `rhc connect --organization <ORG_ID> --activation-key <KEY_NAME>`, deletes staging file
-- [ ] T031 [P] Create `build/scripts/enroll-flightctl.sh` — reads `/etc/boardingpass/staging/flightctl.json`, runs `flightctl login <URL> --username <USERNAME> --password <PASSWORD>`, deletes staging file
+- [X] T027 [P] Create `build/scripts/wifi-scan.sh` — nmcli wrapper that outputs JSON array of WiFi networks (device, ssid, bssid, signal, security, channel, frequency, rate)
+- [X] T028 [P] Create `build/scripts/reload-connection.sh` — takes connection name as param, runs `nmcli connection reload` then `nmcli connection up <name>`
+- [X] T029 [P] Create `build/scripts/connectivity-test.sh` — takes interface name and gateway IP as params, tests IP assignment + gateway ping + DNS resolution + internet reachability, outputs JSON result
+- [X] T030 [P] Create `build/scripts/enroll-insights.sh` — reads `/etc/boardingpass/staging/insights.json`, runs `rhc connect --organization <ORG_ID> --activation-key <KEY_NAME>`, deletes staging file
+- [X] T031 [P] Create `build/scripts/enroll-flightctl.sh` — reads `/etc/boardingpass/staging/flightctl.json`, runs `flightctl login <URL> --username <USERNAME> --password <PASSWORD>`, deletes staging file
 
 ### Service configuration
 
-- [ ] T032 Add new command definitions (wifi-scan, set-hostname, reload-connection, restart-chronyd, connectivity-test, enroll-insights, enroll-flightctl) with `max_params` to `build/config.yaml`
-- [ ] T033 [P] Add sudoers entries for all new scripts and commands (including `rhc connect` and `flightctl login`) to `build/boardingpass.sudoers`
-- [ ] T034 Add path allow-list entries (`/etc/hostname`, `/etc/NetworkManager/system-connections/`, `/etc/chrony.d/`, `/etc/profile.d/`, `/etc/boardingpass/staging/`, `/etc/systemd/system/`) to `build/config.yaml`
+- [X] T032 Add new command definitions (wifi-scan, set-hostname, reload-connection, restart-chronyd, connectivity-test, enroll-insights, enroll-flightctl) with `max_params` to `build/config.yaml`
+- [X] T033 [P] Add sudoers entries for all new scripts and commands (including `rhc connect` and `flightctl login`) to `build/boardingpass.sudoers`
+- [X] T034 Add path allow-list entries (`/etc/hostname`, `/etc/NetworkManager/system-connections/`, `/etc/chrony.d/`, `/etc/profile.d/`, `/etc/boardingpass/staging/`, `/etc/systemd/system/`) to `build/config.yaml`
 
 ### Contract tests
 
-- [ ] T035 Update contract tests to validate new OpenAPI schema fields (hostname in SystemInfo, type/speed/carrier/driver/vendor/model in NetworkInterface, params in CommandRequest, CompleteRequest schema) in `tests/contract/`
+- [X] T035 Update contract tests to validate new OpenAPI schema fields (hostname in SystemInfo, type/speed/carrier/driver/vendor/model in NetworkInterface, params in CommandRequest, CompleteRequest schema) in `tests/contract/`
 
 ### End-to-end validation
 
-- [ ] T036 Run `make lint-service && make test-service` — fix all failures
-- [ ] T037 Run CLI integration/e2e tests (`tests/cli-integration/`, `tests/cli-e2e/`) — fix all failures
+- [X] T036 Run `make lint-service && make test-service` — fix all failures
+- [X] T037 Run CLI integration/e2e tests (`tests/cli-integration/`, `tests/cli-e2e/`) — fix all failures
 
 **Checkpoint**: Service API and CLI fully extended. All service and CLI tests pass.
 

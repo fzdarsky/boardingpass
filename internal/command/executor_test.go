@@ -29,11 +29,25 @@ func TestNewExecutor(t *testing.T) {
 	}
 }
 
+// lookPathOrSkip resolves a command path, skipping the test if the command is not found.
+func lookPathOrSkip(t *testing.T, name string) string {
+	t.Helper()
+	path, err := exec.LookPath(name)
+	if err != nil {
+		t.Skipf("skipping: %q not found in PATH", name)
+	}
+	return path
+}
+
 func TestExecutor_Execute(t *testing.T) {
 	executor, err := command.NewExecutor()
 	if err != nil {
 		t.Fatalf("failed to create executor: %v", err)
 	}
+
+	echoPath := lookPathOrSkip(t, "echo")
+	truePath := lookPathOrSkip(t, "true")
+	falsePath := lookPathOrSkip(t, "false")
 
 	tests := []struct {
 		name         string
@@ -47,7 +61,7 @@ func TestExecutor_Execute(t *testing.T) {
 			name: "successful command - echo",
 			cmd: &config.CommandDefinition{
 				ID:   "echo-test",
-				Path: "/bin/echo",
+				Path: echoPath,
 				Args: []string{"hello", "world"},
 			},
 			wantExitCode: 0,
@@ -59,7 +73,7 @@ func TestExecutor_Execute(t *testing.T) {
 			name: "successful command - true",
 			cmd: &config.CommandDefinition{
 				ID:   "true-test",
-				Path: "/bin/true",
+				Path: truePath,
 				Args: []string{},
 			},
 			wantExitCode: 0,
@@ -71,7 +85,7 @@ func TestExecutor_Execute(t *testing.T) {
 			name: "failed command - false",
 			cmd: &config.CommandDefinition{
 				ID:   "false-test",
-				Path: "/bin/false",
+				Path: falsePath,
 				Args: []string{},
 			},
 			wantExitCode: 1,
@@ -84,7 +98,7 @@ func TestExecutor_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			response, err := executor.Execute(ctx, tt.cmd, false)
+			response, err := executor.Execute(ctx, tt.cmd, false, nil)
 
 			if tt.wantErr {
 				if err == nil {
@@ -125,7 +139,7 @@ func TestExecutor_Execute_NilCommand(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, err = executor.Execute(ctx, nil, false)
+	_, err = executor.Execute(ctx, nil, false, nil)
 
 	if err == nil {
 		t.Error("expected error for nil command, got nil")
@@ -143,13 +157,14 @@ func TestExecutor_Execute_ContextCancellation(t *testing.T) {
 	defer cancel()
 
 	// Try to run a command that sleeps longer than the timeout
+	sleepPath := lookPathOrSkip(t, "sleep")
 	cmd := &config.CommandDefinition{
 		ID:   "sleep-test",
-		Path: "/bin/sleep",
+		Path: sleepPath,
 		Args: []string{"5"},
 	}
 
-	_, err = executor.Execute(ctx, cmd, false)
+	_, err = executor.Execute(ctx, cmd, false, nil)
 
 	// Should get an error due to context cancellation
 	if err == nil {
@@ -164,15 +179,15 @@ func TestExecutor_Execute_StderrCapture(t *testing.T) {
 	}
 
 	// Use a command that writes to stderr
-	// Note: This test may need to be adjusted based on available commands
+	shPath := lookPathOrSkip(t, "sh")
 	cmd := &config.CommandDefinition{
 		ID:   "stderr-test",
-		Path: "/bin/sh",
+		Path: shPath,
 		Args: []string{"-c", "echo error >&2"},
 	}
 
 	ctx := context.Background()
-	response, err := executor.Execute(ctx, cmd, false)
+	response, err := executor.Execute(ctx, cmd, false, nil)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 		return

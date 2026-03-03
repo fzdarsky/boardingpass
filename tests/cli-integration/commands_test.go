@@ -340,7 +340,7 @@ func TestCommandExecution(t *testing.T) {
 	apiClient.SetSessionToken("test-token-cmd")
 
 	// Execute command
-	resp, err := apiClient.ExecuteCommand("show-status")
+	resp, err := apiClient.ExecuteCommand("show-status", nil)
 	require.NoError(t, err)
 
 	// Verify response
@@ -385,7 +385,7 @@ func TestCommandExecution_NonZeroExitCode(t *testing.T) {
 	apiClient.SetSessionToken("test-token")
 
 	// Execute command
-	resp, err := apiClient.ExecuteCommand("failing-command")
+	resp, err := apiClient.ExecuteCommand("failing-command", nil)
 	require.NoError(t, err)
 
 	// Verify non-zero exit code
@@ -436,7 +436,7 @@ func TestCompleteCommand(t *testing.T) {
 	apiClient.SetSessionToken("test-token-complete")
 
 	// Complete provisioning
-	resp, err := apiClient.Complete()
+	resp, err := apiClient.Complete(false)
 	require.NoError(t, err)
 
 	// Verify response

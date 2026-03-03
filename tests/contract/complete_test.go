@@ -32,7 +32,7 @@ func TestCompleteEndpoint_Contract(t *testing.T) {
 		logger := logging.New(logging.LevelInfo, logging.FormatJSON)
 		handler := handlers.NewCompleteHandler(sentinelPath, func(reason string) {
 			shutdownCalled = true
-		}, logger)
+		}, nil, logger)
 
 		req := httptest.NewRequest(http.MethodPost, "/complete", nil)
 		req.Header.Set("Content-Type", "application/json")
@@ -74,7 +74,7 @@ func TestCompleteEndpoint_Contract(t *testing.T) {
 		sentinelPath := filepath.Join(tempDir, "issued")
 
 		logger := logging.New(logging.LevelInfo, logging.FormatJSON)
-		handler := handlers.NewCompleteHandler(sentinelPath, nil, logger)
+		handler := handlers.NewCompleteHandler(sentinelPath, nil, nil, logger)
 
 		// OpenAPI spec only allows POST method
 		disallowedMethods := []string{
@@ -104,7 +104,7 @@ func TestCompleteEndpoint_Contract(t *testing.T) {
 		sentinelPath := filepath.Join(tempDir, "issued")
 
 		logger := logging.New(logging.LevelInfo, logging.FormatJSON)
-		handler := handlers.NewCompleteHandler(sentinelPath, nil, logger)
+		handler := handlers.NewCompleteHandler(sentinelPath, nil, nil, logger)
 
 		// First request
 		req1 := httptest.NewRequest(http.MethodPost, "/complete", nil)
@@ -138,7 +138,7 @@ func TestCompleteEndpoint_Contract(t *testing.T) {
 		sentinelPath := filepath.Join(tempDir, "issued")
 
 		logger := logging.New(logging.LevelInfo, logging.FormatJSON)
-		handler := handlers.NewCompleteHandler(sentinelPath, nil, logger)
+		handler := handlers.NewCompleteHandler(sentinelPath, nil, nil, logger)
 
 		// Request without Content-Type header should still work
 		// (handler doesn't parse request body)
@@ -156,7 +156,7 @@ func TestCompleteEndpoint_Contract(t *testing.T) {
 		sentinelPath := filepath.Join(tempDir, "issued")
 
 		logger := logging.New(logging.LevelInfo, logging.FormatJSON)
-		handler := handlers.NewCompleteHandler(sentinelPath, nil, logger)
+		handler := handlers.NewCompleteHandler(sentinelPath, nil, nil, logger)
 
 		req := httptest.NewRequest(http.MethodPost, "/complete", nil)
 		w := httptest.NewRecorder()
@@ -178,7 +178,7 @@ func TestCompleteEndpoint_Contract(t *testing.T) {
 		handler := handlers.NewCompleteHandler(sentinelPath, func(reason string) {
 			shutdownCallCount++
 			shutdownReason = reason
-		}, logger)
+		}, nil, logger)
 
 		req := httptest.NewRequest(http.MethodPost, "/complete", nil)
 		w := httptest.NewRecorder()
@@ -196,7 +196,7 @@ func TestCompleteEndpoint_Contract(t *testing.T) {
 
 		logger := logging.New(logging.LevelInfo, logging.FormatJSON)
 		// Handler with nil shutdown callback should not panic
-		handler := handlers.NewCompleteHandler(sentinelPath, nil, logger)
+		handler := handlers.NewCompleteHandler(sentinelPath, nil, nil, logger)
 
 		req := httptest.NewRequest(http.MethodPost, "/complete", nil)
 		w := httptest.NewRecorder()

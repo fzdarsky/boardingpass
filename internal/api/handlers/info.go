@@ -69,6 +69,12 @@ func (h *InfoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // gatherSystemInfo collects system information from all inventory components.
 func gatherSystemInfo() (protocol.SystemInfo, error) {
+	hostname, err := inventory.GetHostname()
+	if err != nil {
+		// Non-fatal: continue with empty hostname
+		hostname = "unknown"
+	}
+
 	tpmInfo, err := inventory.GetTPMInfo()
 	if err != nil {
 		// Non-fatal: continue with empty TPM info
@@ -98,9 +104,10 @@ func gatherSystemInfo() (protocol.SystemInfo, error) {
 	}
 
 	return protocol.SystemInfo{
-		TPM:   tpmInfo,
-		Board: boardInfo,
-		CPU:   cpuInfo,
-		OS:    osInfo,
+		Hostname: hostname,
+		TPM:      tpmInfo,
+		Board:    boardInfo,
+		CPU:      cpuInfo,
+		OS:       osInfo,
 	}, nil
 }

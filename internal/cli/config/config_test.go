@@ -414,20 +414,21 @@ func clearEnv(t *testing.T) {
 func setupConfigFile(t *testing.T, content string) {
 	t.Helper()
 
-	// Create temporary config directory
+	// Set HOME first so os.UserConfigDir() resolves correctly on all platforms.
+	// On Linux: uses $XDG_CONFIG_HOME or $HOME/.config
+	// On macOS: uses $HOME/Library/Application Support
 	tmpDir := t.TempDir()
-	configDir := filepath.Join(tmpDir, "boardingpass")
-	require.NoError(t, os.MkdirAll(configDir, 0o755)) // #nosec G301 - test directory, relaxed permissions acceptable
+	t.Setenv("XDG_CONFIG_HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
+
+	// Use the actual config dir that the production code will resolve
+	configDir, err := config.UserConfigDir()
+	require.NoError(t, err)
+	require.NoError(t, os.MkdirAll(configDir, 0o755)) // #nosec G301 - test directory
 
 	// Write config file
 	configPath := filepath.Join(configDir, "config.yaml")
-	require.NoError(t, os.WriteFile(configPath, []byte(content), 0o644)) // #nosec G306 - test file, relaxed permissions acceptable
-
-	// Override config directory lookup
-	// Note: This requires modifying config.UserConfigDir() to be testable
-	// For now, we'll use a temporary directory approach
-	t.Setenv("XDG_CONFIG_HOME", tmpDir)
-	t.Setenv("HOME", tmpDir)
+	require.NoError(t, os.WriteFile(configPath, []byte(content), 0o644)) // #nosec G306 - test file
 }
 
 func setupNoConfigFile(t *testing.T) {
