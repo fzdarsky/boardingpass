@@ -5,14 +5,25 @@
  * speed, state/carrier) with radio selection and optional VLAN ID input.
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, RadioButton, TextInput, HelperText, DataTable, useTheme } from 'react-native-paper';
+import {
+  Text,
+  RadioButton,
+  TextInput,
+  HelperText,
+  DataTable,
+  Badge,
+  useTheme,
+} from 'react-native-paper';
 import { useWizard } from '../../contexts/WizardContext';
 import type { components } from '../../types/api';
 import { spacing } from '../../theme';
 
 type NetworkInterface = components['schemas']['NetworkInterface'];
+
+/** Interface types that can be used as enrollment targets. */
+const ENROLLABLE_TYPES: ReadonlySet<string> = new Set(['ethernet', 'wifi']);
 
 interface InterfaceStepProps {
   interfaces: NetworkInterface[];
@@ -23,10 +34,29 @@ export default function InterfaceStep({ interfaces }: InterfaceStepProps) {
   const theme = useTheme();
   const [showVlan, setShowVlan] = useState(state.networkInterface.vlanId !== null);
 
-  // Filter out loopback and virtual interfaces
-  const selectableInterfaces = interfaces.filter(
-    iface => iface.name !== 'lo' && iface.type !== 'virtual'
+  // Only show interfaces that can be used for enrollment
+  const selectableInterfaces = useMemo(
+    () => interfaces.filter(iface => ENROLLABLE_TYPES.has(iface.type)),
+    [interfaces]
   );
+
+  // Auto-select when only one enrollable interface exists
+  useEffect(() => {
+    if (selectableInterfaces.length === 1 && !state.networkInterface.interfaceName) {
+      const iface = selectableInterfaces[0];
+      updateInterface({
+        interfaceName: iface.name,
+        interfaceType: iface.type,
+        vlanId: state.networkInterface.vlanId,
+        wifi: null,
+      });
+    }
+  }, [
+    selectableInterfaces,
+    state.networkInterface.interfaceName,
+    state.networkInterface.vlanId,
+    updateInterface,
+  ]);
 
   const handleSelect = useCallback(
     (iface: NetworkInterface) => {
@@ -89,9 +119,7 @@ export default function InterfaceStep({ interfaces }: InterfaceStepProps) {
             <DataTable.Title style={styles.typeCol}>Type</DataTable.Title>
             <DataTable.Title style={styles.macCol}>MAC</DataTable.Title>
             <DataTable.Title style={styles.vendorCol}>Vendor</DataTable.Title>
-            <DataTable.Title style={styles.speedCol} numeric>
-              Speed
-            </DataTable.Title>
+            <DataTable.Title style={styles.speedCol}>Speed</DataTable.Title>
             <DataTable.Title style={styles.stateCol}>State</DataTable.Title>
           </DataTable.Header>
 
@@ -121,16 +149,13 @@ export default function InterfaceStep({ interfaces }: InterfaceStepProps) {
                   </Text>
                 </DataTable.Cell>
                 <DataTable.Cell style={styles.vendorCol}>{iface.vendor || '-'}</DataTable.Cell>
-                <DataTable.Cell style={styles.speedCol} numeric>
+                <DataTable.Cell style={styles.speedCol}>
                   {iface.speed > 0 ? `${iface.speed} Mbps` : '-'}
                 </DataTable.Cell>
                 <DataTable.Cell style={styles.stateCol}>
-                  <Text
-                    variant="bodySmall"
-                    style={iface.carrier ? styles.stateConnected : styles.stateDisconnected}
-                  >
-                    {iface.carrier ? 'Connected' : 'Disconnected'}
-                  </Text>
+                  <Badge style={iface.carrier ? styles.badgeConnected : styles.badgeDisconnected}>
+                    {iface.carrier ? 'CONNECTED' : 'DISCONNECTED'}
+                  </Badge>
                 </DataTable.Cell>
               </DataTable.Row>
             );
@@ -189,16 +214,18 @@ const styles = StyleSheet.create({
   macCol: { width: 140 },
   vendorCol: { width: 140 },
   speedCol: { width: 90 },
-  stateCol: { width: 100 },
+  stateCol: { width: 120 },
   monoText: {
     fontFamily: 'monospace',
     fontSize: 11,
   },
-  stateConnected: {
-    color: '#4CAF50',
+  badgeConnected: {
+    backgroundColor: '#2D628B',
+    fontSize: 10,
   },
-  stateDisconnected: {
-    color: '#9E9E9E',
+  badgeDisconnected: {
+    backgroundColor: '#9e9e9e',
+    fontSize: 10,
   },
   vlanSection: {
     marginTop: spacing.sm,
