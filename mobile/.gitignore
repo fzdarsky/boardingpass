@@ -55,10 +55,10 @@ ios/Pods/
 dist/
 web-build/
 
-# Native
+# Native (Expo-generated top-level directories only)
 #
-ios/
-android/
+/ios/
+/android/
 
 # Environment
 #
