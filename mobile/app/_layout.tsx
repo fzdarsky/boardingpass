@@ -57,6 +57,12 @@ export default function RootLayout() {
               title: 'Authenticate',
             }}
           />
+          <Stack.Screen
+            name="device/configure"
+            options={{
+              title: 'Configure Device',
+            }}
+          />
         </Stack>
       </AppProvider>
     </PaperProvider>

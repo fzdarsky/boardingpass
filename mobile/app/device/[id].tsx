@@ -291,6 +291,24 @@ export default function DeviceDetailScreen() {
           </View>
         )}
 
+        {/* Configure Button */}
+        {availability.hasAnyData && (
+          <Button
+            mode="contained"
+            icon="cog"
+            onPress={() =>
+              router.push({
+                pathname: '/device/configure',
+                params: { id, host, port },
+              })
+            }
+            style={styles.configureButton}
+            accessibilityLabel="Configure device"
+          >
+            Configure
+          </Button>
+        )}
+
         {/* Device Connection Info */}
         <View style={styles.connectionInfo}>
           <Text variant="bodySmall" style={styles.connectionInfoText}>
@@ -360,6 +378,10 @@ const styles = StyleSheet.create({
   sectionErrorMessage: {
     opacity: 0.8,
     color: '#C62828',
+  },
+  configureButton: {
+    marginTop: spacing.lg,
+    marginHorizontal: spacing.md,
   },
   connectionInfo: {
     marginTop: spacing.xl,

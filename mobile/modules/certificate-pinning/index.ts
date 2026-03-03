@@ -6,9 +6,19 @@
  * through a shared UserDefaults store that the TLS override reads from.
  */
 
-import { requireNativeModule } from 'expo-modules-core';
+import { requireOptionalNativeModule } from 'expo-modules-core';
 
-const CertificatePinningNative = requireNativeModule('CertificatePinning');
+const CertificatePinningNative = requireOptionalNativeModule('CertificatePinning');
+
+function requireModule() {
+  if (!CertificatePinningNative) {
+    throw new Error(
+      'CertificatePinning native module is not available. ' +
+        'The native Swift implementation may be missing from modules/certificate-pinning/ios/.'
+    );
+  }
+  return CertificatePinningNative;
+}
 
 /**
  * Server certificate information returned from a TLS handshake.
@@ -44,7 +54,7 @@ export async function fetchServerCertificate(
   host: string,
   port: number = 8443
 ): Promise<ServerCertificate> {
-  return await CertificatePinningNative.fetchServerCertificate(host, port);
+  return await requireModule().fetchServerCertificate(host, port);
 }
 
 /**
@@ -58,7 +68,7 @@ export async function fetchServerCertificate(
  * @param fingerprint - SHA-256 fingerprint (64-char hex)
  */
 export function pinCertificate(hostKey: string, fingerprint: string): void {
-  CertificatePinningNative.pinCertificate(hostKey, fingerprint);
+  requireModule().pinCertificate(hostKey, fingerprint);
 }
 
 /**
@@ -66,7 +76,7 @@ export function pinCertificate(hostKey: string, fingerprint: string): void {
  * After removal, the TLS override will revert to TOFU behavior for this host.
  */
 export function unpinCertificate(hostKey: string): void {
-  CertificatePinningNative.unpinCertificate(hostKey);
+  requireModule().unpinCertificate(hostKey);
 }
 
 /**
@@ -74,14 +84,14 @@ export function unpinCertificate(hostKey: string): void {
  * @returns SHA-256 fingerprint or null if no pin exists
  */
 export function getPinnedFingerprint(hostKey: string): string | null {
-  return CertificatePinningNative.getPinnedFingerprint(hostKey);
+  return requireModule().getPinnedFingerprint(hostKey);
 }
 
 /**
  * Clear all pinned certificates.
  */
 export function clearAllPins(): void {
-  CertificatePinningNative.clearAllPins();
+  requireModule().clearAllPins();
 }
 
 /**
@@ -90,7 +100,7 @@ export function clearAllPins(): void {
  * servers will use our TOFU logic instead of being rejected.
  */
 export function isTLSOverrideActive(): boolean {
-  return CertificatePinningNative.isTLSOverrideActive();
+  return requireModule().isTLSOverrideActive();
 }
 
 /**
@@ -98,7 +108,7 @@ export function isTLSOverrideActive(): boolean {
  * Keys are "host:port" strings, values are SHA-256 fingerprints.
  */
 export function getPinStore(): Record<string, string> {
-  return CertificatePinningNative.getPinStore();
+  return requireModule().getPinStore();
 }
 
 /**
@@ -122,7 +132,7 @@ export interface TLSDiagnosticResult {
  * TLS handling works at the native level.
  */
 export async function diagnoseTLS(host: string, port: number = 8443): Promise<TLSDiagnosticResult> {
-  return await CertificatePinningNative.diagnoseTLS(host, port);
+  return await requireModule().diagnoseTLS(host, port);
 }
 
 /**
@@ -146,7 +156,7 @@ export interface InvalidateSessionResult {
  * it won't call our handler. Invalidation forces recreation.
  */
 export function invalidateHTTPSession(): InvalidateSessionResult {
-  return CertificatePinningNative.invalidateHTTPSession();
+  return requireModule().invalidateHTTPSession();
 }
 
 /**
@@ -155,14 +165,14 @@ export function invalidateHTTPSession(): InvalidateSessionResult {
  * a specific request (diagnostic only).
  */
 export function getChallengeCount(): number {
-  return CertificatePinningNative.getChallengeCount();
+  return requireModule().getChallengeCount();
 }
 
 /**
  * Reset the TLS challenge handler call counter to 0 (diagnostic only).
  */
 export function resetChallengeCount(): void {
-  CertificatePinningNative.resetChallengeCount();
+  requireModule().resetChallengeCount();
 }
 
 /**
@@ -199,5 +209,5 @@ export async function nativeFetch(
   body: string = '',
   timeoutMs: number = 30000
 ): Promise<NativeFetchResult> {
-  return await CertificatePinningNative.nativeFetch(url, method, headers, body, timeoutMs);
+  return await requireModule().nativeFetch(url, method, headers, body, timeoutMs);
 }

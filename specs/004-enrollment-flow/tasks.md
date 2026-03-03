@@ -122,58 +122,58 @@
 
 ### Mobile types and utilities
 
-- [ ] T038 [P] [US1] Create wizard TypeScript types (WizardState, HostnameConfig, InterfaceConfig, WiFiConfig, AddressingConfig, IPv4Config, IPv6Config, ServicesConfig, NTPConfig, ProxyConfig, EnrollmentConfig, InsightsConfig, FlightControlConfig, ApplyStatus, ConnectivityResult, WiFiNetwork) in `mobile/src/types/wizard.ts`
+- [X] T038 [P] [US1] Create wizard TypeScript types (WizardState, HostnameConfig, InterfaceConfig, WiFiConfig, AddressingConfig, IPv4Config, IPv6Config, ServicesConfig, NTPConfig, ProxyConfig, EnrollmentConfig, InsightsConfig, FlightControlConfig, ApplyStatus, ConnectivityResult, WiFiNetwork) in `mobile/src/types/wizard.ts`
 
 ### Tests: Validation utilities
 
-- [ ] T039 [P] [US1] Write unit tests for network validation utilities (validateHostname, validateIPv4, validateIPv6, validateSubnetMask, validateGatewayInSubnet, validatePort, validateHttpsUrl, validateNtpServer) in `mobile/tests/unit/utils/network-validation.test.ts`
+- [X] T039 [P] [US1] Write unit tests for network validation utilities (validateHostname, validateIPv4, validateIPv6, validateSubnetMask, validateGatewayInSubnet, validatePort, validateHttpsUrl, validateNtpServer) in `mobile/tests/unit/utils/network-validation.test.ts`
 
 ### Tests: NM connection builder
 
-- [ ] T040 [P] [US1] Write unit tests for NM connection file builder (Ethernet, WiFi, VLAN, all IPv4/IPv6 combinations) in `mobile/tests/unit/utils/nm-connection.test.ts`
+- [X] T040 [P] [US1] Write unit tests for NM connection file builder (Ethernet, WiFi, VLAN, all IPv4/IPv6 combinations) in `mobile/tests/unit/utils/nm-connection.test.ts`
 
 ### Tests: Wizard hook
 
-- [ ] T041 [P] [US1] Write unit tests for useConfigWizard hook (step validation, navigation guards, step completion checks) in `mobile/tests/unit/hooks/useConfigWizard.test.ts`
+- [X] T041 [P] [US1] Write unit tests for useConfigWizard hook (step validation, navigation guards, step completion checks) in `mobile/tests/unit/hooks/useConfigWizard.test.ts`
 
 ### Tests: Wizard integration
 
-- [ ] T042 [P] [US1] Write integration test for full wizard navigation flow (forward/backward, validation blocking, data preservation) in `mobile/tests/integration/config-wizard.test.ts`
+- [X] T042 [P] [US1] Write integration test for full wizard navigation flow (forward/backward, validation blocking, data preservation) in `mobile/tests/integration/config-wizard.test.ts`
 
 ### Implementation: Utilities
 
-- [ ] T043 [P] [US1] Create network validation utilities (validateHostname RFC 1123, validateIPv4, validateIPv6, validateSubnetMask, validateGatewayInSubnet, validatePort, validateHttpsUrl, validateNtpServer) in `mobile/src/utils/network-validation.ts`
-- [ ] T044 [P] [US1] Create NetworkManager connection file builder (generateNmConnection for Ethernet/WiFi/VLAN, with IPv4/IPv6 config sections) in `mobile/src/utils/nm-connection.ts`
+- [X] T043 [P] [US1] Create network validation utilities (validateHostname RFC 1123, validateIPv4, validateIPv6, validateSubnetMask, validateGatewayInSubnet, validatePort, validateHttpsUrl, validateNtpServer) in `mobile/src/utils/network-validation.ts`
+- [X] T044 [P] [US1] Create NetworkManager connection file builder (generateNmConnection for Ethernet/WiFi/VLAN, with IPv4/IPv6 config sections) in `mobile/src/utils/nm-connection.ts`
 
 ### Implementation: API service wrappers
 
-- [ ] T045 [P] [US1] Create `POST /configure` wrapper (sends file bundle, returns success/error) in `mobile/src/services/api/configure.ts`
-- [ ] T046 [P] [US1] Create `POST /command` wrapper (sends command ID + optional params, returns stdout/stderr/exit_code) in `mobile/src/services/api/command.ts`
-- [ ] T047 [P] [US1] Create `POST /complete` wrapper (sends optional reboot flag, returns status) in `mobile/src/services/api/complete.ts`
+- [X] T045 [P] [US1] Create `POST /configure` wrapper (sends file bundle, returns success/error) in `mobile/src/services/api/configure.ts`
+- [X] T046 [P] [US1] Create `POST /command` wrapper (sends command ID + optional params, returns stdout/stderr/exit_code) in `mobile/src/services/api/command.ts`
+- [X] T047 [P] [US1] Create `POST /complete` wrapper (sends optional reboot flag, returns status) in `mobile/src/services/api/complete.ts`
 
 ### Implementation: Wizard state management
 
-- [ ] T048 [US1] Create WizardContext with useReducer: actions for setStep, updateHostname, updateInterface, updateAddressing, updateServices, updateEnrollment, setApplyMode, setApplyStatus, reset; provider wraps wizard screen in `mobile/src/contexts/WizardContext.tsx`
+- [X] T048 [US1] Create WizardContext with useReducer: actions for setStep, updateHostname, updateInterface, updateAddressing, updateServices, updateEnrollment, setApplyMode, setApplyStatus, reset; provider wraps wizard screen in `mobile/src/contexts/WizardContext.tsx`
 
 ### Implementation: Step components
 
-- [ ] T049 [P] [US1] Create StepIndicator component showing current step (1–5), step labels, and completion progress in `mobile/src/components/ConfigWizard/StepIndicator.tsx`
-- [ ] T050 [P] [US1] Create HostnameStep component: TextInput pre-populated from device info, RFC 1123 validation, inline error display in `mobile/src/components/ConfigWizard/HostnameStep.tsx`
-- [ ] T051 [P] [US1] Create InterfaceStep component: DataTable of interfaces (name, type, MAC, vendor, model, speed, state/carrier), radio selection, optional VLAN ID input (1–4094), highlight service interface in `mobile/src/components/ConfigWizard/InterfaceStep.tsx`
-- [ ] T052 [P] [US1] Create AddressingStep component: IPv4 radio (DHCP/Static) with conditional fields (address, subnet, gateway), DNS auto checkbox with conditional DNS fields; IPv6 radio (DHCP/Static/Disabled) with same pattern in `mobile/src/components/ConfigWizard/AddressingStep.tsx`
-- [ ] T053 [P] [US1] Create ServicesStep component: NTP radio (Automatic/Manual) with manual server list input, optional proxy section (hostname, port, optional username/password) in `mobile/src/components/ConfigWizard/ServicesStep.tsx`
-- [ ] T054 [P] [US1] Create EnrollmentStep component: Insights toggle with endpoint (default URL), Org ID, Activation Key fields; Flight Control toggle with endpoint, username, password fields in `mobile/src/components/ConfigWizard/EnrollmentStep.tsx`
+- [X] T049 [P] [US1] Create StepIndicator component showing current step (1–5), step labels, and completion progress in `mobile/src/components/ConfigWizard/StepIndicator.tsx`
+- [X] T050 [P] [US1] Create HostnameStep component: TextInput pre-populated from device info, RFC 1123 validation, inline error display in `mobile/src/components/ConfigWizard/HostnameStep.tsx`
+- [X] T051 [P] [US1] Create InterfaceStep component: DataTable of interfaces (name, type, MAC, vendor, model, speed, state/carrier), radio selection, optional VLAN ID input (1–4094), highlight service interface in `mobile/src/components/ConfigWizard/InterfaceStep.tsx`
+- [X] T052 [P] [US1] Create AddressingStep component: IPv4 radio (DHCP/Static) with conditional fields (address, subnet, gateway), DNS auto checkbox with conditional DNS fields; IPv6 radio (DHCP/Static/Disabled) with same pattern in `mobile/src/components/ConfigWizard/AddressingStep.tsx`
+- [X] T053 [P] [US1] Create ServicesStep component: NTP radio (Automatic/Manual) with manual server list input, optional proxy section (hostname, port, optional username/password) in `mobile/src/components/ConfigWizard/ServicesStep.tsx`
+- [X] T054 [P] [US1] Create EnrollmentStep component: Insights toggle with endpoint (default URL), Org ID, Activation Key fields; Flight Control toggle with endpoint, username, password fields in `mobile/src/components/ConfigWizard/EnrollmentStep.tsx`
 
 ### Implementation: Wizard container and screen
 
-- [ ] T055 [US1] Create WizardContainer: renders current step component, StepIndicator, Next/Back buttons, validates step before forward navigation, tracks maxReachedStep in `mobile/src/components/ConfigWizard/WizardContainer.tsx`
-- [ ] T056 [US1] Create useConfigWizard hook: encapsulates step validation logic, per-step data access, navigation guards, step completion checks in `mobile/src/hooks/useConfigWizard.ts`
-- [ ] T057 [US1] Create wizard screen at `mobile/app/device/configure.tsx`: wraps WizardContainer in WizardContext provider, fetches device info + network data on mount, passes to context as initial state
-- [ ] T058 [US1] Add "Configure" button to device detail screen that navigates to `device/configure` in `mobile/app/device/[id].tsx`
+- [X] T055 [US1] Create WizardContainer: renders current step component, StepIndicator, Next/Back buttons, validates step before forward navigation, tracks maxReachedStep in `mobile/src/components/ConfigWizard/WizardContainer.tsx`
+- [X] T056 [US1] Create useConfigWizard hook: encapsulates step validation logic, per-step data access, navigation guards, step completion checks in `mobile/src/hooks/useConfigWizard.ts`
+- [X] T057 [US1] Create wizard screen at `mobile/app/device/configure.tsx`: wraps WizardContainer in WizardContext provider, fetches device info + network data on mount, passes to context as initial state
+- [X] T058 [US1] Add "Configure" button to device detail screen that navigates to `device/configure` in `mobile/app/device/[id].tsx`
 
 ### Checkpoint validation
 
-- [ ] T059 [US1] Run `make lint-app && make test-unit-app` — fix all failures
+- [X] T059 [US1] Run `make lint-app && make test-unit-app` — fix all failures
 
 **Checkpoint**: Full 5-step wizard navigable with validation. No apply logic yet.
 
