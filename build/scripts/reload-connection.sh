@@ -3,6 +3,7 @@
 # Usage: reload-connection.sh -- <connection-name>
 # Called by BoardingPass via the command allow-list.
 set -euo pipefail
+[ "${1:-}" = "--" ] && shift
 
 if [ $# -lt 1 ]; then
     echo "Usage: reload-connection.sh <connection-name>" >&2

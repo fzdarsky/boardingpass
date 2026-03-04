@@ -3,6 +3,7 @@
 # Usage: set-hostname.sh -- <hostname>
 # Called by BoardingPass via the command allow-list.
 set -euo pipefail
+[ "${1:-}" = "--" ] && shift
 
 if [ $# -lt 1 ]; then
     echo "Usage: set-hostname.sh <hostname>" >&2

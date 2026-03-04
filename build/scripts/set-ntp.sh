@@ -3,6 +3,7 @@
 # Usage: set-ntp.sh -- <ntp-server>
 # Called by BoardingPass via the command allow-list.
 set -euo pipefail
+[ "${1:-}" = "--" ] && shift
 
 if [ $# -lt 1 ]; then
     echo "Usage: set-ntp.sh <ntp-server>" >&2

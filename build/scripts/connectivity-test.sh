@@ -3,6 +3,7 @@
 # Usage: connectivity-test.sh -- <interface> <gateway>
 # Called by BoardingPass via the command allow-list.
 set -euo pipefail
+[ "${1:-}" = "--" ] && shift
 
 if [ $# -lt 2 ]; then
     echo "Usage: connectivity-test.sh <interface> <gateway>" >&2

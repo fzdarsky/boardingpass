@@ -27,7 +27,8 @@
       "mcp__ios-simulator__screenshot",
       "Bash(make test-unit-service)",
       "Bash(make lint-service)",
-      "mcp__ios-simulator__ui_swipe"
+      "mcp__ios-simulator__ui_swipe",
+      "mcp__ios-simulator__ui_view"
     ]
   }
 }

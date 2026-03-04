@@ -3,6 +3,7 @@
 # Usage: set-ip.sh -- <interface> <ip/prefix> <gateway> [dns]
 # Called by BoardingPass via the command allow-list.
 set -euo pipefail
+[ "${1:-}" = "--" ] && shift
 
 if [ $# -lt 3 ]; then
     echo "Usage: set-ip.sh <interface> <ip/prefix> <gateway> [dns]" >&2

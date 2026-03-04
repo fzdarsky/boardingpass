@@ -3,6 +3,7 @@
 # Usage: set-dns.sh -- <interface> <dns1> [dns2]
 # Called by BoardingPass via the command allow-list.
 set -euo pipefail
+[ "${1:-}" = "--" ] && shift
 
 if [ $# -lt 2 ]; then
     echo "Usage: set-dns.sh <interface> <dns1> [dns2]" >&2

@@ -17,26 +17,28 @@ Group=boardingpass
 WorkingDirectory=/var/lib/boardingpass
 
 # Security hardening
-# Note: RestrictAddressFamilies, RestrictNamespaces, LockPersonality, and
-# RestrictRealtime are NOT used because they implicitly force NoNewPrivileges=yes,
-# which prevents sudo from working. This service requires sudo for file provisioning
-# to /etc/ and for executing allow-listed system commands.
+# This service requires sudo for file provisioning to /etc/ and for executing
+# allow-listed system commands. Many systemd sandboxing directives implicitly
+# force NoNewPrivileges=yes when User= is set (i.e. without CAP_SYS_ADMIN),
+# which prevents sudo's setuid escalation. The following are NOT used:
+#   RestrictAddressFamilies, RestrictNamespaces, LockPersonality,
+#   RestrictRealtime, ProtectKernelTunables, ProtectKernelModules,
+#   ProtectKernelLogs
 NoNewPrivileges=false
 PrivateTmp=true
 ProtectSystem=yes
 ProtectHome=true
 ReadWritePaths=/var/lib/boardingpass /etc
-ProtectKernelTunables=true
-ProtectKernelModules=true
-ProtectKernelLogs=true
 ProtectControlGroups=true
 RestrictSUIDSGID=false
 RemoveIPC=true
 PrivateMounts=true
 
 # Capabilities
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_SETUID CAP_SETGID
-AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_SETUID CAP_SETGID
+# CapabilityBoundingSet is left at the default (all capabilities) because sudo
+# needs full root capabilities (DAC_OVERRIDE, FOWNER, AUDIT_WRITE, SYS_ADMIN,
+# etc.) to provision files and execute allow-listed commands.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 # Resource limits
 MemoryMax=150M
