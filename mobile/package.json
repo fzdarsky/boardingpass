@@ -36,6 +36,7 @@
     "expo-camera": "~15.0.0",
     "expo-crypto": "~13.0.0",
     "expo-dev-client": "~4.0.0",
+    "expo-device": "~6.0.2",
     "expo-haptics": "~13.0.1",
     "expo-linking": "~6.3.0",
     "expo-router": "~3.5.0",

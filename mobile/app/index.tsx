@@ -35,11 +35,20 @@ import { sessionManager } from '@/services/auth/session';
 export default function DeviceDiscoveryScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { devices, isScanning, error, startDiscovery, refreshDevices, addManualDevice } =
-    useDeviceDiscovery();
+  const {
+    devices,
+    isScanning,
+    error,
+    mdnsUnavailableReason,
+    startDiscovery,
+    refreshDevices,
+    addManualDevice,
+  } = useDeviceDiscovery();
 
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarIsError, setSnackbarIsError] = useState(false);
+  const [mdnsInfoShown, setMdnsInfoShown] = useState(false);
 
   // Manual device entry dialog state
   const [addDialogVisible, setAddDialogVisible] = useState(false);
@@ -80,9 +89,24 @@ export default function DeviceDiscoveryScreen() {
   useEffect(() => {
     if (error) {
       setSnackbarMessage(error.message);
+      setSnackbarIsError(true);
       setSnackbarVisible(true);
     }
   }, [error]);
+
+  // Show info snackbar when mDNS is unavailable (once per session)
+  useEffect(() => {
+    if (mdnsUnavailableReason && !mdnsInfoShown) {
+      const message =
+        mdnsUnavailableReason === 'simulator'
+          ? 'Auto-discovery unavailable on simulator. Use "Add Device" instead.'
+          : 'Auto-discovery unavailable on free developer account. Use "Add Device" instead.';
+      setSnackbarMessage(message);
+      setSnackbarIsError(false);
+      setSnackbarVisible(true);
+      setMdnsInfoShown(true);
+    }
+  }, [mdnsUnavailableReason, mdnsInfoShown]);
 
   /**
    * Handle device press - navigate to details if authenticated, otherwise to auth screen
@@ -248,18 +272,22 @@ export default function DeviceDiscoveryScreen() {
         </Dialog>
       </Portal>
 
-      {/* Error Snackbar */}
+      {/* Snackbar for errors and info messages */}
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
-        duration={4000}
-        action={{
-          label: 'Retry',
-          onPress: () => {
-            setSnackbarVisible(false);
-            startDiscovery();
-          },
-        }}
+        duration={snackbarIsError ? 4000 : 6000}
+        action={
+          snackbarIsError
+            ? {
+                label: 'Retry',
+                onPress: () => {
+                  setSnackbarVisible(false);
+                  startDiscovery();
+                },
+              }
+            : undefined
+        }
       >
         {snackbarMessage}
       </Snackbar>

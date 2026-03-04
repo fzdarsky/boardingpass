@@ -10,6 +10,7 @@
 
 import Zeroconf from 'react-native-zeroconf';
 import { Platform } from 'react-native';
+import * as ExpoDevice from 'expo-device';
 import { Device } from '@/types/device';
 
 export interface MDNSService {
@@ -43,24 +44,21 @@ export class MDNSDiscoveryService {
       return;
     }
 
+    // On iOS simulator, mDNS is not available - fail fast
+    if (Platform.OS === 'ios' && !ExpoDevice.isDevice) {
+      throw new Error('mDNS not available on iOS simulator');
+    }
+
     try {
       this.zeroconf.scan(this.serviceType, 'tcp', this.domain);
       this.isScanning = true;
       // eslint-disable-next-line no-console
       console.log(`Started mDNS scan for ${this.serviceType}`);
-    } catch (error) {
-      // On iOS, mDNS may fail on simulator - handle gracefully
+    } catch {
+      // On iOS physical device, mDNS may fail without multicast entitlement
       if (Platform.OS === 'ios') {
-        console.warn(
-          'mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.'
-        );
-        // Don't throw - allow app to continue with fallback discovery
-        this.isScanning = false;
-        return;
+        throw new Error('mDNS not available - multicast entitlement required');
       }
-
-      // Log error for non-iOS platforms
-      console.error('Failed to start mDNS scan:', error);
 
       // On other platforms, throw the error
       throw new Error('mDNS not available');
