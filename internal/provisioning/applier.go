@@ -1,12 +1,10 @@
 package provisioning
 
 import (
-	"errors"
+	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/fzdarsky/boardingpass/pkg/protocol"
 )
@@ -18,11 +16,14 @@ const (
 
 // Applier handles atomic application of configuration bundles.
 // It uses a temp-write → validate → atomic rename pattern for fail-safe operations.
+// When operating on the real filesystem (rootDir is empty), file placement uses
+// sudo to write to root-owned paths like /etc/.
 type Applier struct {
 	validator *PathValidator
 	tempDir   string
 	rollback  *Rollback
 	rootDir   string // Optional root directory for all path operations
+	fops      fileOps
 }
 
 // NewApplier creates a new Applier with the given path validator and root directory.
@@ -67,8 +68,12 @@ func NewApplier(validator *PathValidator, rootDir string) (*Applier, error) {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
 
+	// Use sudo for file operations on the real filesystem (rootDir is empty).
+	// Tests always provide a rootDir, so they use direct OS calls.
+	fops := fileOps{useSudo: rootDir == ""}
+
 	// Initialize rollback tracker
-	rollback, err := NewRollback(tempDir)
+	rollback, err := NewRollback(tempDir, fops)
 	if err != nil {
 		_ = os.RemoveAll(tempDir) // Best effort cleanup
 		return nil, fmt.Errorf("failed to initialize rollback: %w", err)
@@ -79,6 +84,7 @@ func NewApplier(validator *PathValidator, rootDir string) (*Applier, error) {
 		tempDir:   tempDir,
 		rollback:  rollback,
 		rootDir:   rootDir,
+		fops:      fops,
 	}, nil
 }
 
@@ -93,74 +99,6 @@ func (a *Applier) resolveTargetPath(relPath string) string {
 	return absPath
 }
 
-// atomicMove attempts to move a file atomically from src to dst.
-// It first tries os.Rename (atomic on same filesystem).
-// If that fails with EXDEV (cross-device link), it falls back to copy+delete.
-func atomicMove(src, dst string) error {
-	// Try atomic rename first
-	err := os.Rename(src, dst)
-	if err == nil {
-		return nil
-	}
-
-	// Check if error is cross-device link
-	var linkErr *os.LinkError
-	if errors.As(err, &linkErr) && errors.Is(linkErr.Err, syscall.EXDEV) {
-		// Fall back to copy+delete for cross-device moves
-		// Open source file
-		//nolint:gosec // G304: src is a controlled staging file path, not user input
-		srcFile, err := os.Open(src)
-		if err != nil {
-			return fmt.Errorf("failed to open source file: %w", err)
-		}
-		defer func() {
-			_ = srcFile.Close() // Best effort close
-		}()
-
-		// Get source file info for permissions
-		srcInfo, err := srcFile.Stat()
-		if err != nil {
-			return fmt.Errorf("failed to stat source file: %w", err)
-		}
-
-		// Create destination file with same permissions
-		//nolint:gosec // G304: dst is a validated target path from allow-list
-		dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcInfo.Mode())
-		if err != nil {
-			return fmt.Errorf("failed to create destination file: %w", err)
-		}
-
-		// Copy contents
-		if _, err := io.Copy(dstFile, srcFile); err != nil {
-			_ = dstFile.Close()
-			_ = os.Remove(dst) // Clean up partial destination file
-			return fmt.Errorf("failed to copy file contents: %w", err)
-		}
-
-		// Ensure data is written to disk
-		if err := dstFile.Sync(); err != nil {
-			_ = dstFile.Close()
-			_ = os.Remove(dst)
-			return fmt.Errorf("failed to sync destination file: %w", err)
-		}
-
-		// Close destination file
-		if err := dstFile.Close(); err != nil {
-			return fmt.Errorf("failed to close destination file: %w", err)
-		}
-
-		// Remove source file after successful copy
-		if err := os.Remove(src); err != nil {
-			return fmt.Errorf("failed to remove source file: %w", err)
-		}
-
-		return nil
-	}
-
-	// Other error, return as-is
-	return err
-}
-
 // Apply applies a configuration bundle atomically.
 // Steps:
 // 1. Validate bundle (size, file count, Base64 encoding)
@@ -171,7 +109,7 @@ func atomicMove(src, dst string) error {
 // 6. Clean up temp directory
 //
 // On any failure, rollback is performed to restore original state.
-func (a *Applier) Apply(bundle *protocol.ConfigBundle) error {
+func (a *Applier) Apply(ctx context.Context, bundle *protocol.ConfigBundle) error {
 	// Step 1: Validate bundle
 	if err := ValidateBundle(bundle); err != nil {
 		return fmt.Errorf("bundle validation failed: %w", err)
@@ -212,37 +150,26 @@ func (a *Applier) Apply(bundle *protocol.ConfigBundle) error {
 		stagedFiles[file.Path] = tempPath
 	}
 
-	// Step 4: Backup existing files and Step 5: Atomic rename
+	// Step 4: Backup existing files and Step 5: Install to target paths
 	for relPath, tempPath := range stagedFiles {
 		targetPath := a.resolveTargetPath(relPath)
-
-		// Ensure target directory exists
-		targetDir := filepath.Dir(targetPath)
-		//nolint:gosec // G301: 0755 is standard for /etc directories
-		if err := os.MkdirAll(targetDir, 0o755); err != nil {
-			// Rollback on failure
-			if rollbackErr := a.rollback.Restore(); rollbackErr != nil {
-				return fmt.Errorf("failed to create target directory %s (rollback also failed: %v): %w", targetDir, rollbackErr, err)
-			}
-			return fmt.Errorf("failed to create target directory %s: %w", targetDir, err)
-		}
 
 		// Backup existing file (if exists)
 		if err := a.rollback.BackupFile(targetPath); err != nil {
 			// Rollback on failure
-			if rollbackErr := a.rollback.Restore(); rollbackErr != nil {
+			if rollbackErr := a.rollback.Restore(ctx); rollbackErr != nil {
 				return fmt.Errorf("failed to backup file %s (rollback also failed: %v): %w", targetPath, rollbackErr, err)
 			}
 			return fmt.Errorf("failed to backup file %s: %w", targetPath, err)
 		}
 
-		// Atomic move (tries rename first, falls back to copy+delete for cross-device)
-		if err := atomicMove(tempPath, targetPath); err != nil {
+		// Install file to target (uses sudo in production to write root-owned paths)
+		if err := a.fops.installFile(ctx, tempPath, targetPath); err != nil {
 			// Rollback on failure
-			if rollbackErr := a.rollback.Restore(); rollbackErr != nil {
-				return fmt.Errorf("failed to move file %s to %s (rollback also failed: %v): %w", tempPath, targetPath, rollbackErr, err)
+			if rollbackErr := a.rollback.Restore(ctx); rollbackErr != nil {
+				return fmt.Errorf("failed to install file %s to %s (rollback also failed: %v): %w", tempPath, targetPath, rollbackErr, err)
 			}
-			return fmt.Errorf("failed to move file %s to %s: %w", tempPath, targetPath, err)
+			return fmt.Errorf("failed to install file %s to %s: %w", tempPath, targetPath, err)
 		}
 	}
 
@@ -274,6 +201,6 @@ func (a *Applier) Cleanup() error {
 
 // Rollback restores all files to their pre-provisioning state.
 // This is called automatically on failure during Apply.
-func (a *Applier) Rollback() error {
-	return a.rollback.Restore()
+func (a *Applier) Rollback(ctx context.Context) error {
+	return a.rollback.Restore(ctx)
 }

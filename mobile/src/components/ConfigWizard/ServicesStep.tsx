@@ -1,7 +1,7 @@
 /**
  * ServicesStep Component (Step 4)
  *
- * NTP radio (Automatic/Manual) with manual server list input.
+ * NTP switch (Automatic/Manual) with manual server list input.
  * Optional proxy section (hostname, port, optional username/password).
  */
 
@@ -10,7 +10,6 @@ import { View, StyleSheet } from 'react-native';
 import {
   Text,
   TextInput,
-  RadioButton,
   Switch,
   Divider,
   IconButton,
@@ -93,21 +92,14 @@ export default function ServicesStep() {
         NTP (Time Synchronization)
       </Text>
 
-      <RadioButton.Group
-        value={ntp.mode}
-        onValueChange={v => updateNtp({ mode: v as 'automatic' | 'manual' })}
-      >
-        <RadioButton.Item
-          label="Automatic (system default)"
-          value="automatic"
-          accessibilityLabel="Automatic NTP"
+      <View style={styles.ntpRow}>
+        <Text variant="bodyMedium">Automatic time servers</Text>
+        <Switch
+          value={ntp.mode === 'automatic'}
+          onValueChange={v => updateNtp({ mode: v ? 'automatic' : 'manual' })}
+          accessibilityLabel="Automatic time servers"
         />
-        <RadioButton.Item
-          label="Manual (specify servers)"
-          value="manual"
-          accessibilityLabel="Manual NTP"
-        />
-      </RadioButton.Group>
+      </View>
 
       {ntp.mode === 'manual' && (
         <View style={styles.serverSection}>
@@ -246,6 +238,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: spacing.xs,
+  },
+  ntpRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   serverSection: {
     paddingLeft: spacing.md,

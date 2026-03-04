@@ -16,6 +16,12 @@ boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart NetworkManager
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart chronyd
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/chronyc makestep
 
+# Allow file provisioning to /etc/ (path validation enforced by Go allow-list)
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/install
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/mkdir
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/cp
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/rm
+
 # Allow boardingpass helper scripts (enrollment flow)
 boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/set-hostname.sh
 boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/set-ip.sh

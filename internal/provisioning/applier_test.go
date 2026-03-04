@@ -1,6 +1,7 @@
 package provisioning
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -93,7 +94,7 @@ func TestApplier_Apply_ValidBundle(t *testing.T) {
 		},
 	}
 
-	err = applier.Apply(bundle)
+	err = applier.Apply(context.Background(), bundle)
 	require.NoError(t, err)
 
 	// Verify file was written to correct location
@@ -147,7 +148,7 @@ func TestApplier_Apply_InvalidBundle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := applier.Apply(tt.bundle)
+			err := applier.Apply(context.Background(), tt.bundle)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.errMsg)
 		})
@@ -175,7 +176,7 @@ func TestApplier_Apply_PathValidationFailure(t *testing.T) {
 		},
 	}
 
-	err = applier.Apply(bundle)
+	err = applier.Apply(context.Background(), bundle)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "path validation failed")
 }

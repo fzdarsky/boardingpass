@@ -1,6 +1,7 @@
 package provisioning
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,10 +12,11 @@ import (
 type Rollback struct {
 	backups map[string]string // maps target path to backup path
 	tempDir string            // temporary directory for backups
+	fops    fileOps
 }
 
 // NewRollback creates a new Rollback tracker with a temporary backup directory.
-func NewRollback(tempDir string) (*Rollback, error) {
+func NewRollback(tempDir string, fops fileOps) (*Rollback, error) {
 	if tempDir == "" {
 		return nil, fmt.Errorf("tempDir cannot be empty")
 	}
@@ -28,6 +30,7 @@ func NewRollback(tempDir string) (*Rollback, error) {
 	return &Rollback{
 		backups: make(map[string]string),
 		tempDir: backupDir,
+		fops:    fops,
 	}, nil
 }
 
@@ -67,21 +70,21 @@ func (r *Rollback) BackupFile(targetPath string) error {
 // Restore restores all backed-up files to their original locations.
 // This is called on provisioning failure to undo partial changes.
 // Returns an error if any restore operation fails.
-func (r *Rollback) Restore() error {
+func (r *Rollback) Restore(ctx context.Context) error {
 	var restoreErrors []error
 
 	for targetPath, backupPath := range r.backups {
 		// Check if backup exists
 		if _, err := os.Stat(backupPath); os.IsNotExist(err) {
 			// Backup doesn't exist, file was newly created, remove it
-			if err := os.Remove(targetPath); err != nil && !os.IsNotExist(err) {
+			if err := r.fops.remove(ctx, targetPath); err != nil && !os.IsNotExist(err) {
 				restoreErrors = append(restoreErrors, fmt.Errorf("failed to remove %s: %w", targetPath, err))
 			}
 			continue
 		}
 
-		// Restore from backup
-		if err := copyFile(backupPath, targetPath); err != nil {
+		// Restore from backup (writes to /etc/, may need sudo)
+		if err := r.fops.restoreFile(ctx, backupPath, targetPath); err != nil {
 			restoreErrors = append(restoreErrors, fmt.Errorf("failed to restore %s: %w", targetPath, err))
 		}
 	}

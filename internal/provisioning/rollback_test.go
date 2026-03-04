@@ -1,6 +1,7 @@
 package provisioning
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,7 +13,7 @@ import (
 func TestNewRollback(t *testing.T) {
 	tempDir := t.TempDir()
 
-	rollback, err := NewRollback(tempDir)
+	rollback, err := NewRollback(tempDir, fileOps{})
 	require.NoError(t, err)
 	assert.NotNil(t, rollback)
 	assert.NotEmpty(t, rollback.tempDir)
@@ -26,7 +27,7 @@ func TestNewRollback(t *testing.T) {
 }
 
 func TestNewRollback_EmptyTempDir(t *testing.T) {
-	rollback, err := NewRollback("")
+	rollback, err := NewRollback("", fileOps{})
 	assert.Nil(t, rollback)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "tempDir cannot be empty")
@@ -34,7 +35,7 @@ func TestNewRollback_EmptyTempDir(t *testing.T) {
 
 func TestRollback_BackupFile_NonExistentFile(t *testing.T) {
 	tempDir := t.TempDir()
-	rollback, err := NewRollback(tempDir)
+	rollback, err := NewRollback(tempDir, fileOps{})
 	require.NoError(t, err)
 
 	// Backup a file that doesn't exist (should succeed with no backup created)
@@ -48,7 +49,7 @@ func TestRollback_BackupFile_NonExistentFile(t *testing.T) {
 
 func TestRollback_BackupFile_ExistingFile(t *testing.T) {
 	tempDir := t.TempDir()
-	rollback, err := NewRollback(tempDir)
+	rollback, err := NewRollback(tempDir, fileOps{})
 	require.NoError(t, err)
 
 	// Create a test file
@@ -74,7 +75,7 @@ func TestRollback_BackupFile_ExistingFile(t *testing.T) {
 
 func TestRollback_BackupFile_Directory(t *testing.T) {
 	tempDir := t.TempDir()
-	rollback, err := NewRollback(tempDir)
+	rollback, err := NewRollback(tempDir, fileOps{})
 	require.NoError(t, err)
 
 	// Create a directory
@@ -90,7 +91,7 @@ func TestRollback_BackupFile_Directory(t *testing.T) {
 
 func TestRollback_Restore_NewFile(t *testing.T) {
 	tempDir := t.TempDir()
-	rollback, err := NewRollback(tempDir)
+	rollback, err := NewRollback(tempDir, fileOps{})
 	require.NoError(t, err)
 
 	// Create a new file that didn't exist before
@@ -103,7 +104,7 @@ func TestRollback_Restore_NewFile(t *testing.T) {
 	rollback.backups[newFile] = filepath.Join(rollback.tempDir, "nonexistent.backup")
 
 	// Restore should remove the new file
-	err = rollback.Restore()
+	err = rollback.Restore(context.Background())
 	require.NoError(t, err)
 
 	// File should be removed
@@ -113,7 +114,7 @@ func TestRollback_Restore_NewFile(t *testing.T) {
 
 func TestRollback_Restore_ModifiedFile(t *testing.T) {
 	tempDir := t.TempDir()
-	rollback, err := NewRollback(tempDir)
+	rollback, err := NewRollback(tempDir, fileOps{})
 	require.NoError(t, err)
 
 	// Create original file
@@ -137,7 +138,7 @@ func TestRollback_Restore_ModifiedFile(t *testing.T) {
 	assert.Equal(t, modifiedContent, currentContent)
 
 	// Restore should revert to original
-	err = rollback.Restore()
+	err = rollback.Restore(context.Background())
 	require.NoError(t, err)
 
 	// Verify file was restored
@@ -148,7 +149,7 @@ func TestRollback_Restore_ModifiedFile(t *testing.T) {
 
 func TestRollback_Restore_MultipleFiles(t *testing.T) {
 	tempDir := t.TempDir()
-	rollback, err := NewRollback(tempDir)
+	rollback, err := NewRollback(tempDir, fileOps{})
 	require.NoError(t, err)
 
 	// Create and backup multiple files
@@ -173,7 +174,7 @@ func TestRollback_Restore_MultipleFiles(t *testing.T) {
 	require.NoError(t, err)
 
 	// Restore both
-	err = rollback.Restore()
+	err = rollback.Restore(context.Background())
 	require.NoError(t, err)
 
 	// Verify both were restored
@@ -188,7 +189,7 @@ func TestRollback_Restore_MultipleFiles(t *testing.T) {
 
 func TestRollback_Cleanup(t *testing.T) {
 	tempDir := t.TempDir()
-	rollback, err := NewRollback(tempDir)
+	rollback, err := NewRollback(tempDir, fileOps{})
 	require.NoError(t, err)
 
 	// Create and backup a file
