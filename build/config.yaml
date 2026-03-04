@@ -39,14 +39,41 @@ commands:
     args: []
     max_params: 1
 
+  - id: "wifi-scan"
+    path: "/usr/lib/boardingpass/scripts/wifi-scan.sh"
+    args: []
+    max_params: 0
+    sudo: false
+
   - id: "show-status"
     path: "/usr/lib/boardingpass/scripts/show-status.sh"
     args: []
     max_params: 0
+    sudo: false
 
   - id: "restart-networkmanager"
     path: "/usr/bin/systemctl"
     args: ["restart", "NetworkManager"]
+    max_params: 0
+
+  - id: "reload-connection"
+    path: "/usr/lib/boardingpass/scripts/reload-connection.sh"
+    args: []
+    max_params: 1
+
+  - id: "connectivity-test"
+    path: "/usr/lib/boardingpass/scripts/connectivity-test.sh"
+    args: []
+    max_params: 2
+
+  - id: "enroll-insights"
+    path: "/usr/lib/boardingpass/scripts/enroll-insights.sh"
+    args: []
+    max_params: 0
+
+  - id: "enroll-flightctl"
+    path: "/usr/lib/boardingpass/scripts/enroll-flightctl.sh"
+    args: []
     max_params: 0
 
   - id: "restart-chronyd"
@@ -61,6 +88,8 @@ paths:
     - "/etc/chrony.conf"
     - "/etc/chrony.d/"
     - "/etc/hostname"
+    - "/etc/profile.d/"
+    - "/etc/boardingpass/staging/"
 
 logging:
   level: "info"

@@ -265,6 +265,21 @@ export function useConfigWizard() {
             errors.push('Please select a network interface');
           }
           if (
+            state.networkInterface.interfaceType === 'wifi' &&
+            !state.networkInterface.wifi?.ssid
+          ) {
+            errors.push('Please select a WiFi network');
+          }
+          if (
+            state.networkInterface.interfaceType === 'wifi' &&
+            state.networkInterface.wifi &&
+            state.networkInterface.wifi.security !== 'open' &&
+            state.networkInterface.wifi.security !== '--' &&
+            !state.networkInterface.wifi.password
+          ) {
+            errors.push('WiFi password is required for secured networks');
+          }
+          if (
             state.networkInterface.vlanId !== null &&
             (state.networkInterface.vlanId < 1 || state.networkInterface.vlanId > 4094)
           ) {

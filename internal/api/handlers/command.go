@@ -49,7 +49,7 @@ func NewCommandHandlerWithExecutor(cfg *config.Config, executor command.CommandE
 //
 // This endpoint:
 // 1. Validates command ID against the allow-list (T095)
-// 2. Executes the command via sudo
+// 2. Executes the command (via sudo unless opted out)
 // 3. Captures stdout, stderr, and exit code (T096)
 // 4. Logs execution with exit codes (T098)
 //
@@ -120,8 +120,8 @@ func (h *CommandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// T096: Execute command and capture stdout/stderr (with sudo)
-	response, err := h.executor.Execute(r.Context(), cmdDef, true, req.Params)
+	// T096: Execute command and capture stdout/stderr
+	response, err := h.executor.Execute(r.Context(), cmdDef, cmdDef.NeedsSudo(), req.Params)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Command execution failed", map[string]any{
 			"command_id": req.ID,

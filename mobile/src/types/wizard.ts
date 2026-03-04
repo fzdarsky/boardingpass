@@ -29,7 +29,7 @@ export interface WiFiConfig {
   password: string | null;
 }
 
-/** Read-only data from wifi-scan command */
+/** Read-only data from wifi-scan command, deduplicated by SSID */
 export interface WiFiNetwork {
   device: string;
   ssid: string;
@@ -39,6 +39,7 @@ export interface WiFiNetwork {
   channel: number;
   frequency: number;
   band: string;
+  bands: string[];
   rate: string;
 }
 

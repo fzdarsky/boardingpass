@@ -231,18 +231,18 @@
 
 ### Tests
 
-- [ ] T070 [P] [US3] Write unit tests for WiFiStep component (scan trigger, SSID table rendering, password field visibility, rescan, empty state) in `mobile/tests/unit/components/WiFiStep.test.ts`
-- [ ] T071 [P] [US3] Write unit tests for WiFi NM connection file generation (wifi + wifi-security sections with WPA-PSK/SAE) in `mobile/tests/unit/utils/nm-connection.test.ts` (extend existing)
+- [X] T070 [P] [US3] Write unit tests for WiFiStep component (scan trigger, SSID table rendering, password field visibility, rescan, empty state) in `mobile/tests/unit/components/WiFiStep.test.ts`
+- [X] T071 [P] [US3] Write unit tests for WiFi NM connection file generation (wifi + wifi-security sections with WPA-PSK/SAE) in `mobile/tests/unit/utils/nm-connection.test.ts` (extend existing)
 
 ### Implementation
 
-- [ ] T072 [P] [US3] Create WiFiStep component: triggers wifi-scan command on mount, displays SSID table (SSID, signal, security, channel, band, rate), radio selection, conditional password field for secured networks, Rescan button, empty-state message in `mobile/src/components/ConfigWizard/WiFiStep.tsx`
-- [ ] T073 [US3] Integrate WiFiStep into WizardContainer: show WiFiStep as sub-step after InterfaceStep when WiFi interface is selected, include WiFi config in NM connection file generation in `mobile/src/components/ConfigWizard/WizardContainer.tsx`
-- [ ] T074 [US3] Extend nm-connection.ts to generate WiFi-specific NM connection file sections (wifi, wifi-security with WPA-PSK/SAE) in `mobile/src/utils/nm-connection.ts`
+- [X] T072 [P] [US3] Create WiFiStep component: triggers wifi-scan command on mount, displays SSID table (SSID, signal, security, channel, band, rate), radio selection, conditional password field for secured networks, Rescan button, empty-state message in `mobile/src/components/ConfigWizard/WiFiStep.tsx`
+- [X] T073 [US3] Integrate WiFiStep into WizardContainer: show WiFiStep as sub-step after InterfaceStep when WiFi interface is selected, include WiFi config in NM connection file generation in `mobile/src/components/ConfigWizard/WizardContainer.tsx`
+- [X] T074 [US3] Extend nm-connection.ts to generate WiFi-specific NM connection file sections (wifi, wifi-security with WPA-PSK/SAE) in `mobile/src/utils/nm-connection.ts`
 
 ### Checkpoint validation
 
-- [ ] T075 [US3] Run `make lint-app && make test-unit-app` — fix all failures
+- [X] T075 [US3] Run `make lint-app && make test-unit-app` — fix all failures
 
 **Checkpoint**: WiFi flow works end-to-end.
 

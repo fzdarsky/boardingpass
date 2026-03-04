@@ -241,6 +241,119 @@ describe('generateNmConnection', () => {
       expect(result).toContain('psk=strongpass');
     });
 
+    it('generates WiFi with SAE security string', () => {
+      const wifiInterface: InterfaceConfig = {
+        interfaceName: 'wlan0',
+        interfaceType: 'wifi',
+        vlanId: null,
+        wifi: {
+          ssid: 'SAENetwork',
+          bssid: 'AA:BB:CC:DD:EE:FF',
+          security: 'SAE',
+          password: 'saepass',
+        },
+      };
+
+      const result = generateNmConnection({
+        interfaceConfig: wifiInterface,
+        addressing: defaultAddressing,
+      });
+
+      expect(result).toContain('key-mgmt=sae');
+      expect(result).toContain('psk=saepass');
+    });
+
+    it('generates WiFi with static IPv4 addressing', () => {
+      const wifiInterface: InterfaceConfig = {
+        interfaceName: 'wlan0',
+        interfaceType: 'wifi',
+        vlanId: null,
+        wifi: {
+          ssid: 'StaticNet',
+          bssid: '00:11:22:33:44:55',
+          security: 'wpa2',
+          password: 'mypass',
+        },
+      };
+
+      const staticAddressing: AddressingConfig = {
+        ipv4: {
+          method: 'static',
+          address: '10.0.0.50',
+          subnetMask: '255.255.255.0',
+          gateway: '10.0.0.1',
+          dnsAuto: true,
+          dnsPrimary: null,
+          dnsSecondary: null,
+        },
+        ipv6: {
+          method: 'disabled',
+          address: null,
+          gateway: null,
+          dnsAuto: true,
+          dnsPrimary: null,
+          dnsSecondary: null,
+        },
+      };
+
+      const result = generateNmConnection({
+        interfaceConfig: wifiInterface,
+        addressing: staticAddressing,
+      });
+
+      // WiFi sections present
+      expect(result).toContain('[wifi]');
+      expect(result).toContain('ssid=StaticNet');
+      expect(result).toContain('[wifi-security]');
+      // Static IPv4 sections present
+      expect(result).toContain('method=manual');
+      expect(result).toContain('address1=10.0.0.50/24');
+      expect(result).toContain('gateway=10.0.0.1');
+    });
+
+    it('binds WiFi connection to interface name', () => {
+      const wifiInterface: InterfaceConfig = {
+        interfaceName: 'wlp3s0',
+        interfaceType: 'wifi',
+        vlanId: null,
+        wifi: {
+          ssid: 'Test',
+          bssid: '00:11:22:33:44:55',
+          security: 'open',
+          password: null,
+        },
+      };
+
+      const result = generateNmConnection({
+        interfaceConfig: wifiInterface,
+        addressing: defaultAddressing,
+      });
+
+      expect(result).toContain('interface-name=wlp3s0');
+    });
+
+    it('does not include ethernet section for WiFi connections', () => {
+      const wifiInterface: InterfaceConfig = {
+        interfaceName: 'wlan0',
+        interfaceType: 'wifi',
+        vlanId: null,
+        wifi: {
+          ssid: 'Test',
+          bssid: '00:11:22:33:44:55',
+          security: 'wpa2',
+          password: 'pass',
+        },
+      };
+
+      const result = generateNmConnection({
+        interfaceConfig: wifiInterface,
+        addressing: defaultAddressing,
+      });
+
+      expect(result).not.toContain('[ethernet]');
+      expect(result).not.toContain('[vlan]');
+    });
+
     it('generates open WiFi connection without security section', () => {
       const wifiInterface: InterfaceConfig = {
         interfaceName: 'wlan0',

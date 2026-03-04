@@ -21,7 +21,9 @@
       "WebFetch",
       "Bash(go build ./...)",
       "Bash(go test ./*)",
-      "Bash(make test-service)"
+      "Bash(make test-service)",
+      "mcp__ios-simulator__ui_tap",
+      "mcp__ios-simulator__ui_type"
     ]
   }
 }

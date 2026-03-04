@@ -53,7 +53,14 @@ type CommandDefinition struct {
 	ID        string   `yaml:"id"`
 	Path      string   `yaml:"path"`
 	Args      []string `yaml:"args"`
-	MaxParams int      `yaml:"max_params"` // 0 means no params accepted
+	MaxParams int      `yaml:"max_params"`     // 0 means no params accepted
+	Sudo      *bool    `yaml:"sudo,omitempty"` // nil or true = use sudo (default), false = run directly
+}
+
+// NeedsSudo returns whether this command should be executed via sudo.
+// Defaults to true when not explicitly set.
+func (c *CommandDefinition) NeedsSudo() bool {
+	return c.Sudo == nil || *c.Sudo
 }
 
 // LoggingSettings contains logging configuration.

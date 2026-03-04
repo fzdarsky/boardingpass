@@ -22,6 +22,13 @@ boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/set-ip.sh
 boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/set-dns.sh
 boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/set-ntp.sh
 boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/show-status.sh
+boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/wifi-scan.sh
+boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/reload-connection.sh
+boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/connectivity-test.sh
+boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/enroll-insights.sh
+boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/enroll-flightctl.sh
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/rhc connect *
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/flightctl login *
 
 # Explicitly deny all other commands
 boardingpass ALL=(ALL) !/usr/bin/su

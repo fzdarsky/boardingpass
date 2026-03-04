@@ -16,6 +16,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import StepIndicator from './StepIndicator';
 import HostnameStep from './HostnameStep';
 import InterfaceStep from './InterfaceStep';
+import WiFiStep from './WiFiStep';
 import AddressingStep from './AddressingStep';
 import ServicesStep from './ServicesStep';
 import EnrollmentStep from './EnrollmentStep';
@@ -188,12 +189,18 @@ export default function WizardContainer({
     );
   }
 
+  const isWifiSelected = wizard.state.networkInterface.interfaceType === 'wifi';
+
   const renderStep = () => {
     switch (wizard.state.currentStep) {
       case WIZARD_STEPS.HOSTNAME:
         return <HostnameStep />;
       case WIZARD_STEPS.INTERFACE:
-        return <InterfaceStep interfaces={interfaces} />;
+        return (
+          <InterfaceStep interfaces={interfaces}>
+            {isWifiSelected && <WiFiStep apiClient={apiClient} />}
+          </InterfaceStep>
+        );
       case WIZARD_STEPS.ADDRESSING:
         return <AddressingStep />;
       case WIZARD_STEPS.SERVICES:

@@ -5,7 +5,7 @@
  * speed, state/carrier) with radio selection and optional VLAN ID input.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import {
   Text,
@@ -27,12 +27,12 @@ const ENROLLABLE_TYPES: ReadonlySet<string> = new Set(['ethernet', 'wifi']);
 
 interface InterfaceStepProps {
   interfaces: NetworkInterface[];
+  children?: React.ReactNode;
 }
 
-export default function InterfaceStep({ interfaces }: InterfaceStepProps) {
+export default function InterfaceStep({ interfaces, children }: InterfaceStepProps) {
   const { state, updateInterface } = useWizard();
   const theme = useTheme();
-  const [showVlan, setShowVlan] = useState(state.networkInterface.vlanId !== null);
 
   // Only show interfaces that can be used for enrollment
   const selectableInterfaces = useMemo(
@@ -70,23 +70,12 @@ export default function InterfaceStep({ interfaces }: InterfaceStepProps) {
     [updateInterface, state.networkInterface.vlanId]
   );
 
-  const handleVlanToggle = useCallback(() => {
-    const newShowVlan = !showVlan;
-    setShowVlan(newShowVlan);
-    if (!newShowVlan) {
-      updateInterface({
-        ...state.networkInterface,
-        vlanId: null,
-      });
-    }
-  }, [showVlan, state.networkInterface, updateInterface]);
-
   const handleVlanChange = useCallback(
     (text: string) => {
       const num = parseInt(text, 10);
       updateInterface({
         ...state.networkInterface,
-        vlanId: isNaN(num) ? null : num,
+        vlanId: text === '' ? null : isNaN(num) ? null : num,
       });
     },
     [state.networkInterface, updateInterface]
@@ -108,7 +97,7 @@ export default function InterfaceStep({ interfaces }: InterfaceStepProps) {
         variant="bodyMedium"
         style={[styles.description, { color: theme.colors.onSurfaceVariant }]}
       >
-        Choose the network interface to configure for enrollment.
+        Choose the network interface to use for enrollment.
       </Text>
 
       <ScrollView horizontal style={styles.tableScroll}>
@@ -163,32 +152,33 @@ export default function InterfaceStep({ interfaces }: InterfaceStepProps) {
         </DataTable>
       </ScrollView>
 
-      {/* VLAN Configuration */}
-      <View style={styles.vlanSection}>
-        <RadioButton.Item
-          label="Configure VLAN"
-          value="vlan"
-          status={showVlan ? 'checked' : 'unchecked'}
-          onPress={handleVlanToggle}
-          accessibilityLabel="Enable VLAN configuration"
-        />
+      {/* Injected sub-step (e.g. WiFi network selection) */}
+      {children}
 
-        {showVlan && (
-          <View style={styles.vlanInput}>
-            <TextInput
-              label="VLAN ID (1-4094)"
-              value={state.networkInterface.vlanId?.toString() || ''}
-              onChangeText={handleVlanChange}
-              mode="outlined"
-              keyboardType="number-pad"
-              error={!!vlanError}
-              accessibilityLabel="VLAN ID"
-            />
-            <HelperText type="error" visible={!!vlanError}>
-              {vlanError}
-            </HelperText>
-          </View>
-        )}
+      {/* VLAN Configuration — always visible, empty means no VLAN */}
+      <View style={styles.vlanSection}>
+        <Text variant="titleMedium" style={[styles.title, { color: theme.colors.onSurface }]}>
+          Configure a VLAN ID (optional)
+        </Text>
+
+        <Text
+          variant="bodyMedium"
+          style={[styles.description, { color: theme.colors.onSurfaceVariant }]}
+        >
+          Enter a VLAN ID if required by your network.
+        </Text>
+        <TextInput
+          label="VLAN ID (1–4094) or empty for none"
+          value={state.networkInterface.vlanId?.toString() || ''}
+          onChangeText={handleVlanChange}
+          mode="outlined"
+          keyboardType="number-pad"
+          error={!!vlanError}
+          accessibilityLabel="VLAN ID"
+        />
+        <HelperText type="error" visible={!!vlanError}>
+          {vlanError}
+        </HelperText>
       </View>
     </View>
   );
@@ -228,10 +218,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   vlanSection: {
-    marginTop: spacing.sm,
-  },
-  vlanInput: {
-    paddingLeft: spacing.xl,
-    paddingRight: spacing.md,
+    marginTop: spacing.md,
   },
 });
