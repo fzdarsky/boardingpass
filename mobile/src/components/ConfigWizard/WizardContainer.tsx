@@ -54,6 +54,14 @@ export default function WizardContainer({
 
   const isImmediate = wizard.state.applyMode === 'immediate';
 
+  // Hostname is always applied immediately (safe — doesn't affect connectivity).
+  // Other steps are applied immediately only when the wizard is in immediate mode.
+  // Interface step (Step 2) never has config to apply.
+  const willApplyOnNext =
+    !wizard.isLastStep &&
+    (wizard.state.currentStep === WIZARD_STEPS.HOSTNAME ||
+      (isImmediate && wizard.state.currentStep !== WIZARD_STEPS.INTERFACE));
+
   const handleNext = useCallback(async () => {
     if (wizard.isLastStep) {
       const validation = wizard.validateStep(wizard.state.currentStep);
@@ -84,6 +92,10 @@ export default function WizardContainer({
         onComplete?.();
       }
     } else {
+      // State hasn't re-rendered yet after goNext(), so currentStep
+      // still holds the step we're about to leave.
+      const stepLeaving = wizard.state.currentStep;
+
       const validation = wizard.goNext();
       if (!validation.isValid) {
         setErrors(validation.errors);
@@ -91,12 +103,10 @@ export default function WizardContainer({
         return;
       }
 
-      // In immediate mode, apply the step we just left
-      if (isImmediate && apiClient) {
-        const prevStep = wizard.state.currentStep - 1;
-        if (prevStep >= WIZARD_STEPS.HOSTNAME) {
-          await wizard.applyStepImmediate(prevStep, apiClient);
-        }
+      // Apply the step we just left (hostname always; others in immediate mode)
+      const shouldApply = stepLeaving === WIZARD_STEPS.HOSTNAME || isImmediate;
+      if (shouldApply && apiClient) {
+        await wizard.applyStepImmediate(stepLeaving, apiClient);
       }
     }
   }, [wizard, isImmediate, apiClient, onComplete]);
@@ -241,12 +251,12 @@ export default function WizardContainer({
         {renderStep()}
 
         {/* Show apply feedback for current step (when applying) */}
-        {isImmediate && currentApplyStatus && (
+        {currentApplyStatus && currentApplyStatus.status !== 'pending' && (
           <ApplyFeedback applyStatus={currentApplyStatus} onRetry={handleRetryStep} />
         )}
 
         {/* Show feedback from the previous step (success/failure persists) */}
-        {isImmediate && prevApplyStatus && prevApplyStatus.status !== 'pending' && (
+        {prevApplyStatus && prevApplyStatus.status !== 'pending' && (
           <ApplyFeedback applyStatus={prevApplyStatus} />
         )}
       </ScrollView>
@@ -268,13 +278,21 @@ export default function WizardContainer({
           disabled={isApplying}
           loading={isApplying}
           style={styles.navButton}
-          accessibilityLabel={wizard.isLastStep ? 'Finish wizard' : 'Next step'}
+          accessibilityLabel={
+            wizard.isLastStep
+              ? 'Finish wizard'
+              : willApplyOnNext
+                ? 'Apply and go to next step'
+                : 'Next step'
+          }
         >
           {wizard.isLastStep
             ? wizard.state.applyMode === 'deferred'
               ? 'Review'
               : 'Finish'
-            : 'Next'}
+            : willApplyOnNext
+              ? 'Apply & Next'
+              : 'Next'}
         </Button>
       </View>
 

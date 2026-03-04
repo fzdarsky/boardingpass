@@ -17,6 +17,10 @@ Group=boardingpass
 WorkingDirectory=/var/lib/boardingpass
 
 # Security hardening
+# Note: RestrictAddressFamilies, RestrictNamespaces, LockPersonality, and
+# RestrictRealtime are NOT used because they implicitly force NoNewPrivileges=yes,
+# which prevents sudo from working. This service requires sudo for file provisioning
+# to /etc/ and for executing allow-listed system commands.
 NoNewPrivileges=false
 PrivateTmp=true
 ProtectSystem=yes
@@ -26,10 +30,6 @@ ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectKernelLogs=true
 ProtectControlGroups=true
-RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
-RestrictNamespaces=true
-LockPersonality=true
-RestrictRealtime=true
 RestrictSUIDSGID=false
 RemoveIPC=true
 PrivateMounts=true
