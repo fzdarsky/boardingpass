@@ -19,6 +19,7 @@ import { getSystemInfo } from '../../src/services/api/info';
 import { getNetworkConfig } from '../../src/services/api/network';
 import { sessionManager } from '../../src/services/auth/session';
 import { createInitialWizardState } from '../../src/types/wizard';
+import type { APIClient } from '../../src/services/api/client';
 import type { components } from '../../src/types/api';
 import { spacing } from '../../src/theme';
 
@@ -41,6 +42,7 @@ export default function ConfigureScreen() {
   // Device data for wizard initialization
   const [systemInfo, setSystemInfo] = useState<SystemInfoType | null>(null);
   const [networkConfig, setNetworkConfig] = useState<NetworkConfigType | null>(null);
+  const [apiClient, setApiClient] = useState<APIClient | null>(null);
 
   // Load session token and fetch device data
   useEffect(() => {
@@ -64,16 +66,17 @@ export default function ConfigureScreen() {
           return;
         }
 
-        const apiClient = createAPIClient(host, parseInt(port, 10));
-        apiClient.setAuthToken(t);
+        const client = createAPIClient(host, parseInt(port, 10));
+        client.setAuthToken(t);
 
         // Fetch device info and network config in parallel
         const [info, network] = await Promise.all([
-          getSystemInfo(apiClient),
-          getNetworkConfig(apiClient),
+          getSystemInfo(client),
+          getNetworkConfig(client),
         ]);
 
         if (cancelled) return;
+        setApiClient(client);
         setSystemInfo(info);
         setNetworkConfig(network);
         setLoading(false);
@@ -245,7 +248,11 @@ export default function ConfigureScreen() {
       />
 
       <WizardProvider initialState={initialWizardState}>
-        <WizardContainer interfaces={networkConfig?.interfaces || []} onComplete={handleComplete} />
+        <WizardContainer
+          interfaces={networkConfig?.interfaces || []}
+          apiClient={apiClient ?? undefined}
+          onComplete={handleComplete}
+        />
       </WizardProvider>
     </View>
   );

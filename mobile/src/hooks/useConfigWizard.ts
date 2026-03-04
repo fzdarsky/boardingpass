@@ -2,9 +2,11 @@
  * useConfigWizard Hook
  *
  * Encapsulates wizard step validation logic, per-step data access,
- * navigation guards, and step completion checks.
+ * navigation guards, step completion checks, apply mode detection,
+ * and configuration apply orchestration for both immediate and deferred modes.
  *
- * This hook reads from WizardContext and provides validation + navigation helpers.
+ * This hook reads from WizardContext and provides validation + navigation +
+ * apply helpers.
  */
 
 import { useCallback, useMemo } from 'react';
@@ -19,11 +21,226 @@ import {
   validateNtpServer,
 } from '../utils/network-validation';
 import { WIZARD_STEPS, TOTAL_STEPS } from '../types/wizard';
+import type { WizardState, ConnectivityResult } from '../types/wizard';
+import { generateNmConnection, getConnectionPath } from '../utils/nm-connection';
+import { sendConfigBundle, createConfigFile } from '../services/api/configure';
+import { executeCommand } from '../services/api/command';
+import { completeProvisioning } from '../services/api/complete';
+import type { APIClient } from '../services/api/client';
+
+const CONNECTION_NAME = 'boardingpass-enrollment';
 
 export interface StepValidation {
   isValid: boolean;
   errors: string[];
 }
+
+interface RawConfigFile {
+  path: string;
+  content: string;
+  mode?: number;
+}
+
+interface StepCommand {
+  id: string;
+  params?: string[];
+}
+
+// ── Pure Functions (exported for testing) ──
+
+/**
+ * Build the configuration files for a given wizard step.
+ * Returns raw (unencoded) file content suitable for createConfigFile().
+ */
+export function buildStepConfigFiles(step: number, state: WizardState): RawConfigFile[] {
+  const files: RawConfigFile[] = [];
+
+  switch (step) {
+    case WIZARD_STEPS.HOSTNAME: {
+      files.push({ path: 'hostname', content: `${state.hostname.hostname}\n` });
+      break;
+    }
+
+    case WIZARD_STEPS.INTERFACE:
+      // Interface selection only — no config files
+      break;
+
+    case WIZARD_STEPS.ADDRESSING: {
+      const nmContent = generateNmConnection({
+        interfaceConfig: state.networkInterface,
+        addressing: state.addressing,
+        connectionName: CONNECTION_NAME,
+      });
+      files.push({ path: getConnectionPath(CONNECTION_NAME), content: nmContent });
+      break;
+    }
+
+    case WIZARD_STEPS.SERVICES: {
+      // NTP config (manual only)
+      if (state.services.ntp.mode === 'manual' && state.services.ntp.servers.length > 0) {
+        const ntpLines = state.services.ntp.servers.map(s => `server ${s} iburst`);
+        files.push({
+          path: 'chrony.d/boardingpass-ntp.conf',
+          content: ntpLines.join('\n') + '\n',
+        });
+      }
+
+      // Proxy config
+      if (state.services.proxy) {
+        files.push({
+          path: 'profile.d/boardingpass-proxy.sh',
+          content: buildProxyScript(state.services.proxy),
+        });
+      }
+      break;
+    }
+
+    case WIZARD_STEPS.ENROLLMENT: {
+      if (state.enrollment.insights) {
+        files.push({
+          path: 'boardingpass/staging/insights.json',
+          content: JSON.stringify({
+            endpoint: state.enrollment.insights.endpoint,
+            org_id: state.enrollment.insights.orgId,
+            activation_key: state.enrollment.insights.activationKey,
+          }),
+          mode: 0o600,
+        });
+      }
+
+      if (state.enrollment.flightControl) {
+        files.push({
+          path: 'boardingpass/staging/flightctl.json',
+          content: JSON.stringify({
+            endpoint: state.enrollment.flightControl.endpoint,
+            username: state.enrollment.flightControl.username,
+            password: state.enrollment.flightControl.password,
+          }),
+          mode: 0o600,
+        });
+      }
+      break;
+    }
+  }
+
+  return files;
+}
+
+/**
+ * Get the commands to execute after applying config for a given step.
+ */
+export function buildStepCommands(step: number, state: WizardState): StepCommand[] {
+  const commands: StepCommand[] = [];
+
+  switch (step) {
+    case WIZARD_STEPS.HOSTNAME:
+      commands.push({ id: 'set-hostname', params: [state.hostname.hostname] });
+      break;
+
+    case WIZARD_STEPS.INTERFACE:
+      // No commands for interface selection
+      break;
+
+    case WIZARD_STEPS.ADDRESSING:
+      commands.push({ id: 'reload-connection', params: [CONNECTION_NAME] });
+      break;
+
+    case WIZARD_STEPS.SERVICES:
+      if (state.services.ntp.mode === 'manual' || state.services.proxy) {
+        commands.push({ id: 'restart-chronyd' });
+      }
+      break;
+
+    case WIZARD_STEPS.ENROLLMENT:
+      if (state.enrollment.insights) {
+        commands.push({ id: 'enroll-insights' });
+      }
+      if (state.enrollment.flightControl) {
+        commands.push({ id: 'enroll-flightctl' });
+      }
+      break;
+  }
+
+  return commands;
+}
+
+/**
+ * Build the complete deferred configuration bundle (all steps combined).
+ * Includes systemd oneshot service for enrollment if any enrollment is configured.
+ */
+export function buildDeferredBundle(state: WizardState): RawConfigFile[] {
+  const files: RawConfigFile[] = [];
+
+  // Collect files from all steps
+  for (let step = WIZARD_STEPS.HOSTNAME; step <= TOTAL_STEPS; step++) {
+    files.push(...buildStepConfigFiles(step, state));
+  }
+
+  // Add systemd oneshot service for enrollment (deferred mode only)
+  const hasEnrollment = state.enrollment.insights || state.enrollment.flightControl;
+  if (hasEnrollment) {
+    files.push({
+      path: 'systemd/system/boardingpass-enroll.service',
+      content: buildEnrollmentServiceUnit(state),
+    });
+    // Symlink to enable the service (written as a regular file — NM keyfile format)
+    files.push({
+      path: 'systemd/system/multi-user.target.wants/boardingpass-enroll.service',
+      content: buildEnrollmentServiceUnit(state),
+    });
+  }
+
+  return files;
+}
+
+// ── Helper Functions ──
+
+function buildProxyScript(proxy: {
+  hostname: string;
+  port: number;
+  username: string | null;
+  password: string | null;
+}): string {
+  const auth = proxy.username && proxy.password ? `${proxy.username}:${proxy.password}@` : '';
+  const proxyUrl = `http://${auth}${proxy.hostname}:${proxy.port}`;
+  return [
+    '# BoardingPass proxy configuration',
+    `export http_proxy=${proxyUrl}`,
+    `export https_proxy=${proxyUrl}`,
+    `export HTTP_PROXY=${proxyUrl}`,
+    `export HTTPS_PROXY=${proxyUrl}`,
+    'export no_proxy=localhost,127.0.0.1,::1',
+    'export NO_PROXY=localhost,127.0.0.1,::1',
+    '',
+  ].join('\n');
+}
+
+function buildEnrollmentServiceUnit(state: WizardState): string {
+  const execLines: string[] = [];
+  if (state.enrollment.insights) {
+    execLines.push('ExecStart=/usr/libexec/boardingpass/enroll-insights.sh');
+  }
+  if (state.enrollment.flightControl) {
+    execLines.push('ExecStart=/usr/libexec/boardingpass/enroll-flightctl.sh');
+  }
+
+  return [
+    '[Unit]',
+    'Description=BoardingPass post-boot enrollment',
+    'After=network-online.target',
+    'Wants=network-online.target',
+    'ConditionPathExists=/etc/boardingpass/staging',
+    '',
+    '[Service]',
+    'Type=oneshot',
+    ...execLines,
+    'ExecStartPost=/bin/systemctl disable boardingpass-enroll.service',
+    'RemainAfterExit=no',
+    '',
+  ].join('\n');
+}
+
+// ── Hook ──
 
 export function useConfigWizard() {
   const wizard = useWizard();
@@ -194,15 +411,32 @@ export function useConfigWizard() {
 
   /**
    * Navigate to the next step (validates current step first).
+   * When leaving Step 2, determines apply mode by comparing selected
+   * interface against the service interface.
    * Returns validation result — caller should show errors if invalid.
    */
   const goNext = useCallback((): StepValidation => {
     const validation = validateStep(state.currentStep);
     if (validation.isValid && state.currentStep < TOTAL_STEPS) {
+      // Determine apply mode when leaving Step 2 (interface selection)
+      if (state.currentStep === WIZARD_STEPS.INTERFACE) {
+        const mode =
+          !state.serviceInterfaceName ||
+          state.networkInterface.interfaceName === state.serviceInterfaceName
+            ? 'deferred'
+            : 'immediate';
+        wizard.setApplyMode(mode);
+      }
       wizard.setStep(state.currentStep + 1);
     }
     return validation;
-  }, [state.currentStep, validateStep, wizard]);
+  }, [
+    state.currentStep,
+    state.serviceInterfaceName,
+    state.networkInterface.interfaceName,
+    validateStep,
+    wizard,
+  ]);
 
   /**
    * Navigate to the previous step (no validation needed).
@@ -242,6 +476,90 @@ export function useConfigWizard() {
     [state.currentStep, validateStep]
   );
 
+  /**
+   * Apply a single step's configuration in immediate mode.
+   * Sends config files via /configure, then executes step commands via /command.
+   * Updates stepApplyStatus in context.
+   */
+  const applyStepImmediate = useCallback(
+    async (step: number, client: APIClient): Promise<void> => {
+      const configFiles = buildStepConfigFiles(step, state);
+      const commands = buildStepCommands(step, state);
+
+      // Nothing to apply for this step
+      if (configFiles.length === 0 && commands.length === 0) {
+        wizard.setApplyStatus(step, { status: 'success', error: null, connectivityResult: null });
+        return;
+      }
+
+      wizard.setApplyStatus(step, { status: 'applying', error: null, connectivityResult: null });
+
+      try {
+        // Send config files
+        if (configFiles.length > 0) {
+          const encoded = configFiles.map(f => createConfigFile(f.path, f.content, f.mode));
+          await sendConfigBundle(client, encoded);
+        }
+
+        // Execute commands
+        for (const cmd of commands) {
+          const result = await executeCommand(client, cmd.id, cmd.params);
+          if (result.exit_code !== 0) {
+            throw new Error(`Command '${cmd.id}' failed: ${result.stderr || 'non-zero exit code'}`);
+          }
+        }
+
+        // Run connectivity test after addressing step
+        let connectivityResult: ConnectivityResult | null = null;
+        if (step === WIZARD_STEPS.ADDRESSING) {
+          try {
+            const gateway = state.addressing.ipv4.gateway || '';
+            const iface = state.networkInterface.interfaceName;
+            if (gateway && iface) {
+              const testResult = await executeCommand(client, 'connectivity-test', [
+                iface,
+                gateway,
+              ]);
+              if (testResult.exit_code === 0 && testResult.stdout) {
+                connectivityResult = JSON.parse(testResult.stdout);
+              }
+            }
+          } catch {
+            // Connectivity test is informational — don't fail the step
+          }
+        }
+
+        wizard.setApplyStatus(step, {
+          status: 'success',
+          error: null,
+          connectivityResult,
+        });
+      } catch (err) {
+        wizard.setApplyStatus(step, {
+          status: 'failed',
+          error: err instanceof Error ? err.message : 'Apply failed',
+          connectivityResult: null,
+        });
+      }
+    },
+    [state, wizard]
+  );
+
+  /**
+   * Apply the entire deferred configuration bundle.
+   * Sends all config files in a single /configure call, then calls /complete with reboot.
+   */
+  const applyDeferred = useCallback(
+    async (client: APIClient): Promise<void> => {
+      const rawFiles = buildDeferredBundle(state);
+      const encoded = rawFiles.map(f => createConfigFile(f.path, f.content, f.mode));
+
+      await sendConfigBundle(client, encoded);
+      await completeProvisioning(client, true);
+    },
+    [state]
+  );
+
   return {
     ...wizard,
     validateStep,
@@ -252,5 +570,7 @@ export function useConfigWizard() {
     isFirstStep,
     isLastStep,
     currentValidation,
+    applyStepImmediate,
+    applyDeferred,
   };
 }

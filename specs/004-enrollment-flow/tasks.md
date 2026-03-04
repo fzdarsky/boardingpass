@@ -187,37 +187,37 @@
 
 ### Tests: Apply mode detection and immediate apply
 
-- [ ] T060 [P] [US2] Write unit tests for apply mode detection (compare connection target IP against device interface IPs) and per-step immediate apply logic in `mobile/tests/unit/hooks/useConfigWizard.test.ts` (extend existing)
+- [X] T060 [P] [US2] Write unit tests for apply mode detection (compare connection target IP against device interface IPs) and per-step immediate apply logic in `mobile/tests/unit/hooks/useConfigWizard.test.ts` (extend existing)
 
 ### Tests: Deferred apply and review
 
-- [ ] T061 [P] [US2] Write integration test for deferred apply flow: all config files bundled into single `/configure` call, then `/complete` with `reboot: true` in `mobile/tests/integration/config-wizard.test.ts` (extend existing)
+- [X] T061 [P] [US2] Write integration test for deferred apply flow: all config files bundled into single `/configure` call, then `/complete` with `reboot: true` in `mobile/tests/integration/config-wizard.test.ts` (extend existing)
 
 ### Implementation: Apply mode detection
 
-- [ ] T062 [US2] Add service interface detection: compare app's connection target IP against device interface IPs to determine serviceInterfaceName; set applyMode in WizardContext when interface is selected in Step 2 in `mobile/src/hooks/useConfigWizard.ts`
+- [X] T062 [US2] Add service interface detection: compare app's connection target IP against device interface IPs to determine serviceInterfaceName; set applyMode in WizardContext when interface is selected in Step 2 in `mobile/src/hooks/useConfigWizard.ts`
 
 ### Implementation: Immediate apply (different interface)
 
-- [ ] T063 [US2] Implement per-step immediate apply in useConfigWizard: after step completion, call `/configure` with step's config files then `/command` with step's apply command, update stepApplyStatus in context in `mobile/src/hooks/useConfigWizard.ts`
-- [ ] T064 [P] [US2] Create ApplyFeedback component: shows per-step apply status (spinner during apply, success checkmark, error with retry button) in `mobile/src/components/ConfigWizard/ApplyFeedback.tsx`
+- [X] T063 [US2] Implement per-step immediate apply in useConfigWizard: after step completion, call `/configure` with step's config files then `/command` with step's apply command, update stepApplyStatus in context in `mobile/src/hooks/useConfigWizard.ts`
+- [X] T064 [P] [US2] Create ApplyFeedback component: shows per-step apply status (spinner during apply, success checkmark, error with retry button) in `mobile/src/components/ConfigWizard/ApplyFeedback.tsx`
 
 ### Implementation: Connectivity verification
 
-- [ ] T065 [US2] After network addressing apply (Step 3), invoke `connectivity-test` command with interface name and gateway IP, display ConnectivityResult (IP assigned, gateway reachable, DNS resolves, internet reachable) in ApplyFeedback in `mobile/src/hooks/useConfigWizard.ts`
+- [X] T065 [US2] After network addressing apply (Step 3), invoke `connectivity-test` command with interface name and gateway IP, display ConnectivityResult (IP assigned, gateway reachable, DNS resolves, internet reachable) in ApplyFeedback in `mobile/src/hooks/useConfigWizard.ts`
 
 ### Implementation: Deferred apply (same interface)
 
-- [ ] T066 [US2] Implement deferred apply: collect all config files across steps, generate NM connection file, NTP config, proxy config, enrollment staging files, systemd oneshot (if enrollment enabled), send entire bundle via single `/configure` call, then call `/complete` with `reboot: true` in `mobile/src/hooks/useConfigWizard.ts`
-- [ ] T067 [P] [US2] Create ReviewPage component: human-readable summary of all queued changes (hostname, interface, addressing, services, enrollment), "Confirm & Reboot" and "Back" buttons in `mobile/src/components/ConfigWizard/ReviewPage.tsx`
+- [X] T066 [US2] Implement deferred apply: collect all config files across steps, generate NM connection file, NTP config, proxy config, enrollment staging files, systemd oneshot (if enrollment enabled), send entire bundle via single `/configure` call, then call `/complete` with `reboot: true` in `mobile/src/hooks/useConfigWizard.ts`
+- [X] T067 [P] [US2] Create ReviewPage component: human-readable summary of all queued changes (hostname, interface, addressing, services, enrollment), "Confirm & Reboot" and "Back" buttons in `mobile/src/components/ConfigWizard/ReviewPage.tsx`
 
 ### Implementation: Post-apply UX
 
-- [ ] T068 [US2] Handle post-apply states: in immediate mode call `/complete` (graceful shutdown) after final step; in deferred mode show "Device is rebooting" message after confirm, return to device list after timeout in `mobile/src/components/ConfigWizard/WizardContainer.tsx`
+- [X] T068 [US2] Handle post-apply states: in immediate mode call `/complete` (graceful shutdown) after final step; in deferred mode show "Device is rebooting" message after confirm, return to device list after timeout in `mobile/src/components/ConfigWizard/WizardContainer.tsx`
 
 ### Checkpoint validation
 
-- [ ] T069 [US2] Run `make lint-app && make test-app` — fix all failures
+- [X] T069 [US2] Run `make lint-app && make test-app` — fix all failures
 
 **Checkpoint**: Both apply modes functional.
 
