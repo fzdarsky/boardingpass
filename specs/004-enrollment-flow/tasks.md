@@ -277,11 +277,11 @@
 
 **Purpose**: Final quality, end-to-end validation, and security verification
 
-- [ ] T082 Run `make lint-all` and fix all errors
-- [ ] T083 Run `make test-all` and fix all failures (service + CLI + app, all test types)
-- [ ] T084 Validate quickstart.md scenarios manually (both immediate and deferred API call flows)
-- [ ] T085 Verify credential security: confirm WiFi passwords, proxy passwords, activation keys, and enrollment passwords use secure text input, are not logged, and are cleared on wizard close
-- [ ] T086 Run contract tests to verify mobile app and service types align with updated OpenAPI spec
+- [X] T082 Run `make lint-all` and fix all errors
+- [X] T083 Run `make test-all` and fix all failures (service + CLI + app, all test types)
+- [X] T084 Validate quickstart.md scenarios manually (both immediate and deferred API call flows)
+- [X] T085 Verify credential security: confirm WiFi passwords, proxy passwords, activation keys, and enrollment passwords use secure text input, are not logged, and are cleared on wizard close
+- [X] T086 Run contract tests to verify mobile app and service types align with updated OpenAPI spec
 
 ---
 

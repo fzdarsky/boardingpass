@@ -92,16 +92,18 @@ make run-app-ios
 Step 1: POST /configure [{path: "hostname", content: base64("my-device")}]
         POST /command   {id: "set-hostname", params: ["my-device"]}
 
-Step 3: POST /configure [{path: "NetworkManager/system-connections/bp-enrollment.nmconnection", ...}]
-        POST /command   {id: "reload-connection", params: ["bp-enrollment"]}
+Step 3: POST /configure [{path: "NetworkManager/system-connections/boardingpass-enrollment.nmconnection", ...}]
+        POST /command   {id: "reload-connection", params: ["boardingpass-enrollment"]}
         POST /command   {id: "connectivity-test", params: ["eth0", "192.168.1.1"]}
 
 Step 4: POST /configure [{path: "chrony.d/boardingpass-ntp.conf", ...},
                           {path: "profile.d/boardingpass-proxy.sh", ...}]
         POST /command   {id: "restart-chronyd"}
 
-Step 5: POST /configure [{path: "boardingpass/staging/insights.json", ...}]
+Step 5: POST /configure [{path: "boardingpass/staging/insights.json", ...},
+                          {path: "boardingpass/staging/flightctl.json", ...}]
         POST /command   {id: "enroll-insights"}
+        POST /command   {id: "enroll-flightctl"}
 
 Done:   POST /complete  {}
 ```
@@ -111,10 +113,11 @@ Done:   POST /complete  {}
 ```
 Review: POST /configure [
           {path: "hostname", ...},
-          {path: "NetworkManager/system-connections/bp-enrollment.nmconnection", ...},
+          {path: "NetworkManager/system-connections/boardingpass-enrollment.nmconnection", ...},
           {path: "chrony.d/boardingpass-ntp.conf", ...},
           {path: "profile.d/boardingpass-proxy.sh", ...},
           {path: "boardingpass/staging/insights.json", ...},
+          {path: "boardingpass/staging/flightctl.json", ...},
           {path: "systemd/system/boardingpass-enroll.service", ...},
           {path: "systemd/system/multi-user.target.wants/boardingpass-enroll.service", ...}
         ]
