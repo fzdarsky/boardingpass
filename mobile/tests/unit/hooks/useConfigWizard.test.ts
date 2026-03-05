@@ -606,6 +606,7 @@ describe('useConfigWizard', () => {
       const parsed = JSON.parse(insightsFile!.content);
       expect(parsed.org_id).toBe('org123');
       expect(parsed.activation_key).toBe('key456');
+      expect(parsed.disable_remote_management).toBe(false);
     });
 
     it('builds flightctl staging file for step 5', () => {
@@ -624,6 +625,36 @@ describe('useConfigWizard', () => {
       expect(parsed.endpoint).toBe('https://fc.example.com');
       expect(parsed.username).toBe('admin');
       expect(parsed.password).toBe('secret');
+    });
+
+    it('builds both insights and flightctl staging files when both enabled', () => {
+      const state = createInitialWizardState();
+      state.enrollment.insights = {
+        endpoint: 'https://cert-api.access.redhat.com',
+        orgId: 'org123',
+        activationKey: 'key456',
+      };
+      state.enrollment.flightControl = {
+        endpoint: 'https://fc.example.com',
+        username: 'admin',
+        password: 'secret',
+      };
+
+      const files = buildStepConfigFiles(WIZARD_STEPS.ENROLLMENT, state);
+      expect(files).toHaveLength(2);
+
+      const insightsFile = files.find(f => f.path === 'boardingpass/staging/insights.json');
+      expect(insightsFile).toBeDefined();
+      expect(insightsFile!.mode).toBe(0o600);
+      const insightsParsed = JSON.parse(insightsFile!.content);
+      expect(insightsParsed.endpoint).toBe('https://cert-api.access.redhat.com');
+      expect(insightsParsed.org_id).toBe('org123');
+      expect(insightsParsed.activation_key).toBe('key456');
+      expect(insightsParsed.disable_remote_management).toBe(true);
+
+      const fcFile = files.find(f => f.path === 'boardingpass/staging/flightctl.json');
+      expect(fcFile).toBeDefined();
+      expect(fcFile!.mode).toBe(0o600);
     });
   });
 
@@ -912,6 +943,136 @@ describe('useConfigWizard', () => {
       expect(serviceFile).toBeDefined();
       expect(serviceFile!.content).toContain('After=network-online.target');
       expect(serviceFile!.content).toContain('enroll-flightctl.sh');
+    });
+
+    describe('systemd enrollment service unit generation', () => {
+      function createEnrollmentState(): WizardState {
+        const state = createInitialWizardState();
+        state.hostname.hostname = 'my-device';
+        state.networkInterface = {
+          interfaceName: 'eth0',
+          interfaceType: 'ethernet',
+          vlanId: null,
+          wifi: null,
+        };
+        return state;
+      }
+
+      it('generates service unit with both ExecStart lines when both enrollments enabled', () => {
+        const state = createEnrollmentState();
+        state.enrollment.insights = {
+          endpoint: 'https://cert-api.access.redhat.com',
+          orgId: 'org123',
+          activationKey: 'key456',
+        };
+        state.enrollment.flightControl = {
+          endpoint: 'https://fc.example.com',
+          username: 'admin',
+          password: 'secret',
+        };
+
+        const bundle = buildDeferredBundle(state);
+        const serviceFile = bundle.find(
+          f => f.path === 'systemd/system/boardingpass-enroll.service'
+        );
+        expect(serviceFile).toBeDefined();
+        expect(serviceFile!.content).toContain(
+          'ExecStart=/usr/libexec/boardingpass/enroll-insights.sh'
+        );
+        expect(serviceFile!.content).toContain(
+          'ExecStart=/usr/libexec/boardingpass/enroll-flightctl.sh'
+        );
+      });
+
+      it('generates service unit with only insights ExecStart when only insights enabled', () => {
+        const state = createEnrollmentState();
+        state.enrollment.insights = {
+          endpoint: 'https://cert-api.access.redhat.com',
+          orgId: 'org123',
+          activationKey: 'key456',
+        };
+
+        const bundle = buildDeferredBundle(state);
+        const serviceFile = bundle.find(
+          f => f.path === 'systemd/system/boardingpass-enroll.service'
+        );
+        expect(serviceFile).toBeDefined();
+        expect(serviceFile!.content).toContain(
+          'ExecStart=/usr/libexec/boardingpass/enroll-insights.sh'
+        );
+        expect(serviceFile!.content).not.toContain('enroll-flightctl.sh');
+      });
+
+      it('includes ConditionPathExists directive', () => {
+        const state = createEnrollmentState();
+        state.enrollment.insights = {
+          endpoint: 'https://cert-api.access.redhat.com',
+          orgId: 'org123',
+          activationKey: 'key456',
+        };
+
+        const bundle = buildDeferredBundle(state);
+        const serviceFile = bundle.find(
+          f => f.path === 'systemd/system/boardingpass-enroll.service'
+        );
+        expect(serviceFile!.content).toContain('ConditionPathExists=/etc/boardingpass/staging');
+      });
+
+      it('includes ExecStartPost to self-disable after enrollment', () => {
+        const state = createEnrollmentState();
+        state.enrollment.flightControl = {
+          endpoint: 'https://fc.example.com',
+          username: 'admin',
+          password: 'secret',
+        };
+
+        const bundle = buildDeferredBundle(state);
+        const serviceFile = bundle.find(
+          f => f.path === 'systemd/system/boardingpass-enroll.service'
+        );
+        expect(serviceFile!.content).toContain(
+          'ExecStartPost=/bin/systemctl disable boardingpass-enroll.service'
+        );
+      });
+
+      it('includes enablement symlink in deferred bundle', () => {
+        const state = createEnrollmentState();
+        state.enrollment.insights = {
+          endpoint: 'https://cert-api.access.redhat.com',
+          orgId: 'org123',
+          activationKey: 'key456',
+        };
+
+        const bundle = buildDeferredBundle(state);
+        const symlink = bundle.find(
+          f => f.path === 'systemd/system/multi-user.target.wants/boardingpass-enroll.service'
+        );
+        expect(symlink).toBeDefined();
+        expect(symlink!.content).toContain('[Unit]');
+        expect(symlink!.content).toContain('[Service]');
+      });
+
+      it('service unit has correct systemd structure', () => {
+        const state = createEnrollmentState();
+        state.enrollment.insights = {
+          endpoint: 'https://cert-api.access.redhat.com',
+          orgId: 'org123',
+          activationKey: 'key456',
+        };
+
+        const bundle = buildDeferredBundle(state);
+        const serviceFile = bundle.find(
+          f => f.path === 'systemd/system/boardingpass-enroll.service'
+        );
+        expect(serviceFile).toBeDefined();
+        const content = serviceFile!.content;
+        expect(content).toContain('[Unit]');
+        expect(content).toContain('[Service]');
+        expect(content).toContain('Type=oneshot');
+        expect(content).toContain('After=network-online.target');
+        expect(content).toContain('Wants=network-online.target');
+        expect(content).toContain('RemainAfterExit=no');
+      });
     });
   });
 });

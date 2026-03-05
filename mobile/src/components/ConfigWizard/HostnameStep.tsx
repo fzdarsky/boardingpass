@@ -21,9 +21,9 @@ export default function HostnameStep() {
 
   const handleChange = useCallback(
     (text: string) => {
-      updateHostname({ hostname: text.toLowerCase().trim() });
+      updateHostname({ ...state.hostname, hostname: text.toLowerCase().trim() });
     },
-    [updateHostname]
+    [state.hostname, updateHostname]
   );
 
   const handleBlur = useCallback(() => {

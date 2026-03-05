@@ -250,10 +250,19 @@ export default function WizardContainer({
       >
         {renderStep()}
 
-        {/* Show connectivity test results after addressing step */}
-        {currentApplyStatus?.status === 'success' && currentApplyStatus.connectivityResult && (
-          <ApplyFeedback applyStatus={currentApplyStatus} />
-        )}
+        {/* Show ApplyFeedback for failures (all steps) or connectivity results (Step 3) */}
+        {currentApplyStatus &&
+          (currentApplyStatus.status === 'failed' ||
+            (currentApplyStatus.status === 'success' && currentApplyStatus.connectivityResult)) && (
+            <ApplyFeedback
+              applyStatus={currentApplyStatus}
+              onRetry={
+                apiClient
+                  ? () => wizard.applyStepImmediate(wizard.state.currentStep, apiClient)
+                  : undefined
+              }
+            />
+          )}
       </ScrollView>
 
       <View style={[styles.navigation, { borderTopColor: theme.colors.outlineVariant }]}>

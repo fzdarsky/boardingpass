@@ -13,20 +13,28 @@ if [ ! -f "$STAGING_FILE" ]; then
     exit 0
 fi
 
+# Verify required tools are available
+for cmd in jq flightctl; do
+    if ! command -v "$cmd" &>/dev/null; then
+        echo "Error: '$cmd' is not installed" >&2
+        exit 1
+    fi
+done
+
 # Read credentials from staging file
-ENDPOINT=$(cat "$STAGING_FILE" | python3 -c "import sys,json; print(json.load(sys.stdin)['endpoint'])" 2>/dev/null) || {
+ENDPOINT=$(jq -r '.endpoint' "$STAGING_FILE") || {
     echo "Error: failed to parse endpoint from $STAGING_FILE" >&2
     rm -f "$STAGING_FILE"
     exit 1
 }
 
-USERNAME=$(cat "$STAGING_FILE" | python3 -c "import sys,json; print(json.load(sys.stdin)['username'])" 2>/dev/null) || {
+USERNAME=$(jq -r '.username' "$STAGING_FILE") || {
     echo "Error: failed to parse username from $STAGING_FILE" >&2
     rm -f "$STAGING_FILE"
     exit 1
 }
 
-PASSWORD=$(cat "$STAGING_FILE" | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])" 2>/dev/null) || {
+PASSWORD=$(jq -r '.password' "$STAGING_FILE") || {
     echo "Error: failed to parse password from $STAGING_FILE" >&2
     rm -f "$STAGING_FILE"
     exit 1

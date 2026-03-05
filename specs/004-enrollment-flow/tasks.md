@@ -256,18 +256,18 @@
 
 ### Tests
 
-- [ ] T076 [P] [US4] Write unit tests for enrollment staging file generation (insights.json with org_id/activation_key, flightctl.json with endpoint/username/password, mode 0600) in `mobile/tests/unit/hooks/useConfigWizard.test.ts` (extend existing)
-- [ ] T077 [P] [US4] Write unit tests for systemd oneshot service unit generation (boardingpass-enroll.service with both ExecStart lines, ConditionPathExists, enablement symlink) in `mobile/tests/unit/hooks/useConfigWizard.test.ts` (extend existing)
+- [X] T076 [P] [US4] Write unit tests for enrollment staging file generation (insights.json with org_id/activation_key, flightctl.json with endpoint/username/password, mode 0600) in `mobile/tests/unit/hooks/useConfigWizard.test.ts` (extend existing)
+- [X] T077 [P] [US4] Write unit tests for systemd oneshot service unit generation (boardingpass-enroll.service with both ExecStart lines, ConditionPathExists, enablement symlink) in `mobile/tests/unit/hooks/useConfigWizard.test.ts` (extend existing)
 
 ### Implementation
 
-- [ ] T078 [US4] Implement enrollment staging file generation in useConfigWizard: build `insights.json` and/or `flightctl.json` staging file content from EnrollmentConfig, include in `/configure` bundle with mode 0600 in `mobile/src/hooks/useConfigWizard.ts`
-- [ ] T079 [US4] Implement enrollment command execution in immediate apply: after staging files are written via `/configure`, invoke `enroll-insights` and/or `enroll-flightctl` commands, display success/failure in ApplyFeedback in `mobile/src/hooks/useConfigWizard.ts`
-- [ ] T080 [US4] Implement deferred enrollment: generate systemd oneshot service unit (`boardingpass-enroll.service` with ExecStart for both `enroll-insights.sh` and `enroll-flightctl.sh`) and enablement symlink, include in deferred `/configure` bundle in `mobile/src/hooks/useConfigWizard.ts`
+- [X] T078 [US4] Implement enrollment staging file generation in useConfigWizard: build `insights.json` and/or `flightctl.json` staging file content from EnrollmentConfig, include in `/configure` bundle with mode 0600 in `mobile/src/hooks/useConfigWizard.ts`
+- [X] T079 [US4] Implement enrollment command execution in immediate apply: after staging files are written via `/configure`, invoke `enroll-insights` and/or `enroll-flightctl` commands, display success/failure in ApplyFeedback in `mobile/src/hooks/useConfigWizard.ts`
+- [X] T080 [US4] Implement deferred enrollment: generate systemd oneshot service unit (`boardingpass-enroll.service` with ExecStart for both `enroll-insights.sh` and `enroll-flightctl.sh`) and enablement symlink, include in deferred `/configure` bundle in `mobile/src/hooks/useConfigWizard.ts`
 
 ### Checkpoint validation
 
-- [ ] T081 [US4] Run `make lint-app && make test-unit-app` — fix all failures
+- [X] T081 [US4] Run `make lint-app && make test-unit-app` — fix all failures
 
 **Checkpoint**: Enrollment registration works in both apply modes.
 

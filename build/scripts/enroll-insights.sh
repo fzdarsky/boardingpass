@@ -13,24 +13,39 @@ if [ ! -f "$STAGING_FILE" ]; then
     exit 0
 fi
 
+# Verify required tools are available
+for cmd in jq rhc; do
+    if ! command -v "$cmd" &>/dev/null; then
+        echo "Error: '$cmd' is not installed" >&2
+        exit 1
+    fi
+done
+
 # Read credentials from staging file
-ORG_ID=$(cat "$STAGING_FILE" | python3 -c "import sys,json; print(json.load(sys.stdin)['org_id'])" 2>/dev/null) || {
+ORG_ID=$(jq -r '.org_id' "$STAGING_FILE") || {
     echo "Error: failed to parse org_id from $STAGING_FILE" >&2
     rm -f "$STAGING_FILE"
     exit 1
 }
 
-ACTIVATION_KEY=$(cat "$STAGING_FILE" | python3 -c "import sys,json; print(json.load(sys.stdin)['activation_key'])" 2>/dev/null) || {
+ACTIVATION_KEY=$(jq -r '.activation_key' "$STAGING_FILE") || {
     echo "Error: failed to parse activation_key from $STAGING_FILE" >&2
     rm -f "$STAGING_FILE"
     exit 1
 }
 
+DISABLE_MGMT=$(jq -r '.disable_remote_management // false' "$STAGING_FILE")
+
 # Delete staging file before executing enrollment (minimize credential lifetime)
 rm -f "$STAGING_FILE"
 
-# Run enrollment
-rhc connect --organization "$ORG_ID" --activation-key "$ACTIVATION_KEY" || {
+# Build command — disable remote management when Flight Control handles it
+RHC_ARGS=(connect --organization "$ORG_ID" --activation-key "$ACTIVATION_KEY")
+if [ "$DISABLE_MGMT" = "true" ]; then
+    RHC_ARGS+=(--disable-feature remote-management)
+fi
+
+rhc "${RHC_ARGS[@]}" || {
     echo "Error: rhc connect failed" >&2
     exit 1
 }

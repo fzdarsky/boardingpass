@@ -143,6 +143,13 @@ export default function EnrollmentStep() {
         </View>
       )}
 
+      {insights && flightControl && (
+        <HelperText type="info" visible={true} style={styles.managementNote}>
+          Remote management will be handled by Flight Control. Insights will be used for analytics
+          only.
+        </HelperText>
+      )}
+
       <Divider style={styles.divider} />
 
       {/* Flight Control Section */}
@@ -225,6 +232,9 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: spacing.xs,
+  },
+  managementNote: {
+    paddingLeft: spacing.md,
   },
   divider: {
     marginVertical: spacing.md,

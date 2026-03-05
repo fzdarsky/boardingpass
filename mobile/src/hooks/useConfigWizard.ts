@@ -106,6 +106,7 @@ export function buildStepConfigFiles(step: number, state: WizardState): RawConfi
             endpoint: state.enrollment.insights.endpoint,
             org_id: state.enrollment.insights.orgId,
             activation_key: state.enrollment.insights.activationKey,
+            disable_remote_management: state.enrollment.flightControl !== null,
           }),
           mode: 0o600,
         });
