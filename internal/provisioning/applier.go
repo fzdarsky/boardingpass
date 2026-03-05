@@ -155,7 +155,7 @@ func (a *Applier) Apply(ctx context.Context, bundle *protocol.ConfigBundle) erro
 		targetPath := a.resolveTargetPath(relPath)
 
 		// Backup existing file (if exists)
-		if err := a.rollback.BackupFile(targetPath); err != nil {
+		if err := a.rollback.BackupFile(ctx, targetPath); err != nil {
 			// Rollback on failure
 			if rollbackErr := a.rollback.Restore(ctx); rollbackErr != nil {
 				return fmt.Errorf("failed to backup file %s (rollback also failed: %v): %w", targetPath, rollbackErr, err)

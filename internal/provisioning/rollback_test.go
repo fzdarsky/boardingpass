@@ -40,7 +40,7 @@ func TestRollback_BackupFile_NonExistentFile(t *testing.T) {
 
 	// Backup a file that doesn't exist (should succeed with no backup created)
 	nonExistentFile := filepath.Join(tempDir, "nonexistent.txt")
-	err = rollback.BackupFile(nonExistentFile)
+	err = rollback.BackupFile(context.Background(), nonExistentFile)
 	assert.NoError(t, err)
 
 	// No backup should be recorded
@@ -59,7 +59,7 @@ func TestRollback_BackupFile_ExistingFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Backup the file
-	err = rollback.BackupFile(targetFile)
+	err = rollback.BackupFile(context.Background(), targetFile)
 	require.NoError(t, err)
 
 	// Verify backup was recorded
@@ -84,7 +84,7 @@ func TestRollback_BackupFile_Directory(t *testing.T) {
 	require.NoError(t, err)
 
 	// Attempt to backup directory (should fail)
-	err = rollback.BackupFile(targetDir)
+	err = rollback.BackupFile(context.Background(), targetDir)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "not a regular file")
 }
@@ -124,7 +124,7 @@ func TestRollback_Restore_ModifiedFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Backup the file
-	err = rollback.BackupFile(targetFile)
+	err = rollback.BackupFile(context.Background(), targetFile)
 	require.NoError(t, err)
 
 	// Modify the file
@@ -157,14 +157,14 @@ func TestRollback_Restore_MultipleFiles(t *testing.T) {
 	content1 := []byte("content 1")
 	err = os.WriteFile(file1, content1, 0o644) //nolint:gosec // G306: Test file
 	require.NoError(t, err)
-	err = rollback.BackupFile(file1)
+	err = rollback.BackupFile(context.Background(), file1)
 	require.NoError(t, err)
 
 	file2 := filepath.Join(tempDir, "file2.txt")
 	content2 := []byte("content 2")
 	err = os.WriteFile(file2, content2, 0o600)
 	require.NoError(t, err)
-	err = rollback.BackupFile(file2)
+	err = rollback.BackupFile(context.Background(), file2)
 	require.NoError(t, err)
 
 	// Modify both files
@@ -196,7 +196,7 @@ func TestRollback_Cleanup(t *testing.T) {
 	targetFile := filepath.Join(tempDir, "test.txt")
 	err = os.WriteFile(targetFile, []byte("content"), 0o644) //nolint:gosec // G306: Test file
 	require.NoError(t, err)
-	err = rollback.BackupFile(targetFile)
+	err = rollback.BackupFile(context.Background(), targetFile)
 	require.NoError(t, err)
 
 	// Verify backup directory exists

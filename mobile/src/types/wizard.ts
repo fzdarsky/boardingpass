@@ -11,6 +11,7 @@
 
 export interface HostnameConfig {
   hostname: string;
+  original: string;
 }
 
 // ── Step 2: Network Interface ──
@@ -169,7 +170,7 @@ export function createInitialWizardState(): WizardState {
     maxReachedStep: WIZARD_STEPS.HOSTNAME,
     applyMode: null,
     serviceInterfaceName: null,
-    hostname: { hostname: '' },
+    hostname: { hostname: '', original: '' },
     networkInterface: {
       interfaceName: '',
       interfaceType: '',

@@ -94,6 +94,26 @@ func (f *fileOps) remove(ctx context.Context, path string) error {
 	return nil
 }
 
+// backupCopy copies a file from src (possibly root-owned) to dst (user-owned backup dir).
+// In sudo mode, uses "sudo install" to copy root-owned source files while setting
+// ownership to the current user so backups remain readable for restore and cleanup.
+func (f *fileOps) backupCopy(ctx context.Context, src, dst string, mode os.FileMode) error {
+	if !f.useSudo {
+		return copyFile(src, dst)
+	}
+
+	// Use sudo install to copy root-owned file with boardingpass ownership.
+	// install(1) is already in the sudoers allow-list; cat is not.
+	modeStr := fmt.Sprintf("%04o", mode.Perm())
+	//nolint:gosec // G204: args are controlled paths validated against allow-list
+	cmd := exec.CommandContext(ctx, "sudo", "install", "-m", modeStr,
+		"-o", "boardingpass", "-g", "boardingpass", src, dst)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to backup file %s: %s: %w", src, out, err)
+	}
+	return nil
+}
+
 // atomicMove attempts to move a file atomically from src to dst.
 // It first tries os.Rename (atomic on same filesystem).
 // If that fails with EXDEV (cross-device link), it falls back to copy+delete.

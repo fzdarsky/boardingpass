@@ -36,8 +36,9 @@ func NewRollback(tempDir string, fops fileOps) (*Rollback, error) {
 
 // BackupFile creates a backup of the target file before modification.
 // If the target file doesn't exist, no backup is created (new file).
+// Uses sudo when needed to read root-owned files.
 // Returns nil on success, error on failure.
-func (r *Rollback) BackupFile(targetPath string) error {
+func (r *Rollback) BackupFile(ctx context.Context, targetPath string) error {
 	// Check if file exists
 	info, err := os.Stat(targetPath)
 	if os.IsNotExist(err) {
@@ -56,8 +57,8 @@ func (r *Rollback) BackupFile(targetPath string) error {
 	// Generate backup path
 	backupPath := filepath.Join(r.tempDir, filepath.Base(targetPath)+".backup")
 
-	// Copy file to backup location
-	if err := copyFile(targetPath, backupPath); err != nil {
+	// Copy file to backup location (uses sudo in production to read root-owned files)
+	if err := r.fops.backupCopy(ctx, targetPath, backupPath, info.Mode()); err != nil {
 		return fmt.Errorf("failed to backup file %s: %w", targetPath, err)
 	}
 

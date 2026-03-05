@@ -112,6 +112,7 @@ export default function ConfigureScreen() {
     const state = createInitialWizardState();
     if (systemInfo?.hostname) {
       state.hostname.hostname = systemInfo.hostname;
+      state.hostname.original = systemInfo.hostname;
     }
     if (serviceInterfaceName) {
       state.serviceInterfaceName = serviceInterfaceName;

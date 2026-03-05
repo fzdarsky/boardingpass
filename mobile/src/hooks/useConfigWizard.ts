@@ -57,7 +57,9 @@ export function buildStepConfigFiles(step: number, state: WizardState): RawConfi
 
   switch (step) {
     case WIZARD_STEPS.HOSTNAME: {
-      files.push({ path: 'hostname', content: `${state.hostname.hostname}\n` });
+      if (state.hostname.hostname !== state.hostname.original) {
+        files.push({ path: 'hostname', content: `${state.hostname.hostname}\n` });
+      }
       break;
     }
 
@@ -135,7 +137,9 @@ export function buildStepCommands(step: number, state: WizardState): StepCommand
 
   switch (step) {
     case WIZARD_STEPS.HOSTNAME:
-      commands.push({ id: 'set-hostname', params: [state.hostname.hostname] });
+      if (state.hostname.hostname !== state.hostname.original) {
+        commands.push({ id: 'set-hostname', params: [state.hostname.hostname] });
+      }
       break;
 
     case WIZARD_STEPS.INTERFACE:
