@@ -41,7 +41,10 @@ func TestNetworkEndpoint(t *testing.T) {
 
 	for _, iface := range config.Interfaces {
 		assert.NotEmpty(t, iface.Name, "Interface name should not be empty")
-		assert.NotEmpty(t, iface.MACAddress, "Interface MAC should not be empty")
+		// MAC address may be empty for tunnel/virtual interfaces (e.g., utun, gif, stf on macOS)
+		if iface.MACAddress == "" {
+			t.Logf("  Interface %s has no MAC address (tunnel/virtual interface)", iface.Name)
+		}
 		assert.Contains(t, []string{"up", "down"}, iface.LinkState, "Link state should be 'up' or 'down'")
 		assert.NotNil(t, iface.IPAddresses, "Addresses array should not be nil")
 

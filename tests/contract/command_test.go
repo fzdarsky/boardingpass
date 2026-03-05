@@ -35,7 +35,7 @@ func TestCommandEndpoint_Contract(t *testing.T) {
 
 		// Mock successful execution
 		mockExecutor.EXPECT().
-			Execute(gomock.Any(), gomock.Any(), true).
+			Execute(gomock.Any(), gomock.Any(), true, gomock.Any()).
 			Return(&protocol.CommandResponse{
 				ExitCode: 0,
 				Stdout:   "hello\n",
@@ -222,7 +222,7 @@ func TestCommandEndpoint_Contract(t *testing.T) {
 				// Only expect Execute call for valid command in allow-list
 				if tt.expectedStatus == http.StatusOK {
 					mockExecutor.EXPECT().
-						Execute(gomock.Any(), gomock.Any(), true).
+						Execute(gomock.Any(), gomock.Any(), true, gomock.Any()).
 						Return(&protocol.CommandResponse{
 							ExitCode: 0,
 							Stdout:   "test\n",
@@ -327,7 +327,7 @@ func TestCommandEndpoint_Contract(t *testing.T) {
 
 				// Mock successful execution
 				mockExecutor.EXPECT().
-					Execute(gomock.Any(), gomock.Any(), true).
+					Execute(gomock.Any(), gomock.Any(), true, gomock.Any()).
 					Return(&protocol.CommandResponse{
 						ExitCode: tt.wantExitCode,
 						Stdout:   "",
@@ -380,7 +380,7 @@ func TestCommandEndpoint_Contract(t *testing.T) {
 
 		// Mock successful execution
 		mockExecutor.EXPECT().
-			Execute(gomock.Any(), gomock.Any(), true).
+			Execute(gomock.Any(), gomock.Any(), true, gomock.Any()).
 			Return(&protocol.CommandResponse{
 				ExitCode: 0,
 				Stdout:   "hello\n",
@@ -425,7 +425,7 @@ func TestCommandEndpoint_Contract(t *testing.T) {
 
 		// Mock failed command execution (exit code 1)
 		mockExecutor.EXPECT().
-			Execute(gomock.Any(), gomock.Any(), true).
+			Execute(gomock.Any(), gomock.Any(), true, gomock.Any()).
 			Return(&protocol.CommandResponse{
 				ExitCode: 1,
 				Stdout:   "",

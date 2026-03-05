@@ -95,7 +95,7 @@ func (h *ConfigureHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := applier.Apply(&bundle); err != nil {
+	if err := applier.Apply(r.Context(), &bundle); err != nil {
 		h.logger.ErrorContext(r.Context(), "Configuration provisioning failed", map[string]any{
 			"error":     err.Error(),
 			"client_ip": r.RemoteAddr,

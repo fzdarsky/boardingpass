@@ -13,7 +13,7 @@
  * - Logging without sensitive data (T053 - FR-029)
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   Button,
@@ -24,26 +24,41 @@ import {
   HelperText,
   useTheme,
 } from 'react-native-paper';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useDeviceDiscovery } from '@/hooks/useDeviceDiscovery';
 import { DeviceList } from '@/components/DeviceList';
 import { Device } from '@/types/device';
 import { parseAndValidateHostPort } from '@/utils/validation';
 import { HapticFeedback } from '@/utils/haptics';
+import { sessionManager } from '@/services/auth/session';
 
 export default function DeviceDiscoveryScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { devices, isScanning, error, startDiscovery, refreshDevices, addManualDevice } =
-    useDeviceDiscovery();
+  const {
+    devices,
+    isScanning,
+    error,
+    mdnsUnavailableReason,
+    startDiscovery,
+    refreshDevices,
+    addManualDevice,
+  } = useDeviceDiscovery();
 
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarIsError, setSnackbarIsError] = useState(false);
+  const [mdnsInfoShown, setMdnsInfoShown] = useState(false);
 
   // Manual device entry dialog state
   const [addDialogVisible, setAddDialogVisible] = useState(false);
   const [addressInput, setAddressInput] = useState('');
   const [addressError, setAddressError] = useState<string | undefined>(undefined);
+
+  // Track which devices have valid auth sessions (for UI display)
+  const [authenticatedDevices, setAuthenticatedDevices] = useState<Set<string>>(new Set());
+  const devicesRef = useRef(devices);
+  devicesRef.current = devices;
 
   // Auto-start discovery on mount
   useEffect(() => {
@@ -51,29 +66,77 @@ export default function DeviceDiscoveryScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Refresh auth state for all devices when screen gains focus.
+  // Uses a ref for devices to avoid re-triggering on every render
+  // (useDeviceDiscovery returns a new array reference each time).
+  useFocusEffect(
+    useCallback(() => {
+      const checkAuthStates = async () => {
+        const authenticated = new Set<string>();
+        for (const device of devicesRef.current) {
+          const validation = await sessionManager.isSessionValid(device.id);
+          if (validation.isValid) {
+            authenticated.add(device.id);
+          }
+        }
+        setAuthenticatedDevices(authenticated);
+      };
+      checkAuthStates();
+    }, [])
+  );
+
   // Show error snackbar
   useEffect(() => {
     if (error) {
       setSnackbarMessage(error.message);
+      setSnackbarIsError(true);
       setSnackbarVisible(true);
     }
   }, [error]);
 
+  // Show info snackbar when mDNS is unavailable (once per session)
+  useEffect(() => {
+    if (mdnsUnavailableReason && !mdnsInfoShown) {
+      const message =
+        mdnsUnavailableReason === 'simulator'
+          ? 'Auto-discovery unavailable on simulator. Use "Add Device" instead.'
+          : 'Auto-discovery unavailable on free developer account. Use "Add Device" instead.';
+      setSnackbarMessage(message);
+      setSnackbarIsError(false);
+      setSnackbarVisible(true);
+      setMdnsInfoShown(true);
+    }
+  }, [mdnsUnavailableReason, mdnsInfoShown]);
+
   /**
-   * Handle device press - navigate to authentication screen
+   * Handle device press - navigate to details if authenticated, otherwise to auth screen
    */
-  const handleDevicePress = (device: Device) => {
-    if (device.status === 'online') {
-      router.push({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        pathname: '/device/authenticate' as any,
-        params: {
-          deviceId: device.id,
-          deviceName: device.name,
-          host: device.host,
-          port: device.port.toString(),
-        },
-      });
+  const handleDevicePress = async (device: Device) => {
+    if (device.status === 'online' || device.status === 'authenticated') {
+      const validation = await sessionManager.isSessionValid(device.id);
+
+      if (validation.isValid) {
+        router.push({
+          pathname: '/device/[id]',
+          params: {
+            id: device.id,
+            host: device.host,
+            port: device.port.toString(),
+          },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any);
+      } else {
+        router.push({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          pathname: '/device/authenticate' as any,
+          params: {
+            deviceId: device.id,
+            deviceName: device.name,
+            host: device.host,
+            port: device.port.toString(),
+          },
+        });
+      }
     }
   };
 
@@ -141,6 +204,7 @@ export default function DeviceDiscoveryScreen() {
         onDevicePress={handleDevicePress}
         onStartScan={handleStartScan}
         onAddDevice={handleOpenAddDialog}
+        authenticatedDeviceIds={authenticatedDevices}
       />
 
       {/* Action Bar (when devices are shown) */}
@@ -208,18 +272,22 @@ export default function DeviceDiscoveryScreen() {
         </Dialog>
       </Portal>
 
-      {/* Error Snackbar */}
+      {/* Snackbar for errors and info messages */}
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
-        duration={4000}
-        action={{
-          label: 'Retry',
-          onPress: () => {
-            setSnackbarVisible(false);
-            startDiscovery();
-          },
-        }}
+        duration={snackbarIsError ? 4000 : 6000}
+        action={
+          snackbarIsError
+            ? {
+                label: 'Retry',
+                onPress: () => {
+                  setSnackbarVisible(false);
+                  startDiscovery();
+                },
+              }
+            : undefined
+        }
       >
         {snackbarMessage}
       </Snackbar>

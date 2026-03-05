@@ -10,6 +10,7 @@ import (
 	"github.com/fzdarsky/boardingpass/internal/cli/client"
 	"github.com/fzdarsky/boardingpass/internal/cli/config"
 	"github.com/fzdarsky/boardingpass/internal/cli/session"
+	"github.com/fzdarsky/boardingpass/pkg/srp"
 	"golang.org/x/term"
 )
 
@@ -103,8 +104,12 @@ func (c *PassCommand) authenticate(cfg *config.Config, username, password string
 
 	fmt.Fprintf(os.Stderr, "Authenticating with %s...\n", cfg.Address())
 
+	// Normalize password to canonical form (lowercase, no separators)
+	// Both client and server must apply the same normalization before SRP
+	normalizedPassword := srp.NormalizePassword(password)
+
 	// Initialize SRP client
-	srpClient := client.NewSRPClient(username, password)
+	srpClient := client.NewSRPClient(username, normalizedPassword)
 	defer srpClient.ClearSecrets()
 
 	// Phase 1: Generate ephemeral keypair and send Init request

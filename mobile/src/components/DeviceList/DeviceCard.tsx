@@ -22,6 +22,7 @@ export interface DeviceCardProps {
   onPress?: () => void;
   showDuplicateIndicator?: boolean;
   showCertificateStatus?: boolean;
+  isAuthenticated?: boolean;
 }
 
 export function DeviceCard({
@@ -29,10 +30,13 @@ export function DeviceCard({
   onPress,
   showDuplicateIndicator = false,
   showCertificateStatus = true,
+  isAuthenticated = false,
 }: DeviceCardProps) {
   const theme = useTheme();
   const [showCertModal, setShowCertModal] = useState(false);
-  const statusConfig = getStatusConfig(device.status);
+  const displayStatus =
+    isAuthenticated && device.status === 'online' ? 'authenticated' : device.status;
+  const statusConfig = getStatusConfig(displayStatus);
   const discoveryBadgeColor = getDiscoveryMethodColor(device.discoveryMethod);
 
   // Dynamic styles that depend on theme
@@ -160,10 +164,14 @@ export function DeviceCard({
         </Card.Content>
 
         {/* Action Button */}
-        {onPress && device.status === 'online' && (
+        {onPress && (device.status === 'online' || device.status === 'authenticated') && (
           <Card.Actions>
-            <Button icon="login" mode="contained" onPress={onPress}>
-              Connect
+            <Button
+              icon={isAuthenticated ? 'information-outline' : 'login'}
+              mode="contained"
+              onPress={onPress}
+            >
+              {isAuthenticated ? 'Details' : 'Connect'}
             </Button>
           </Card.Actions>
         )}

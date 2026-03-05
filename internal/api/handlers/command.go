@@ -49,7 +49,7 @@ func NewCommandHandlerWithExecutor(cfg *config.Config, executor command.CommandE
 //
 // This endpoint:
 // 1. Validates command ID against the allow-list (T095)
-// 2. Executes the command via sudo
+// 2. Executes the command (via sudo unless opted out)
 // 3. Captures stdout, stderr, and exit code (T096)
 // 4. Logs execution with exit codes (T098)
 //
@@ -98,8 +98,30 @@ func (h *CommandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// T096: Execute command and capture stdout/stderr (with sudo)
-	response, err := h.executor.Execute(r.Context(), cmdDef, true)
+	// Validate param count against max_params
+	if len(req.Params) > cmdDef.MaxParams {
+		h.logger.WarnContext(r.Context(), "Too many params for command", map[string]any{
+			"command_id":  req.ID,
+			"param_count": len(req.Params),
+			"max_params":  cmdDef.MaxParams,
+			"client_ip":   r.RemoteAddr,
+		})
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		if err := json.NewEncoder(w).Encode(map[string]string{
+			"error":   "too_many_params",
+			"message": fmt.Sprintf("Command %q accepts at most %d params, got %d", req.ID, cmdDef.MaxParams, len(req.Params)),
+		}); err != nil {
+			h.logger.ErrorContext(r.Context(), "Failed to encode error response", map[string]any{
+				"error":     err.Error(),
+				"client_ip": r.RemoteAddr,
+			})
+		}
+		return
+	}
+
+	// T096: Execute command and capture stdout/stderr
+	response, err := h.executor.Execute(r.Context(), cmdDef, cmdDef.NeedsSudo(), req.Params)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "Command execution failed", map[string]any{
 			"command_id": req.ID,

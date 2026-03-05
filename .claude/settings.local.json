@@ -17,7 +17,18 @@
       "Bash(make test-unit-app)",
       "WebSearch",
       "Bash(log stream --predicate 'process == \"\"BoardingPass\"\"' --timeout 5)",
-      "Bash(make lint-all)"
+      "Bash(make lint-all)",
+      "WebFetch",
+      "Bash(go build ./...)",
+      "Bash(go test ./*)",
+      "Bash(make test-service)",
+      "mcp__ios-simulator__ui_tap",
+      "mcp__ios-simulator__ui_type",
+      "mcp__ios-simulator__screenshot",
+      "Bash(make test-unit-service)",
+      "Bash(make lint-service)",
+      "mcp__ios-simulator__ui_swipe",
+      "mcp__ios-simulator__ui_view"
     ]
   }
 }

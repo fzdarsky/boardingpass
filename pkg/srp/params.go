@@ -5,6 +5,7 @@ package srp
 import (
 	"crypto/sha256"
 	"math/big"
+	"strings"
 )
 
 // RFC 5054 2048-bit SRP Group Parameters
@@ -59,4 +60,20 @@ func computeK(N, g *big.Int) *big.Int {
 	hash.Write(N.Bytes())
 	hash.Write(g.Bytes())
 	return new(big.Int).SetBytes(hash.Sum(nil))
+}
+
+// NormalizePassword strips all non-alphanumeric characters and lowercases,
+// producing a canonical form for SRP key derivation. Both clients (CLI, mobile)
+// and the service MUST apply this normalization before SRP to ensure identical
+// password bytes regardless of input format (e.g. "94:C6:91:A8:18:EA",
+// "94-c6-91-a8-18-ea", and "94C691A818EA" all normalize to "94c691a818ea").
+func NormalizePassword(password string) string {
+	var b strings.Builder
+	b.Grow(len(password))
+	for _, r := range password {
+		if (r >= '0' && r <= '9') || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+			b.WriteRune(r)
+		}
+	}
+	return strings.ToLower(b.String())
 }

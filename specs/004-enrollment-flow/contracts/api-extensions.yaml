@@ -1,0 +1,242 @@
+# BoardingPass API Extensions for Enrollment Flow (004)
+#
+# This file documents the changes needed to the main OpenAPI spec at
+# specs/001-boardingpass-api/contracts/openapi.yaml
+#
+# Changes are organized by endpoint/schema.
+
+# ============================================================
+# FIX: /configure endpoint description
+# ============================================================
+# Remove lines 201-203 from the /configure description:
+#   "On success, creates sentinel file (`/etc/boardingpass/issued`) and initiates
+#    service shutdown."
+# This is incorrect — only /complete creates the sentinel file.
+# Replace with:
+#   "This endpoint may be called multiple times during a provisioning session.
+#    It does not create the sentinel file or initiate shutdown."
+
+# ============================================================
+# CHANGE: /command endpoint
+# ============================================================
+# Update description to mention parameter support:
+paths:
+  /command:
+    post:
+      description: |
+        Executes a command from the allow-list with sudo privileges. Commands are
+        identified by string IDs mapped to executable paths in the service configuration.
+
+        Commands may accept positional parameters (up to the configured `max_params`).
+        Parameters are appended after a `--` separator to prevent option injection.
+        The number and meaning of parameters is defined per command.
+
+        Requires authentication.
+
+# ============================================================
+# CHANGE: /complete endpoint — accept optional request body
+# ============================================================
+  /complete:
+    post:
+      description: |
+        Signals that provisioning is complete. Creates the sentinel file and
+        either shuts down the service gracefully or reboots the device.
+
+        When `reboot` is false or omitted, the service shuts down gracefully
+        (existing behavior). When `reboot` is true, the service creates the
+        sentinel file, sends the response, then schedules a system reboot
+        after a short delay (to ensure the response reaches the client).
+
+        This is the final API call in a provisioning workflow.
+
+        Requires authentication.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRequest'
+
+# ============================================================
+# SCHEMA CHANGES
+# ============================================================
+components:
+  schemas:
+    # --- Extended: SystemInfo (add hostname) ---
+    SystemInfo:
+      type: object
+      required:
+        - hostname
+        - tpm
+        - board
+        - cpu
+        - os
+        - fips_mode
+      properties:
+        hostname:
+          type: string
+          description: Current system hostname
+          example: "localhost.localdomain"
+        # ... (existing fields unchanged)
+
+    # --- Extended: NetworkInterface (add type, speed, carrier, driver) ---
+    NetworkInterface:
+      type: object
+      required:
+        - name
+        - mac_address
+        - link_state
+        - ip_addresses
+        - type
+        - speed
+        - carrier
+      properties:
+        # ... (existing fields unchanged)
+        type:
+          type: string
+          description: Interface type detected from sysfs
+          enum:
+            - ethernet
+            - wifi
+            - bridge
+            - bond
+            - vlan
+            - virtual
+          example: "ethernet"
+        speed:
+          type: integer
+          description: Link speed in Mbps. -1 if unknown or not applicable.
+          example: 1000
+        carrier:
+          type: boolean
+          description: Whether a cable/link is detected (true = connected)
+          example: true
+        driver:
+          type: string
+          description: >
+            Kernel driver name (e.g., "e1000e", "iwlwifi", "virtio_net").
+            Empty string for virtual interfaces without a backing driver.
+          example: "e1000e"
+
+    # --- Extended: CommandRequest (add params) ---
+    CommandRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: Command identifier from allow-list
+          pattern: '^[a-z0-9-]+$'
+          example: "set-hostname"
+        params:
+          type: array
+          description: >
+            Positional parameters appended after `--` separator.
+            Number of items must not exceed the command's configured max_params.
+          items:
+            type: string
+            maxLength: 1024
+          maxItems: 10
+          example: ["my-device"]
+
+    # --- New: CompleteRequest ---
+    CompleteRequest:
+      type: object
+      properties:
+        reboot:
+          type: boolean
+          description: >
+            If true, create sentinel file and reboot the device (after a short
+            delay to allow the HTTP response to reach the client).
+            If false or omitted, create sentinel and shut down gracefully.
+          default: false
+
+    # --- Extended: CompleteResponse (extend status enum) ---
+    CompleteResponse:
+      type: object
+      required:
+        - status
+        - sentinel_file
+      properties:
+        status:
+          type: string
+          description: Completion status
+          enum:
+            - shutting_down
+            - rebooting
+          example: "shutting_down"
+        sentinel_file:
+          type: string
+          description: Path to created sentinel file
+          example: "/etc/boardingpass/issued"
+        message:
+          type: string
+          description: Human-readable status message
+          example: "Provisioning complete. Service will terminate in 5 seconds."
+
+# ============================================================
+# COMMAND ALLOW-LIST (config.yaml additions)
+# ============================================================
+# The following commands should be added to the default service config
+# and the sudoers file:
+#
+# commands:
+#   # --- Enrollment wizard: queries ---
+#   - id: "wifi-scan"
+#     path: "/usr/libexec/boardingpass/wifi-scan.sh"
+#     args: []
+#     max_params: 0
+#
+#   # --- Enrollment wizard: apply ---
+#   - id: "set-hostname"
+#     path: "/usr/bin/hostnamectl"
+#     args: ["set-hostname", "--static", "--no-ask-password"]
+#     max_params: 1
+#
+#   - id: "reload-connection"
+#     path: "/usr/libexec/boardingpass/reload-connection.sh"
+#     args: []
+#     max_params: 1
+#
+#   - id: "restart-chronyd"
+#     path: "/usr/bin/systemctl"
+#     args: ["restart", "chronyd"]
+#     max_params: 0
+#
+#   - id: "connectivity-test"
+#     path: "/usr/libexec/boardingpass/connectivity-test.sh"
+#     args: []
+#     max_params: 2
+#
+#   # --- Enrollment wizard: enrollment (reads staging files) ---
+#   - id: "enroll-insights"
+#     path: "/usr/libexec/boardingpass/enroll-insights.sh"
+#     args: []
+#     max_params: 0
+#
+#   - id: "enroll-flightctl"
+#     path: "/usr/libexec/boardingpass/enroll-flightctl.sh"
+#     args: []
+#     max_params: 0
+#
+# Sudoers additions (build/boardingpass.sudoers):
+#   boardingpass ALL=(ALL) NOPASSWD: /usr/libexec/boardingpass/wifi-scan.sh
+#   boardingpass ALL=(ALL) NOPASSWD: /usr/bin/hostnamectl set-hostname *
+#   boardingpass ALL=(ALL) NOPASSWD: /usr/libexec/boardingpass/reload-connection.sh
+#   boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart chronyd
+#   boardingpass ALL=(ALL) NOPASSWD: /usr/libexec/boardingpass/connectivity-test.sh
+#   boardingpass ALL=(ALL) NOPASSWD: /usr/libexec/boardingpass/enroll-insights.sh
+#   boardingpass ALL=(ALL) NOPASSWD: /usr/libexec/boardingpass/enroll-flightctl.sh
+#   boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl reboot
+
+# ============================================================
+# PATH ALLOW-LIST (config.yaml addition)
+# ============================================================
+# Add to paths.allow_list:
+#   - "/etc/hostname"
+#   - "/etc/NetworkManager/system-connections/"
+#   - "/etc/chrony.d/"
+#   - "/etc/profile.d/"
+#   - "/etc/boardingpass/staging/"
+#   - "/etc/systemd/system/"

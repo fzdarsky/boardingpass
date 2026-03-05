@@ -50,7 +50,7 @@ func TestCommandHandler_POST_Success(t *testing.T) {
 
 			// Set expectation for Execute call
 			mockExecutor.EXPECT().
-				Execute(gomock.Any(), gomock.Any(), true).
+				Execute(gomock.Any(), gomock.Any(), true, gomock.Any()).
 				Return(&protocol.CommandResponse{
 					ExitCode: tt.wantExitCode,
 					Stdout:   tt.wantStdout,
@@ -202,7 +202,7 @@ func TestCommandHandler_POST_NonZeroExitCode(t *testing.T) {
 
 	// Mock should return exit code 1
 	mockExecutor.EXPECT().
-		Execute(gomock.Any(), gomock.Any(), true).
+		Execute(gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(&protocol.CommandResponse{
 			ExitCode: 1,
 			Stdout:   "",
@@ -255,7 +255,7 @@ func TestCommandHandler_POST_StderrCapture(t *testing.T) {
 
 	// Mock should capture stderr
 	mockExecutor.EXPECT().
-		Execute(gomock.Any(), gomock.Any(), true).
+		Execute(gomock.Any(), gomock.Any(), true, gomock.Any()).
 		Return(&protocol.CommandResponse{
 			ExitCode: 0,
 			Stdout:   "",

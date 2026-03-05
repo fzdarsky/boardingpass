@@ -18,7 +18,10 @@ func TestGetInterfaces(t *testing.T) {
 	for _, iface := range interfaces {
 		// Each interface should have required fields populated
 		assert.NotEmpty(t, iface.Name, "Interface name should not be empty")
-		assert.NotEmpty(t, iface.MACAddress, "Interface MAC should not be empty")
+		// MAC address may be empty for tunnel/virtual interfaces (e.g., utun, gif, stf on macOS)
+		if iface.MACAddress == "" {
+			t.Logf("Interface %s has no MAC address (tunnel/virtual interface)", iface.Name)
+		}
 		assert.Contains(t, []string{"up", "down"}, iface.LinkState, "Link state should be 'up' or 'down'")
 
 		t.Logf("Interface: %s, MAC: %s, State: %s, Addresses: %d",

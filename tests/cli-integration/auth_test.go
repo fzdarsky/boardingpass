@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/fzdarsky/boardingpass/internal/cli/client"
+	"github.com/fzdarsky/boardingpass/internal/cli/config"
 	"github.com/fzdarsky/boardingpass/internal/cli/session"
 	"github.com/fzdarsky/boardingpass/pkg/srp"
 	"github.com/stretchr/testify/assert"
@@ -318,20 +319,17 @@ func setupTestEnv(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 }
 
-func getTokenFilename(t *testing.T, store *session.Store, host string, port int) string {
+func getTokenFilename(t *testing.T, _ *session.Store, host string, port int) string {
 	t.Helper()
 
-	// Compute expected filename
+	// Compute expected filename using the platform-correct cache directory
 	identifier := fmt.Sprintf("%s:%d", host, port)
 	hash := sha256.Sum256([]byte(identifier))
 	hashStr := fmt.Sprintf("%x", hash[:8])
 	filename := fmt.Sprintf("session-%s.token", hashStr)
 
-	cacheDir := os.Getenv("XDG_CACHE_HOME")
-	if cacheDir == "" {
-		cacheDir = os.Getenv("HOME")
-	}
-	cacheDir = filepath.Join(cacheDir, "boardingpass")
+	cacheDir, err := config.UserCacheDir()
+	require.NoError(t, err)
 
 	return filepath.Join(cacheDir, filename)
 }

@@ -199,8 +199,8 @@ paths:
         to target paths under `/etc`. If any file operation fails, the entire
         bundle is rejected and no files are modified.
 
-        On success, creates sentinel file (`/etc/boardingpass/issued`) and initiates
-        service shutdown.
+        This endpoint may be called multiple times during a provisioning session.
+        It does not create the sentinel file or initiate shutdown.
 
         Requires authentication.
       security:
@@ -251,11 +251,11 @@ paths:
       summary: Execute allow-listed command
       description: |
         Executes a command from the allow-list with sudo privileges. Commands are
-        identified by string IDs (e.g., "reboot", "restart-networkmanager") mapped to
-        filesystem paths in the service configuration.
+        identified by string IDs mapped to executable paths in the service configuration.
 
-        No arbitrary command execution is permitted. Arguments are fixed in the
-        allow-list configuration.
+        Commands may accept positional parameters (up to the configured `max_params`).
+        Parameters are appended after a `--` separator to prevent option injection.
+        The number and meaning of parameters is defined per command.
 
         Requires authentication.
       security:
@@ -298,18 +298,25 @@ paths:
         - Lifecycle
       summary: Signal provisioning completion
       description: |
-        Signals that provisioning is complete. This endpoint creates the sentinel
-        file (`/etc/boardingpass/issued`) and initiates graceful service termination.
+        Signals that provisioning is complete. Creates the sentinel file and
+        either shuts down the service gracefully or reboots the device.
 
-        After calling this endpoint, the service will begin shutting down and
-        subsequent API requests may fail. This is the final API call in a
-        successful provisioning workflow.
+        When `reboot` is false or omitted, the service shuts down gracefully
+        (existing behavior). When `reboot` is true, the service creates the
+        sentinel file, sends the response, then schedules a system reboot
+        after a short delay (to ensure the response reaches the client).
 
-        Typical workflow: authenticate → query → configure → command → **complete**
+        This is the final API call in a provisioning workflow.
 
         Requires authentication.
       security:
         - sessionToken: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRequest'
       responses:
         '200':
           description: Provisioning marked complete, service shutting down
@@ -409,11 +416,16 @@ components:
     SystemInfo:
       type: object
       required:
+        - hostname
         - tpm
         - board
         - cpu
         - os
       properties:
+        hostname:
+          type: string
+          description: Current system hostname
+          example: "localhost.localdomain"
         tpm:
           $ref: '#/components/schemas/TPMInfo'
         board:
@@ -521,6 +533,9 @@ components:
         - mac_address
         - link_state
         - ip_addresses
+        - type
+        - speed
+        - carrier
       properties:
         name:
           type: string
@@ -544,6 +559,43 @@ components:
           description: Assigned IP addresses
           items:
             $ref: '#/components/schemas/IPAddress'
+        type:
+          type: string
+          description: Interface type detected from sysfs
+          enum:
+            - ethernet
+            - wifi
+            - bridge
+            - bond
+            - vlan
+            - virtual
+          example: "ethernet"
+        speed:
+          type: integer
+          description: Link speed in Mbps. -1 if unknown or not applicable.
+          example: 1000
+        carrier:
+          type: boolean
+          description: Whether a cable/link is detected (true = connected)
+          example: true
+        driver:
+          type: string
+          description: >
+            Kernel driver name (e.g., "e1000e", "iwlwifi", "virtio_net").
+            Empty string for virtual interfaces without a backing driver.
+          example: "e1000e"
+        vendor:
+          type: string
+          description: >
+            Hardware vendor name (e.g., "Intel Corporation") or hex PCI ID
+            (e.g., "0x8086") if hwdata unavailable. Empty for virtual interfaces.
+          example: "Intel Corporation"
+        model:
+          type: string
+          description: >
+            Hardware model name (e.g., "Wi-Fi 6 AX201") or hex PCI ID
+            (e.g., "0xa0f0") if hwdata unavailable. Empty for virtual interfaces.
+          example: "I210 Gigabit Network Connection"
 
     IPAddress:
       type: object
@@ -625,7 +677,17 @@ components:
           type: string
           description: Command identifier from allow-list
           pattern: '^[a-z0-9-]+$'
-          example: "restart-networkmanager"
+          example: "set-hostname"
+        params:
+          type: array
+          description: >
+            Positional parameters appended after `--` separator.
+            Number of items must not exceed the command's configured max_params.
+          items:
+            type: string
+            maxLength: 1024
+          maxItems: 10
+          example: ["my-device"]
 
     CommandResponse:
       type: object
@@ -647,6 +709,17 @@ components:
           description: Standard error (UTF-8)
           example: ""
 
+    CompleteRequest:
+      type: object
+      properties:
+        reboot:
+          type: boolean
+          description: >
+            If true, create sentinel file and reboot the device (after a short
+            delay to allow the HTTP response to reach the client).
+            If false or omitted, create sentinel and shut down gracefully.
+          default: false
+
     CompleteResponse:
       type: object
       required:
@@ -656,7 +729,9 @@ components:
         status:
           type: string
           description: Completion status
-          enum: ["shutting_down"]
+          enum:
+            - shutting_down
+            - rebooting
           example: "shutting_down"
         sentinel_file:
           type: string

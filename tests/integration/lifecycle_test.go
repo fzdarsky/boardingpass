@@ -31,7 +31,7 @@ func TestCompleteHandler_POST_Success(t *testing.T) {
 	handler := handlers.NewCompleteHandler(sentinelPath, func(reason string) {
 		shutdownCalled = true
 		shutdownReason = reason
-	}, logger)
+	}, nil, logger)
 
 	req := httptest.NewRequest(http.MethodPost, "/complete", nil)
 	req.Header.Set("Content-Type", "application/json")
@@ -63,7 +63,7 @@ func TestCompleteHandler_POST_MethodNotAllowed(t *testing.T) {
 	sentinelPath := filepath.Join(tempDir, "issued")
 
 	logger := logging.New(logging.LevelInfo, logging.FormatJSON)
-	handler := handlers.NewCompleteHandler(sentinelPath, nil, logger)
+	handler := handlers.NewCompleteHandler(sentinelPath, nil, nil, logger)
 
 	// Try GET instead of POST
 	req := httptest.NewRequest(http.MethodGet, "/complete", nil)
@@ -79,7 +79,7 @@ func TestCompleteHandler_POST_IdempotentSentinelCreation(t *testing.T) {
 	sentinelPath := filepath.Join(tempDir, "issued")
 
 	logger := logging.New(logging.LevelInfo, logging.FormatJSON)
-	handler := handlers.NewCompleteHandler(sentinelPath, nil, logger)
+	handler := handlers.NewCompleteHandler(sentinelPath, nil, nil, logger)
 
 	// First call
 	req1 := httptest.NewRequest(http.MethodPost, "/complete", nil)

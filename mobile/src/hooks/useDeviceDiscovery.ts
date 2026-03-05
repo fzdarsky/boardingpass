@@ -9,10 +9,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
+import * as ExpoDevice from 'expo-device';
 import { Device } from '@/types/device';
 import { getMDNSDiscoveryService } from '@/services/discovery/mdns';
 import { getFallbackIPService } from '@/services/discovery/fallback';
 import { toAppError, isNetworkError, AppError } from '@/utils/error-messages';
+
+/** Reason why mDNS auto-discovery is unavailable */
+export type MDNSUnavailableReason = 'simulator' | 'entitlement' | null;
 
 export interface UseDeviceDiscoveryResult {
   devices: Device[];
@@ -20,6 +24,7 @@ export interface UseDeviceDiscoveryResult {
   error: AppError | null;
   errorCount: number;
   retry: (() => void) | undefined;
+  mdnsUnavailableReason: MDNSUnavailableReason;
   startDiscovery: () => void;
   stopDiscovery: () => void;
   refreshDevices: () => void;
@@ -35,6 +40,7 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
   const [errorCount, setErrorCount] = useState(0);
+  const [mdnsUnavailableReason, setMdnsUnavailableReason] = useState<MDNSUnavailableReason>(null);
 
   const mdnsService = useRef(getMDNSDiscoveryService());
   const fallbackService = useRef(getFallbackIPService());
@@ -135,19 +141,23 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       const cleanupResolved = mdnsService.current.onDeviceResolved(addOrUpdateDevice);
       const cleanupRemoved = mdnsService.current.onDeviceRemoved(removeDevice);
       const cleanupError = mdnsService.current.onError(err => {
-        // On iOS, mDNS errors are expected on simulator - handle gracefully
-        if (Platform.OS === 'ios') {
-          console.warn(
-            'mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.'
-          );
-          // Don't show error to user - just stop scanning and clear any previous errors
-          setError(null);
-          setIsScanning(false);
-          return;
+        // Clear the discovery timeout since we're handling the error now
+        if (discoveryTimeout.current) {
+          clearTimeout(discoveryTimeout.current);
+          discoveryTimeout.current = null;
         }
 
-        // Only log as error for non-iOS platforms (to avoid triggering React error boundary on simulator)
-        console.error('mDNS error:', err);
+        // On iOS, mDNS may be unavailable on simulator or without multicast entitlement
+        if (Platform.OS === 'ios') {
+          // Determine reason: simulator vs missing entitlement (paid developer account)
+          const reason: MDNSUnavailableReason = ExpoDevice.isDevice ? 'entitlement' : 'simulator';
+          setMdnsUnavailableReason(reason);
+          setError(null);
+          setIsScanning(false);
+          // Check fallback IP since mDNS failed
+          checkFallback();
+          return;
+        }
 
         // Convert to AppError with context for other platforms
         const appError = toAppError(err, isNetworkError(err) ? 'network' : 'unknown');
@@ -177,12 +187,11 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
         console.log('Discovery timeout reached');
       }, 10000);
     } catch (err) {
-      // On iOS, mDNS errors are expected on simulator - handle gracefully
+      // On iOS, mDNS may be unavailable on simulator or without multicast entitlement
       if (Platform.OS === 'ios') {
-        console.warn(
-          'mDNS discovery unavailable on iOS Simulator. Use a physical device for full testing, or try the fallback IP option.'
-        );
-        setError(null); // Clear any previous errors
+        const reason: MDNSUnavailableReason = ExpoDevice.isDevice ? 'entitlement' : 'simulator';
+        setMdnsUnavailableReason(reason);
+        setError(null);
         setIsScanning(false);
         // Still check fallback IP
         checkFallback();
@@ -293,6 +302,7 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
     error,
     errorCount,
     retry: error ? retry : undefined,
+    mdnsUnavailableReason,
     startDiscovery,
     stopDiscovery,
     refreshDevices,

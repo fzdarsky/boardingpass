@@ -25,12 +25,14 @@ func (c *CompleteCommand) Execute(args []string) {
 	host := fs.String("host", "", "BoardingPass service hostname or IP")
 	port := fs.Int("port", 0, "BoardingPass service port")
 	caCert := fs.String("ca-cert", "", "Path to custom CA certificate bundle")
+	reboot := fs.Bool("reboot", false, "Reboot the device after completing provisioning")
 
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: boarding complete [flags]
 
 Signal provisioning completion to the BoardingPass service.
-This triggers the service to finalize provisioning and terminate.
+This triggers the service to finalize provisioning and either
+shut down the service or reboot the device.
 The session token is deleted after completion.
 
 Requires prior authentication via 'boarding pass'.
@@ -40,8 +42,11 @@ Flags:
 		fs.PrintDefaults()
 		fmt.Fprintf(os.Stderr, `
 Examples:
-  # Complete provisioning
+  # Complete provisioning (graceful shutdown)
   boarding complete --host 192.168.1.100
+
+  # Complete provisioning and reboot the device
+  boarding complete --host 192.168.1.100 --reboot
 
   # Using environment variables for host/port
   export BOARDING_HOST=192.168.1.100
@@ -64,13 +69,13 @@ Examples:
 	cfg.ApplyFlags(*host, *port, *caCert)
 
 	// Execute complete
-	if err := c.completeProvisioning(cfg); err != nil {
+	if err := c.completeProvisioning(cfg, *reboot); err != nil {
 		exitWithError("%v", err)
 	}
 }
 
 // completeProvisioning signals completion to the service and deletes the session token.
-func (c *CompleteCommand) completeProvisioning(cfg *config.Config) error {
+func (c *CompleteCommand) completeProvisioning(cfg *config.Config, reboot bool) error {
 	// Create API client
 	apiClient, err := createClient(cfg)
 	if err != nil {
@@ -95,9 +100,13 @@ func (c *CompleteCommand) completeProvisioning(cfg *config.Config) error {
 	apiClient.SetSessionToken(token)
 
 	// Signal completion
-	fmt.Fprintf(os.Stderr, "Completing provisioning...\n")
+	if reboot {
+		fmt.Fprintf(os.Stderr, "Completing provisioning (with reboot)...\n")
+	} else {
+		fmt.Fprintf(os.Stderr, "Completing provisioning...\n")
+	}
 
-	resp, err := apiClient.Complete()
+	resp, err := apiClient.Complete(reboot)
 	if err != nil {
 		return fmt.Errorf("failed to complete provisioning: %w", err)
 	}

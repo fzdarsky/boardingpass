@@ -191,7 +191,7 @@ func run(configPath, verifierPath string) error {
 	// Complete endpoint (requires authentication)
 	completeHandler := handlers.NewCompleteHandler(cfg.Service.SentinelFile, func(reason string) {
 		shutdownManager.Shutdown(reason)
-	}, logger)
+	}, lifecycle.SystemReboot, logger)
 	mux.Handle("/complete", activityMiddleware(authMiddleware.Require(completeHandler)))
 
 	// Configure endpoint (requires authentication)

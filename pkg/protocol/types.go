@@ -3,10 +3,11 @@ package protocol
 // SystemInfo represents hardware and software characteristics of the device.
 // Derived from system inspection (/sys, /proc, DMI, TPM).
 type SystemInfo struct {
-	TPM   TPMInfo   `json:"tpm"`
-	Board BoardInfo `json:"board"`
-	CPU   CPUInfo   `json:"cpu"`
-	OS    OSInfo    `json:"os"`
+	Hostname string    `json:"hostname"`
+	TPM      TPMInfo   `json:"tpm"`
+	Board    BoardInfo `json:"board"`
+	CPU      CPUInfo   `json:"cpu"`
+	OS       OSInfo    `json:"os"`
 }
 
 // TPMInfo represents TPM (Trusted Platform Module) information.
@@ -48,6 +49,12 @@ type NetworkInterface struct {
 	MACAddress  string      `json:"mac_address"`
 	LinkState   string      `json:"link_state"`
 	IPAddresses []IPAddress `json:"ip_addresses"`
+	Type        string      `json:"type"`
+	Speed       int         `json:"speed"`
+	Carrier     bool        `json:"carrier"`
+	Driver      string      `json:"driver"`
+	Vendor      string      `json:"vendor"`
+	Model       string      `json:"model"`
 }
 
 // IPAddress represents an IP address assignment.
@@ -71,7 +78,13 @@ type ConfigFile struct {
 
 // CommandRequest represents a request to execute an allow-listed command.
 type CommandRequest struct {
-	ID string `json:"id"`
+	ID     string   `json:"id"`
+	Params []string `json:"params,omitempty"`
+}
+
+// CompleteRequest represents the optional request body for POST /complete.
+type CompleteRequest struct {
+	Reboot bool `json:"reboot"`
 }
 
 // CommandResponse represents the result of command execution.

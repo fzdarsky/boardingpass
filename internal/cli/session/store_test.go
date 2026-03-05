@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/fzdarsky/boardingpass/internal/cli/config"
 	"github.com/fzdarsky/boardingpass/internal/cli/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,8 +23,9 @@ func TestNewStore(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, store)
 
-	// Verify cache directory was created
-	expectedDir := filepath.Join(tmpDir, "boardingpass")
+	// Verify cache directory was created using the platform-correct path
+	expectedDir, err := config.UserCacheDir()
+	require.NoError(t, err)
 	info, err := os.Stat(expectedDir)
 	require.NoError(t, err)
 	assert.True(t, info.IsDir())
@@ -281,7 +283,7 @@ func getTokenFilename(t *testing.T, store *session.Store, host string, port int)
 	return computeExpectedFilename(t, store, host, port)
 }
 
-func computeExpectedFilename(t *testing.T, store *session.Store, host string, port int) string {
+func computeExpectedFilename(t *testing.T, _ *session.Store, host string, port int) string {
 	t.Helper()
 
 	// Replicate the filename generation logic from store.go
@@ -290,12 +292,9 @@ func computeExpectedFilename(t *testing.T, store *session.Store, host string, po
 	hashStr := fmt.Sprintf("%x", hash[:8])
 	filename := fmt.Sprintf("session-%s.token", hashStr)
 
-	// Get cache dir from env
-	cacheDir := os.Getenv("XDG_CACHE_HOME")
-	if cacheDir == "" {
-		cacheDir = os.Getenv("HOME")
-	}
-	cacheDir = filepath.Join(cacheDir, "boardingpass")
+	// Use the platform-correct cache directory
+	cacheDir, err := config.UserCacheDir()
+	require.NoError(t, err)
 
 	return filepath.Join(cacheDir, filename)
 }

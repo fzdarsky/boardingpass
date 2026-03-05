@@ -43,16 +43,16 @@ func (m *MockCommandExecutor) EXPECT() *MockCommandExecutorMockRecorder {
 }
 
 // Execute mocks base method.
-func (m *MockCommandExecutor) Execute(ctx context.Context, cmd *config.CommandDefinition, runUsingSudo bool) (*protocol.CommandResponse, error) {
+func (m *MockCommandExecutor) Execute(ctx context.Context, cmd *config.CommandDefinition, runUsingSudo bool, params []string) (*protocol.CommandResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Execute", ctx, cmd, runUsingSudo)
+	ret := m.ctrl.Call(m, "Execute", ctx, cmd, runUsingSudo, params)
 	ret0, _ := ret[0].(*protocol.CommandResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Execute indicates an expected call of Execute.
-func (mr *MockCommandExecutorMockRecorder) Execute(ctx, cmd, runUsingSudo any) *gomock.Call {
+func (mr *MockCommandExecutorMockRecorder) Execute(ctx, cmd, runUsingSudo, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockCommandExecutor)(nil).Execute), ctx, cmd, runUsingSudo)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Execute", reflect.TypeOf((*MockCommandExecutor)(nil).Execute), ctx, cmd, runUsingSudo, params)
 }

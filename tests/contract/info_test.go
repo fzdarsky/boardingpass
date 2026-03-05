@@ -33,6 +33,9 @@ func TestInfoContractValidation(t *testing.T) {
 
 	// Validate response structure matches OpenAPI schema
 
+	// Hostname field validation (new in enrollment flow)
+	assert.NotEmpty(t, info.Hostname, "hostname field is required and must not be empty")
+
 	// TPM field validation
 	assert.NotNil(t, info.TPM, "tpm field is required")
 	// TPM.Present is required

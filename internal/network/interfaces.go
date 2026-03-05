@@ -29,11 +29,19 @@ func GetInterfaces() ([]protocol.NetworkInterface, error) {
 			return nil, err
 		}
 
+		ifaceType, speed, carrier, driver, vendor, model := GetMetadata(iface.Name)
+
 		netIface := protocol.NetworkInterface{
 			Name:        iface.Name,
 			MACAddress:  iface.HardwareAddr.String(),
 			LinkState:   GetLinkState(iface),
 			IPAddresses: addrs,
+			Type:        ifaceType,
+			Speed:       speed,
+			Carrier:     carrier,
+			Driver:      driver,
+			Vendor:      vendor,
+			Model:       model,
 		}
 		result = append(result, netIface)
 	}

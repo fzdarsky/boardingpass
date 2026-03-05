@@ -112,9 +112,11 @@ func (c *Client) GetNetwork() (*protocol.NetworkConfig, error) {
 }
 
 // ExecuteCommand executes an allow-listed command on the device.
-func (c *Client) ExecuteCommand(commandID string) (*protocol.CommandResponse, error) {
+// Optional params are appended after a -- separator on the server side.
+func (c *Client) ExecuteCommand(commandID string, params []string) (*protocol.CommandResponse, error) {
 	req := protocol.CommandRequest{
-		ID: commandID,
+		ID:     commandID,
+		Params: params,
 	}
 
 	var resp protocol.CommandResponse
@@ -130,9 +132,14 @@ func (c *Client) PostConfigure(bundle *protocol.ConfigBundle) error {
 }
 
 // Complete signals provisioning completion to the device.
-func (c *Client) Complete() (*protocol.CompleteResponse, error) {
+// If reboot is true, the device will reboot after creating the sentinel file.
+func (c *Client) Complete(reboot bool) (*protocol.CompleteResponse, error) {
+	req := protocol.CompleteRequest{
+		Reboot: reboot,
+	}
+
 	var resp protocol.CompleteResponse
-	if err := c.post("/complete", nil, &resp); err != nil {
+	if err := c.post("/complete", req, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil

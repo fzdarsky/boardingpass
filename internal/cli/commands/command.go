@@ -9,6 +9,15 @@ import (
 	"github.com/fzdarsky/boardingpass/internal/cli/session"
 )
 
+// multiString implements flag.Value for repeatable --param flags.
+type multiString []string
+
+func (m *multiString) String() string { return fmt.Sprint(*m) }
+func (m *multiString) Set(value string) error {
+	*m = append(*m, value)
+	return nil
+}
+
 // CommandCommand implements the 'command' command for executing allow-listed commands.
 type CommandCommand struct{}
 
@@ -25,6 +34,8 @@ func (c *CommandCommand) Execute(args []string) {
 	host := fs.String("host", "", "BoardingPass service hostname or IP")
 	port := fs.Int("port", 0, "BoardingPass service port")
 	caCert := fs.String("ca-cert", "", "Path to custom CA certificate bundle")
+	var params multiString
+	fs.Var(&params, "param", "Parameter to pass to the command (can be repeated)")
 
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage: boarding command [flags] <command-id>
@@ -33,8 +44,9 @@ Execute an allow-listed command on the device.
 Requires prior authentication via 'boarding pass'.
 
 The command-id must match one of the allow-listed commands configured
-on the BoardingPass service. The command output (stdout/stderr) and
-exit code are displayed.
+on the BoardingPass service. Parameters (--param) are passed after a
+'--' separator to prevent option injection. The command output
+(stdout/stderr) and exit code are displayed.
 
 Flags:
 `)
@@ -42,7 +54,10 @@ Flags:
 		fmt.Fprintf(os.Stderr, `
 Examples:
   # Execute an allow-listed command
-  boarding command --host 192.168.1.100 restart-service
+  boarding command --host 192.168.1.100 restart-networkmanager
+
+  # Execute a command with parameters
+  boarding command --host 192.168.1.100 --param my-hostname set-hostname
 
   # Using environment variables for host/port
   export BOARDING_HOST=192.168.1.100
@@ -74,13 +89,13 @@ Examples:
 	cfg.ApplyFlags(*host, *port, *caCert)
 
 	// Execute command
-	if err := c.executeCommand(cfg, commandID); err != nil {
+	if err := c.executeCommand(cfg, commandID, []string(params)); err != nil {
 		exitWithError("%v", err)
 	}
 }
 
 // executeCommand executes an allow-listed command on the device and displays the output.
-func (c *CommandCommand) executeCommand(cfg *config.Config, commandID string) error {
+func (c *CommandCommand) executeCommand(cfg *config.Config, commandID string, params []string) error {
 	// Create API client
 	apiClient, err := createClient(cfg)
 	if err != nil {
@@ -107,7 +122,7 @@ func (c *CommandCommand) executeCommand(cfg *config.Config, commandID string) er
 	// Execute command
 	fmt.Fprintf(os.Stderr, "Executing command '%s'...\n", commandID)
 
-	resp, err := apiClient.ExecuteCommand(commandID)
+	resp, err := apiClient.ExecuteCommand(commandID, params)
 	if err != nil {
 		return fmt.Errorf("failed to execute command: %w", err)
 	}
