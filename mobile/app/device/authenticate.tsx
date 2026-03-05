@@ -709,16 +709,6 @@ export default function AuthenticateScreen(): React.ReactElement {
         >
           {isAuthenticating ? 'Authenticating...' : 'Authenticate'}
         </Button>
-
-        {/* Loading indicator */}
-        {isAuthenticating && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator animating={true} size="large" />
-            <Text variant="bodyMedium" style={styles.loadingText}>
-              Performing secure authentication...
-            </Text>
-          </View>
-        )}
       </ScrollView>
 
       {/* Error/Success snackbar (T075) */}
@@ -791,10 +781,6 @@ const styles = StyleSheet.create({
   },
   authenticateButtonContent: {
     paddingVertical: spacing.sm,
-  },
-  loadingContainer: {
-    marginTop: spacing.lg,
-    alignItems: 'center',
   },
   loadingText: {
     marginTop: spacing.md,

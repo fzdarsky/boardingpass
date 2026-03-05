@@ -71,7 +71,8 @@ export function buildStepConfigFiles(step: number, state: WizardState): RawConfi
         addressing: state.addressing,
         connectionName: CONNECTION_NAME,
       });
-      files.push({ path: getConnectionPath(CONNECTION_NAME), content: nmContent });
+      // NM requires 0600 on keyfiles — it silently ignores world-readable ones
+      files.push({ path: getConnectionPath(CONNECTION_NAME), content: nmContent, mode: 0o600 });
       break;
     }
 
@@ -497,14 +498,14 @@ export function useConfigWizard() {
    * Updates stepApplyStatus in context.
    */
   const applyStepImmediate = useCallback(
-    async (step: number, client: APIClient): Promise<void> => {
+    async (step: number, client: APIClient): Promise<string | null> => {
       const configFiles = buildStepConfigFiles(step, state);
       const commands = buildStepCommands(step, state);
 
       // Nothing to apply for this step
       if (configFiles.length === 0 && commands.length === 0) {
         wizard.setApplyStatus(step, { status: 'success', error: null, connectivityResult: null });
-        return;
+        return null;
       }
 
       wizard.setApplyStatus(step, { status: 'applying', error: null, connectivityResult: null });
@@ -549,12 +550,15 @@ export function useConfigWizard() {
           error: null,
           connectivityResult,
         });
+        return null;
       } catch (err) {
+        const message = err instanceof Error ? err.message : 'Apply failed';
         wizard.setApplyStatus(step, {
           status: 'failed',
-          error: err instanceof Error ? err.message : 'Apply failed',
+          error: message,
           connectivityResult: null,
         });
+        return message;
       }
     },
     [state, wizard]

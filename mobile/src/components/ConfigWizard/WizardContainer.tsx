@@ -73,7 +73,12 @@ export default function WizardContainer({
 
       if (isImmediate && apiClient) {
         // Immediate mode: apply the final step, then call /complete
-        await wizard.applyStepImmediate(wizard.state.currentStep, apiClient);
+        const applyError = await wizard.applyStepImmediate(wizard.state.currentStep, apiClient);
+        if (applyError) {
+          setErrors([applyError]);
+          setShowError(true);
+          return;
+        }
 
         try {
           await completeProvisioning(apiClient, false);
@@ -92,22 +97,26 @@ export default function WizardContainer({
         onComplete?.();
       }
     } else {
-      // State hasn't re-rendered yet after goNext(), so currentStep
-      // still holds the step we're about to leave.
-      const stepLeaving = wizard.state.currentStep;
-
-      const validation = wizard.goNext();
+      // Validate current step before doing anything
+      const validation = wizard.validateStep(wizard.state.currentStep);
       if (!validation.isValid) {
         setErrors(validation.errors);
         setShowError(true);
         return;
       }
 
-      // Apply the step we just left (hostname always; others in immediate mode)
-      const shouldApply = stepLeaving === WIZARD_STEPS.HOSTNAME || isImmediate;
+      // Apply config first (if needed), then navigate on success
+      const shouldApply = wizard.state.currentStep === WIZARD_STEPS.HOSTNAME || isImmediate;
       if (shouldApply && apiClient) {
-        await wizard.applyStepImmediate(stepLeaving, apiClient);
+        const error = await wizard.applyStepImmediate(wizard.state.currentStep, apiClient);
+        if (error) {
+          setErrors([error]);
+          setShowError(true);
+          return;
+        }
       }
+
+      wizard.goNext();
     }
   }, [wizard, isImmediate, apiClient, onComplete]);
 
@@ -125,11 +134,6 @@ export default function WizardContainer({
       setShowError(true);
     }
   }, [apiClient, wizard, onComplete]);
-
-  const handleRetryStep = useCallback(async () => {
-    if (!apiClient) return;
-    await wizard.applyStepImmediate(wizard.state.currentStep, apiClient);
-  }, [apiClient, wizard]);
 
   const handleStepPress = (step: number) => {
     if (wizard.canNavigateTo(step)) {
@@ -226,10 +230,6 @@ export default function WizardContainer({
   const currentApplyStatus = wizard.state.stepApplyStatus[wizard.state.currentStep];
   const isApplying = currentApplyStatus?.status === 'applying';
 
-  // Check if the previously applied step had an error (show feedback on current step)
-  const prevStep = wizard.state.currentStep - 1;
-  const prevApplyStatus = prevStep >= 1 ? wizard.state.stepApplyStatus[prevStep] : undefined;
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -250,14 +250,9 @@ export default function WizardContainer({
       >
         {renderStep()}
 
-        {/* Show apply feedback for current step (when applying) */}
-        {currentApplyStatus && currentApplyStatus.status !== 'pending' && (
-          <ApplyFeedback applyStatus={currentApplyStatus} onRetry={handleRetryStep} />
-        )}
-
-        {/* Show feedback from the previous step (success/failure persists) */}
-        {prevApplyStatus && prevApplyStatus.status !== 'pending' && (
-          <ApplyFeedback applyStatus={prevApplyStatus} />
+        {/* Show connectivity test results after addressing step */}
+        {currentApplyStatus?.status === 'success' && currentApplyStatus.connectivityResult && (
+          <ApplyFeedback applyStatus={currentApplyStatus} />
         )}
       </ScrollView>
 
@@ -286,13 +281,15 @@ export default function WizardContainer({
                 : 'Next step'
           }
         >
-          {wizard.isLastStep
-            ? wizard.state.applyMode === 'deferred'
-              ? 'Review'
-              : 'Finish'
-            : willApplyOnNext
-              ? 'Apply & Next'
-              : 'Next'}
+          {isApplying
+            ? 'Applying...'
+            : wizard.isLastStep
+              ? wizard.state.applyMode === 'deferred'
+                ? 'Review'
+                : 'Finish'
+              : willApplyOnNext
+                ? 'Apply & Next'
+                : 'Next'}
         </Button>
       </View>
 
