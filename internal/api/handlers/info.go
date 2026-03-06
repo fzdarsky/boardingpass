@@ -103,6 +103,15 @@ func gatherSystemInfo() (protocol.SystemInfo, error) {
 		}
 	}
 
+	clockTime, clockSync, err := inventory.GetClockStatus()
+	if err != nil {
+		// Non-fatal: use current time and unsynchronized
+		clockTime = time.Now().UTC()
+		clockSync = false
+	}
+	osInfo.SystemTime = clockTime.UTC().Format(time.RFC3339)
+	osInfo.ClockSynchronized = clockSync
+
 	return protocol.SystemInfo{
 		Hostname: hostname,
 		TPM:      tpmInfo,

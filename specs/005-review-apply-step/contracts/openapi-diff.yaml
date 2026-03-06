@@ -1,0 +1,67 @@
+# OpenAPI Diff: Review & Apply Step (005)
+#
+# This file documents the changes to the existing OpenAPI spec
+# (specs/001-boardingpass-api/contracts/openapi.yaml) required for this feature.
+#
+# Only the OSInfo schema changes — no new endpoints are needed.
+
+# ─── Schema Change: OSInfo ───
+#
+# Add two new required fields to the existing OSInfo schema:
+#
+# BEFORE:
+#   OSInfo:
+#     type: object
+#     required: [distribution, version, fips_enabled]
+#     properties:
+#       distribution: { type: string }
+#       version: { type: string }
+#       fips_enabled: { type: boolean }
+#
+# AFTER:
+#   OSInfo:
+#     type: object
+#     required: [distribution, version, fips_enabled, system_time, clock_synchronized]
+#     properties:
+#       distribution: { type: string }
+#       version: { type: string }
+#       fips_enabled: { type: boolean }
+#       system_time: { type: string, format: date-time }      # NEW
+#       clock_synchronized: { type: boolean }                  # NEW
+
+components:
+  schemas:
+    OSInfo:
+      type: object
+      required:
+        - distribution
+        - version
+        - fips_enabled
+        - system_time
+        - clock_synchronized
+      properties:
+        distribution:
+          type: string
+          description: Linux distribution name
+          example: "Red Hat Enterprise Linux"
+        version:
+          type: string
+          description: Distribution version
+          example: "9.3"
+        fips_enabled:
+          type: boolean
+          description: Whether FIPS 140-3 mode is enabled on the OS
+          example: true
+        system_time:
+          type: string
+          format: date-time
+          description: >
+            Current system time in UTC, ISO 8601 format.
+            This value is dynamic and reflects the device's current clock.
+          example: "2026-03-05T14:30:00Z"
+        clock_synchronized:
+          type: boolean
+          description: >
+            Whether the system clock is synchronized via NTP.
+            True when timedatectl reports NTPSynchronized=yes.
+          example: true

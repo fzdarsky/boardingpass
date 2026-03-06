@@ -352,10 +352,10 @@ describe('useConfigWizard', () => {
       expect(result.current.isFirstStep).toBe(true);
     });
 
-    it('isLastStep is true on step 5', () => {
+    it('isLastStep is true on step 6 (Review)', () => {
       const state = createInitialWizardState();
-      state.currentStep = 5;
-      state.maxReachedStep = 5;
+      state.currentStep = 6;
+      state.maxReachedStep = 6;
 
       const { result } = renderHook(() => useConfigWizard(), {
         wrapper: createWrapper(state),

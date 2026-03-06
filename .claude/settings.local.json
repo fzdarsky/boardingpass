@@ -28,7 +28,10 @@
       "Bash(make test-unit-service)",
       "Bash(make lint-service)",
       "mcp__ios-simulator__ui_swipe",
-      "mcp__ios-simulator__ui_view"
+      "mcp__ios-simulator__ui_view",
+      "Bash(make help)",
+      "Bash(make -n lint-service)",
+      "Bash(make -n lint-app)"
     ]
   }
 }

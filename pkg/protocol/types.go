@@ -32,9 +32,11 @@ type CPUInfo struct {
 
 // OSInfo represents operating system information.
 type OSInfo struct {
-	Distribution string `json:"distribution"`
-	Version      string `json:"version"`
-	FIPSEnabled  bool   `json:"fips_enabled"`
+	Distribution      string `json:"distribution"`
+	Version           string `json:"version"`
+	FIPSEnabled       bool   `json:"fips_enabled"`
+	SystemTime        string `json:"system_time"`
+	ClockSynchronized bool   `json:"clock_synchronized"`
 }
 
 // NetworkConfig represents current network interface state.

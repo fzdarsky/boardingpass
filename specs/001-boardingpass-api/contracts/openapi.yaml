@@ -500,6 +500,8 @@ components:
         - distribution
         - version
         - fips_enabled
+        - system_time
+        - clock_synchronized
       properties:
         distribution:
           type: string
@@ -512,6 +514,19 @@ components:
         fips_enabled:
           type: boolean
           description: Whether FIPS 140-3 mode is enabled on the OS
+          example: true
+        system_time:
+          type: string
+          format: date-time
+          description: >
+            Current system time in UTC, ISO 8601 format.
+            This value is dynamic and reflects the device's current clock.
+          example: "2026-03-05T14:30:00Z"
+        clock_synchronized:
+          type: boolean
+          description: >
+            Whether the system clock is synchronized via NTP.
+            True when timedatectl reports NTPSynchronized=yes.
           example: true
 
     NetworkConfig:

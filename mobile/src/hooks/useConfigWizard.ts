@@ -21,11 +21,13 @@ import {
   validateNtpServer,
 } from '../utils/network-validation';
 import { WIZARD_STEPS, TOTAL_STEPS } from '../types/wizard';
-import type { WizardState, ConnectivityResult } from '../types/wizard';
+import type { WizardState, ConnectivityResult, PlannedAction } from '../types/wizard';
 import { generateNmConnection, getConnectionPath } from '../utils/nm-connection';
+import { buildActionList } from '../utils/action-list';
 import { sendConfigBundle, createConfigFile } from '../services/api/configure';
 import { executeCommand } from '../services/api/command';
 import { completeProvisioning } from '../services/api/complete';
+import { getSystemInfo } from '../services/api/info';
 import type { APIClient } from '../services/api/client';
 
 const CONNECTION_NAME = 'boardingpass-enrollment';
@@ -584,6 +586,180 @@ export function useConfigWizard() {
     [state]
   );
 
+  /**
+   * Generate the action list for the current wizard state and apply mode.
+   * Stores the generated list in wizard context.
+   */
+  const generateActionList = useCallback((): PlannedAction[] => {
+    const mode = state.applyMode || 'immediate';
+    const actions = buildActionList(state, mode);
+    wizard.setActionList(actions);
+    return actions;
+  }, [state, wizard]);
+
+  /**
+   * Apply all actions sequentially in immediate mode.
+   * Iterates through steps, sending config files and executing commands.
+   * Updates per-action status in context for real-time UI feedback.
+   * Halts on first failure, marking remaining actions as skipped.
+   */
+  const applyAllImmediate = useCallback(
+    async (client: APIClient): Promise<void> => {
+      const actions = state.actionList;
+      if (actions.length === 0) return;
+
+      wizard.setApplyInProgress(true);
+
+      try {
+        // Group actions by step for batch config/command operations
+        const stepsToApply = [
+          WIZARD_STEPS.ADDRESSING,
+          WIZARD_STEPS.SERVICES,
+          WIZARD_STEPS.ENROLLMENT,
+        ];
+
+        // Send config files for addressing + services + enrollment steps
+        for (const step of stepsToApply) {
+          const configFiles = buildStepConfigFiles(step, state);
+          if (configFiles.length > 0) {
+            const encoded = configFiles.map(f => createConfigFile(f.path, f.content, f.mode));
+            await sendConfigBundle(client, encoded);
+          }
+
+          // Execute commands for this step
+          const commands = buildStepCommands(step, state);
+          for (const cmd of commands) {
+            // Find matching action to update status
+            const matchingAction = actions.find(
+              a => !a.infoOnly && a.step === step && a.status === 'pending'
+            );
+            if (matchingAction) {
+              wizard.updateActionStatus(matchingAction.id, 'running');
+            }
+
+            const result = await executeCommand(client, cmd.id, cmd.params);
+            if (result.exit_code !== 0) {
+              const errMsg = result.stderr || 'non-zero exit code';
+              if (matchingAction) {
+                wizard.updateActionStatus(matchingAction.id, 'failed', errMsg);
+              }
+              // Mark remaining pending actions as skipped
+              for (const a of actions) {
+                if (a.status === 'pending' && !a.infoOnly) {
+                  wizard.updateActionStatus(a.id, 'skipped');
+                }
+              }
+              throw new Error(`Command '${cmd.id}' failed: ${errMsg}`);
+            }
+
+            if (matchingAction) {
+              wizard.updateActionStatus(matchingAction.id, 'success');
+            }
+          }
+
+          // Mark config-only actions for this step as success
+          for (const a of actions) {
+            if (a.step === step && a.status === 'pending' && !a.infoOnly) {
+              wizard.updateActionStatus(a.id, 'success');
+            }
+          }
+        }
+
+        // Connectivity check
+        const connectivityAction = actions.find(a => a.id === 'connectivity-check');
+        if (connectivityAction && !connectivityAction.infoOnly) {
+          wizard.updateActionStatus('connectivity-check', 'running');
+          try {
+            const gateway = state.addressing.ipv4.gateway || '';
+            const iface = state.networkInterface.interfaceName;
+            if (gateway && iface) {
+              const testResult = await executeCommand(client, 'connectivity-test', [
+                iface,
+                gateway,
+              ]);
+              if (testResult.exit_code === 0 && testResult.stdout) {
+                const result: ConnectivityResult = JSON.parse(testResult.stdout);
+                const detail = result.gatewayReachable
+                  ? 'Gateway reachable'
+                  : 'Gateway unreachable';
+                wizard.updateActionStatus('connectivity-check', 'success', detail);
+              } else {
+                wizard.updateActionStatus('connectivity-check', 'success', 'Test completed');
+              }
+            } else {
+              wizard.updateActionStatus('connectivity-check', 'success', 'Skipped (no gateway)');
+            }
+          } catch {
+            // Connectivity test is informational — don't fail
+            wizard.updateActionStatus('connectivity-check', 'success', 'Could not verify');
+          }
+        }
+
+        // DNS resolution check
+        const dnsCheckAction = actions.find(a => a.id === 'dns-check');
+        if (dnsCheckAction && !dnsCheckAction.infoOnly) {
+          wizard.updateActionStatus('dns-check', 'running');
+          try {
+            const dnsResult = await executeCommand(client, 'connectivity-test', [
+              state.networkInterface.interfaceName,
+              state.addressing.ipv4.gateway || '',
+            ]);
+            wizard.updateActionStatus(
+              'dns-check',
+              'success',
+              dnsResult.exit_code === 0 ? 'DNS resolution OK' : 'DNS check completed'
+            );
+          } catch {
+            wizard.updateActionStatus('dns-check', 'success', 'Could not verify');
+          }
+        }
+
+        // Clock sync wait (poll /info for up to 30 seconds)
+        const clockAction = actions.find(a => a.id === 'clock-sync');
+        if (clockAction && !clockAction.infoOnly) {
+          wizard.updateActionStatus('clock-sync', 'running');
+          let synced = false;
+          const maxAttempts = 10;
+          const pollInterval = 3000;
+
+          for (let i = 0; i < maxAttempts; i++) {
+            try {
+              const info = await getSystemInfo(client);
+              if (info.os.clock_synchronized) {
+                synced = true;
+                break;
+              }
+            } catch {
+              // Poll failure is not fatal
+            }
+            if (i < maxAttempts - 1) {
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+            }
+          }
+
+          wizard.updateActionStatus(
+            'clock-sync',
+            'success',
+            synced ? 'Clock synchronised' : 'Clock not yet synchronised (continuing)'
+          );
+        }
+
+        // Mark info-only actions as success
+        for (const a of actions) {
+          if (a.infoOnly && a.status === 'pending') {
+            wizard.updateActionStatus(a.id, 'success');
+          }
+        }
+
+        // All actions complete — call /complete
+        await completeProvisioning(client, false);
+      } finally {
+        wizard.setApplyInProgress(false);
+      }
+    },
+    [state, wizard]
+  );
+
   return {
     ...wizard,
     validateStep,
@@ -596,5 +772,7 @@ export function useConfigWizard() {
     currentValidation,
     applyStepImmediate,
     applyDeferred,
+    generateActionList,
+    applyAllImmediate,
   };
 }

@@ -52,6 +52,31 @@ export function SystemInformationCard({ systemInfo }: SystemInformationCardProps
             {fipsEnabled ? 'ENABLED' : 'DISABLED'}
           </Badge>
         </View>
+        {systemInfo.os.system_time && (
+          <InfoRow
+            label="System time"
+            value={formatSystemTime(systemInfo.os.system_time)}
+            labelStyle={dynamicStyles.label}
+            valueStyle={dynamicStyles.value}
+          />
+        )}
+        {systemInfo.os.clock_synchronized !== undefined && (
+          <View style={styles.row}>
+            <Text variant="bodySmall" style={[styles.label, dynamicStyles.label]}>
+              Clock sync
+            </Text>
+            <Badge
+              style={[
+                styles.fipsBadge,
+                {
+                  backgroundColor: systemInfo.os.clock_synchronized ? '#2e7d32' : '#e65100',
+                },
+              ]}
+            >
+              {systemInfo.os.clock_synchronized ? 'SYNCED' : 'NOT SYNCED'}
+            </Badge>
+          </View>
+        )}
 
         <Divider style={styles.sectionDivider} />
 
@@ -161,6 +186,21 @@ function InfoRow({
       </Text>
     </View>
   );
+}
+
+/**
+ * Format ISO 8601 system time to a human-readable locale string
+ */
+function formatSystemTime(isoTime: string): string {
+  try {
+    const date = new Date(isoTime);
+    return date.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'medium',
+    });
+  } catch {
+    return isoTime;
+  }
 }
 
 /**
