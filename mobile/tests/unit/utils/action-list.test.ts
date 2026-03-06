@@ -46,7 +46,6 @@ describe('buildActionList', () => {
       'interface',
       'ipv4-config',
       'connectivity-check',
-      'dns-check',
       'ntp-config',
       'clock-sync',
     ]);
@@ -59,10 +58,10 @@ describe('buildActionList', () => {
     expect(actions[2].description).toBe('Assign IPv4 address via DHCP');
 
     // Automatic NTP
-    expect(actions[5].description).toBe('Use automatic time servers');
+    expect(actions[4].description).toBe('Use automatic time servers');
 
     // Clock sync in immediate mode → not info only
-    expect(actions[6].infoOnly).toBe(false);
+    expect(actions[5].infoOnly).toBe(false);
   });
 
   it('generates correct actions for static IPv4 with manual DNS', () => {
@@ -281,18 +280,16 @@ describe('buildActionList', () => {
   });
 
   describe('immediate vs deferred mode', () => {
-    it('includes check actions in immediate mode', () => {
+    it('includes connectivity check in immediate mode', () => {
       const state = makeState();
       const actions = buildActionList(state, 'immediate');
       expect(actions.find(a => a.id === 'connectivity-check')).toBeDefined();
-      expect(actions.find(a => a.id === 'dns-check')).toBeDefined();
     });
 
-    it('omits check actions in deferred mode', () => {
+    it('omits connectivity check in deferred mode', () => {
       const state = makeState();
       const actions = buildActionList(state, 'deferred');
       expect(actions.find(a => a.id === 'connectivity-check')).toBeUndefined();
-      expect(actions.find(a => a.id === 'dns-check')).toBeUndefined();
     });
 
     it('clock sync is executable in immediate mode', () => {

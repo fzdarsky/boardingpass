@@ -196,7 +196,7 @@ export default function WiFiStep({ apiClient }: WiFiStepProps) {
         variant="bodyMedium"
         style={[styles.description, { color: theme.colors.onSurfaceVariant }]}
       >
-        Choose a WiFi network for the {state.networkInterface.interfaceName} interface.
+        Choose a WiFi network to connect to.
       </Text>
 
       {/* Scan controls */}
@@ -273,9 +273,7 @@ export default function WiFiStep({ apiClient }: WiFiStepProps) {
                 <DataTable.Row
                   key={network.ssid || network.bssid}
                   onPress={() => handleSelect(network)}
-                  style={
-                    isSelected ? { backgroundColor: theme.colors.primaryContainer } : undefined
-                  }
+                  style={isSelected ? { backgroundColor: theme.colors.surfaceVariant } : undefined}
                 >
                   <DataTable.Cell style={styles.radioCol}>
                     <RadioButton

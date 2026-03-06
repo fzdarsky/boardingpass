@@ -6,14 +6,14 @@
  * Shows real-time per-action status feedback during execution.
  */
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Button, ActivityIndicator, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useConfigWizard } from '../../hooks/useConfigWizard';
 import type { PlannedAction } from '../../types/wizard';
 import type { APIClient } from '../../services/api/client';
-import { spacing } from '../../theme';
+import { spacing, deviceStatusColors } from '../../theme';
 
 type TerminalState = 'rebooting' | 'shutting_down' | null;
 
@@ -41,13 +41,31 @@ function ActionStatusIcon({ action }: { action: PlannedAction }) {
     case 'running':
       return <ActivityIndicator size={16} color={theme.colors.primary} />;
     case 'success':
-      return <MaterialCommunityIcons name="check-circle" size={18} color="#2e7d32" />;
+      return (
+        <MaterialCommunityIcons name="check-circle" size={18} color={deviceStatusColors.online} />
+      );
+    case 'warning':
+      return (
+        <MaterialCommunityIcons name="alert-circle" size={18} color={deviceStatusColors.warning} />
+      );
     case 'failed':
-      return <MaterialCommunityIcons name="close-circle" size={18} color="#c62828" />;
+      return <MaterialCommunityIcons name="close-circle" size={18} color={theme.colors.error} />;
     case 'skipped':
-      return <MaterialCommunityIcons name="minus-circle-outline" size={18} color="#9e9e9e" />;
+      return (
+        <MaterialCommunityIcons
+          name="minus-circle-outline"
+          size={18}
+          color={theme.colors.outline}
+        />
+      );
     default:
-      return <MaterialCommunityIcons name="circle-outline" size={18} color="#bdbdbd" />;
+      return (
+        <MaterialCommunityIcons
+          name="circle-outline"
+          size={18}
+          color={theme.colors.outlineVariant}
+        />
+      );
   }
 }
 
@@ -67,7 +85,7 @@ function ActionRow({ action, index }: { action: PlannedAction; index: number }) 
       <MaterialCommunityIcons
         name={iconName as keyof typeof MaterialCommunityIcons.glyphMap}
         size={18}
-        color={isInfoOnly ? '#9e9e9e' : theme.colors.onSurfaceVariant}
+        color={isInfoOnly ? theme.colors.outline : theme.colors.onSurfaceVariant}
         style={styles.categoryIcon}
       />
       <View style={styles.actionContent}>
@@ -85,7 +103,10 @@ function ActionRow({ action, index }: { action: PlannedAction; index: number }) 
             variant="bodySmall"
             style={[
               styles.actionDetail,
-              { color: action.status === 'failed' ? '#c62828' : theme.colors.onSurfaceVariant },
+              {
+                color:
+                  action.status === 'failed' ? theme.colors.error : theme.colors.onSurfaceVariant,
+              },
             ]}
           >
             {action.detail}
@@ -104,6 +125,10 @@ export default function ReviewApplyPage({ apiClient, onComplete, onError }: Revi
   const isDeferred = state.applyMode === 'deferred';
   const isApplying = state.applyInProgress;
   const actions = state.actionList;
+
+  // Immediate mode: track whether all actions finished so we can show Finish buttons
+  const [applyComplete, setApplyComplete] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   // Generate action list when entering the review step
   useEffect(() => {
@@ -124,14 +149,33 @@ export default function ReviewApplyPage({ apiClient, onComplete, onError }: Revi
     } else {
       try {
         await wizard.applyAllImmediate(apiClient);
-        onComplete('shutting_down');
+        // Don't auto-transition — let the user review results and choose Finish or Reboot
+        setApplyComplete(true);
       } catch (err) {
         onError(err instanceof Error ? err.message : 'Failed to apply configuration');
       }
     }
   }, [apiClient, isDeferred, wizard, onComplete, onError]);
 
+  const handleFinish = useCallback(
+    async (reboot: boolean) => {
+      if (!apiClient) return;
+      setIsFinishing(true);
+      try {
+        await wizard.finishProvisioning(apiClient, reboot);
+        onComplete(reboot ? 'rebooting' : 'shutting_down');
+      } catch (err) {
+        onError(err instanceof Error ? err.message : 'Failed to complete provisioning');
+        setIsFinishing(false);
+      }
+    },
+    [apiClient, wizard, onComplete, onError]
+  );
+
   const hasFailed = actions.some(a => a.status === 'failed');
+
+  // Immediate mode: show Finish buttons after apply completes
+  const showFinishButtons = !isDeferred && applyComplete;
 
   return (
     <View style={styles.container}>
@@ -144,7 +188,9 @@ export default function ReviewApplyPage({ apiClient, onComplete, onError }: Revi
       >
         {isDeferred
           ? 'The following changes will be applied when the device reboots.'
-          : 'The following actions will be executed in order.'}
+          : showFinishButtons
+            ? 'Configuration has been applied.'
+            : 'The following actions will be executed in order.'}
       </Text>
 
       {/* Action list */}
@@ -154,28 +200,58 @@ export default function ReviewApplyPage({ apiClient, onComplete, onError }: Revi
 
       {/* Buttons */}
       <View style={styles.actions}>
-        <Button
-          mode="outlined"
-          onPress={wizard.goBack}
-          disabled={isApplying}
-          style={styles.actionButton}
-          accessibilityLabel="Go back to Enrollment step"
-        >
-          Back
-        </Button>
-        <Button
-          mode="contained"
-          onPress={handleApply}
-          loading={isApplying}
-          disabled={isApplying || hasFailed || !apiClient}
-          style={styles.actionButton}
-          icon={isDeferred ? RebootIcon : undefined}
-          accessibilityLabel={
-            isDeferred ? 'Apply configuration and reboot device' : 'Apply all configuration actions'
-          }
-        >
-          {isDeferred ? 'Apply & Reboot' : 'Apply'}
-        </Button>
+        {showFinishButtons ? (
+          <>
+            <Button
+              mode="outlined"
+              onPress={() => handleFinish(false)}
+              loading={isFinishing}
+              disabled={isFinishing}
+              style={styles.actionButton}
+              accessibilityLabel="Finish provisioning"
+            >
+              Finish
+            </Button>
+            <Button
+              mode="contained"
+              onPress={() => handleFinish(true)}
+              loading={isFinishing}
+              disabled={isFinishing}
+              style={styles.actionButton}
+              icon={RebootIcon}
+              accessibilityLabel="Finish provisioning and reboot device"
+            >
+              Finish & Reboot
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              mode="outlined"
+              onPress={wizard.goBack}
+              disabled={isApplying}
+              style={styles.actionButton}
+              accessibilityLabel="Go back to Enrollment step"
+            >
+              Back
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleApply}
+              loading={isApplying}
+              disabled={isApplying || hasFailed || !apiClient}
+              style={styles.actionButton}
+              icon={isDeferred ? RebootIcon : undefined}
+              accessibilityLabel={
+                isDeferred
+                  ? 'Apply configuration and reboot device'
+                  : 'Apply all configuration actions'
+              }
+            >
+              {isDeferred ? 'Apply & Reboot' : 'Apply'}
+            </Button>
+          </>
+        )}
       </View>
     </View>
   );

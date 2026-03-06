@@ -140,23 +140,11 @@ export function buildActionList(
   }
 
   // 7. Connectivity check (immediate mode only)
+  // Runs gateway ping, DNS resolution, and internet reachability in one call.
   if (applyMode === 'immediate') {
     actions.push({
       id: 'connectivity-check',
-      description: 'Check network connectivity',
-      category: 'check',
-      status: 'pending',
-      detail: null,
-      step: WIZARD_STEPS.ADDRESSING,
-      infoOnly: false,
-    });
-  }
-
-  // 8. DNS resolution check (immediate mode only, if DNS configured)
-  if (applyMode === 'immediate') {
-    actions.push({
-      id: 'dns-check',
-      description: 'Check DNS resolution',
+      description: 'Test network connectivity',
       category: 'check',
       status: 'pending',
       detail: null,

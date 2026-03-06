@@ -13,6 +13,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Card, Text, Badge, Button, IconButton, Portal, Modal, useTheme } from 'react-native-paper';
 import { Device, DeviceStatus } from '@/types/device';
+import { deviceStatusColors } from '@/theme';
 import { CertificateStatusIndicator } from '../CertificateInfo/StatusIndicator';
 import { CertificateInfoDisplay } from '../CertificateInfo';
 import { deviceSelectionFeedback } from '@/utils/haptics';
@@ -37,7 +38,11 @@ export function DeviceCard({
   const displayStatus =
     isAuthenticated && device.status === 'online' ? 'authenticated' : device.status;
   const statusConfig = getStatusConfig(displayStatus);
-  const discoveryBadgeColor = getDiscoveryMethodColor(device.discoveryMethod);
+  const isManualDiscovery = device.discoveryMethod === 'manual';
+  const discoveryBadgeColors = {
+    backgroundColor: isManualDiscovery ? theme.colors.primary : theme.colors.tertiary,
+    color: isManualDiscovery ? theme.colors.onPrimary : theme.colors.onTertiary,
+  };
 
   // Dynamic styles that depend on theme
   const dynamicStyles = {
@@ -121,7 +126,7 @@ export function DeviceCard({
               <Text variant="bodySmall" style={[styles.label, dynamicStyles.secondaryText]}>
                 Discovery:
               </Text>
-              <Badge style={[styles.badge, { backgroundColor: discoveryBadgeColor }]}>
+              <Badge style={[styles.badge, discoveryBadgeColors]}>
                 {device.discoveryMethod.toUpperCase()}
               </Badge>
             </View>
@@ -205,33 +210,17 @@ function getStatusConfig(status: DeviceStatus): {
 } {
   switch (status) {
     case 'online':
-      return { label: 'Online', color: '#4caf50' };
+      return { label: 'Online', color: deviceStatusColors.online };
     case 'offline':
-      return { label: 'Offline', color: '#9e9e9e' };
+      return { label: 'Offline', color: deviceStatusColors.offline };
     case 'authenticating':
-      return { label: 'Authenticating...', color: '#ff9800' };
+      return { label: 'Authenticating...', color: deviceStatusColors.authenticating };
     case 'authenticated':
-      return { label: 'Authenticated', color: '#2196f3' };
+      return { label: 'Authenticated', color: deviceStatusColors.authenticated };
     case 'error':
-      return { label: 'Error', color: '#f44336' };
+      return { label: 'Error', color: deviceStatusColors.error };
     default:
-      return { label: 'Unknown', color: '#9e9e9e' };
-  }
-}
-
-/**
- * Get discovery method badge color
- */
-function getDiscoveryMethodColor(method: string): string {
-  switch (method) {
-    case 'mdns':
-      return '#2196f3'; // Blue
-    case 'fallback':
-      return '#ff9800'; // Orange
-    case 'manual':
-      return '#2D628B'; // Primary (matches Refresh button)
-    default:
-      return '#9e9e9e'; // Grey
+      return { label: 'Unknown', color: deviceStatusColors.offline };
   }
 }
 
@@ -305,6 +294,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     fontSize: 10,
+    paddingHorizontal: 8,
   },
   txtRecords: {
     marginTop: 12,

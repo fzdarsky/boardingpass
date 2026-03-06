@@ -114,7 +114,7 @@ export interface PlannedAction {
   id: string;
   description: string;
   category: 'config' | 'command' | 'check' | 'wait';
-  status: 'pending' | 'running' | 'success' | 'failed' | 'skipped';
+  status: 'pending' | 'running' | 'success' | 'warning' | 'failed' | 'skipped';
   detail: string | null;
   step: number;
   infoOnly: boolean;
@@ -130,6 +130,7 @@ export interface ApplyStatus {
 
 /** Result from connectivity-test command */
 export interface ConnectivityResult {
+  linkUp: boolean;
   ipAssigned: boolean;
   gatewayReachable: boolean;
   dnsResolves: boolean;

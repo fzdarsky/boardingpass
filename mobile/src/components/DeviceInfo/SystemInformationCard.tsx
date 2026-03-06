@@ -1,10 +1,8 @@
 /**
  * SystemInformationCard Component
  *
- * Consolidated single-card display of all system information:
- * Operating System, CPU, TPM, and Board details.
- * Replaces the separate SystemInfo, TPMInfo, and BoardInfo cards
- * on the device details page for a more compact layout.
+ * Consolidated single-card display of all device information:
+ * Operating System, CPU, TPM, Board, and Network Interfaces.
  */
 
 import React from 'react';
@@ -12,22 +10,50 @@ import { View, StyleSheet } from 'react-native';
 import { Card, Text, Badge, Divider, useTheme } from 'react-native-paper';
 import type { SystemInfo } from '../../services/api/info';
 import { getArchitectureDisplayName, isFIPSEnabled } from '../../services/api/info';
+import type {
+  NetworkConfig as NetworkConfigType,
+  NetworkInterface,
+} from '../../services/api/network';
+import {
+  formatMACAddress,
+  formatIPAddress,
+  getInterfaceTypeHint,
+  sortInterfacesByPriority,
+  getIPv4Addresses,
+  getIPv6Addresses,
+} from '../../services/api/network';
 import { spacing } from '../../theme';
 
 export interface SystemInformationCardProps {
   systemInfo: SystemInfo;
+  networkConfig?: NetworkConfigType | null;
+  connectionHost?: string | null;
 }
 
-export function SystemInformationCard({ systemInfo }: SystemInformationCardProps) {
+export function SystemInformationCard({
+  systemInfo,
+  networkConfig,
+  connectionHost,
+}: SystemInformationCardProps) {
   const theme = useTheme();
   const fipsEnabled = isFIPSEnabled(systemInfo);
   const hasTPM = systemInfo.tpm.present;
+
+  // Match connection host IP against interface addresses
+  const serviceIfaceName = connectionHost
+    ? (networkConfig?.interfaces.find(iface =>
+        iface.ip_addresses.some(addr => addr.ip === connectionHost)
+      )?.name ?? null)
+    : null;
 
   const dynamicStyles = {
     label: { color: theme.colors.onSurfaceVariant },
     value: { color: theme.colors.onSurface },
     sectionHeader: { color: theme.colors.onSurface },
-    fipsBadgeColor: { backgroundColor: fipsEnabled ? '#2D628B' : '#9e9e9e' },
+    fipsBadgeColor: {
+      backgroundColor: fipsEnabled ? theme.colors.tertiary : theme.colors.surfaceVariant,
+      color: fipsEnabled ? theme.colors.onTertiary : theme.colors.onSurfaceVariant,
+    },
   };
 
   return (
@@ -69,7 +95,12 @@ export function SystemInformationCard({ systemInfo }: SystemInformationCardProps
               style={[
                 styles.fipsBadge,
                 {
-                  backgroundColor: systemInfo.os.clock_synchronized ? '#2e7d32' : '#e65100',
+                  backgroundColor: systemInfo.os.clock_synchronized
+                    ? theme.colors.tertiary
+                    : theme.colors.surfaceVariant,
+                  color: systemInfo.os.clock_synchronized
+                    ? theme.colors.onTertiary
+                    : theme.colors.onSurfaceVariant,
                 },
               ]}
             >
@@ -155,8 +186,101 @@ export function SystemInformationCard({ systemInfo }: SystemInformationCardProps
           valueStyle={dynamicStyles.value}
           monospace
         />
+
+        {/* Network Interfaces */}
+        {networkConfig && networkConfig.interfaces.length > 0 && (
+          <>
+            <Divider style={styles.sectionDivider} />
+            <Text variant="titleSmall" style={[styles.sectionHeader, dynamicStyles.sectionHeader]}>
+              Network Interfaces ({networkConfig.interfaces.length}):
+            </Text>
+            {sortInterfacesByPriority(networkConfig.interfaces).map((iface, idx) => (
+              <View key={`iface-${idx}-${iface.name}`}>
+                {idx > 0 && <Divider style={styles.ifaceDivider} />}
+                <CompactInterface iface={iface} isServiceIface={iface.name === serviceIfaceName} />
+              </View>
+            ))}
+            {serviceIfaceName && (
+              <Text variant="bodySmall" style={styles.footnote}>
+                <Text style={{ color: theme.colors.error }}>{'* '}</Text>
+                = interface currently used for provisioning
+              </Text>
+            )}
+          </>
+        )}
       </Card.Content>
     </Card>
+  );
+}
+
+/**
+ * Compact network interface display with status badge, MAC, and IPs
+ */
+function CompactInterface({
+  iface,
+  isServiceIface,
+}: {
+  iface: NetworkInterface;
+  isServiceIface: boolean;
+}) {
+  const theme = useTheme();
+  const isUp = iface.carrier;
+  const typeHint = getInterfaceTypeHint(iface.name);
+  const ipv4Addresses = getIPv4Addresses(iface);
+  const ipv6Addresses = getIPv6Addresses(iface);
+
+  return (
+    <View style={styles.ifaceContainer}>
+      <View style={styles.ifaceHeader}>
+        <View
+          style={[
+            styles.statusDot,
+            { backgroundColor: isUp ? theme.colors.tertiary : theme.colors.surfaceVariant },
+          ]}
+        />
+        <Text variant="bodyMedium" style={[styles.ifaceName, { color: theme.colors.onSurface }]}>
+          {iface.name}
+          {isServiceIface && <Text style={{ color: theme.colors.error }}>{' *'}</Text>}
+        </Text>
+        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+          ({typeHint})
+        </Text>
+        <Badge
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor: isUp ? theme.colors.tertiary : theme.colors.surfaceVariant,
+              color: isUp ? theme.colors.onTertiary : theme.colors.onSurfaceVariant,
+            },
+          ]}
+        >
+          {isUp ? 'UP' : 'DOWN'}
+        </Badge>
+      </View>
+      <View style={styles.ifaceDetails}>
+        <Text variant="bodySmall" style={[styles.mono, { color: theme.colors.onSurfaceVariant }]}>
+          {formatMACAddress(iface.mac_address)}
+        </Text>
+        {ipv4Addresses.map(addr => (
+          <Text
+            key={`v4-${addr.ip}-${addr.prefix}`}
+            variant="bodySmall"
+            style={[styles.mono, { color: theme.colors.onSurface }]}
+          >
+            {formatIPAddress(addr)}
+          </Text>
+        ))}
+        {ipv6Addresses.map(addr => (
+          <Text
+            key={`v6-${addr.ip}-${addr.prefix}`}
+            variant="bodySmall"
+            style={[styles.mono, { color: theme.colors.onSurface }]}
+          >
+            {formatIPAddress(addr)}
+          </Text>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -248,10 +372,52 @@ const styles = StyleSheet.create({
   },
   fipsBadge: {
     fontSize: 10,
+    paddingHorizontal: 8,
   },
   notAvailable: {
     paddingLeft: spacing.sm,
     paddingVertical: 3,
     fontStyle: 'italic',
+  },
+  ifaceDivider: {
+    marginVertical: spacing.xs,
+    marginLeft: spacing.sm,
+  },
+  ifaceContainer: {
+    marginVertical: spacing.xs,
+    paddingLeft: spacing.sm,
+  },
+  ifaceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  ifaceName: {
+    fontWeight: '600',
+  },
+  statusBadge: {
+    marginLeft: 'auto',
+    fontSize: 10,
+    paddingHorizontal: 8,
+  },
+  ifaceDetails: {
+    paddingLeft: 14,
+    marginTop: 2,
+  },
+  mono: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  footnote: {
+    marginTop: spacing.sm,
+    paddingLeft: spacing.sm,
+    fontStyle: 'italic',
+    opacity: 0.7,
   },
 });

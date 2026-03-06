@@ -4,7 +4,7 @@
  * Renders the current step component, StepIndicator, and Next/Back buttons.
  * Validates step before forward navigation and tracks maxReachedStep.
  *
- * Steps 1–5 navigate with "Next" only (no per-step apply except hostname).
+ * Steps 1–5 navigate with "Next" only (no per-step apply).
  * Step 6 (Review & Apply) handles both immediate and deferred apply flows.
  */
 
@@ -48,7 +48,7 @@ export default function WizardContainer({
   const [showError, setShowError] = useState(false);
   const [terminalState, setTerminalState] = useState<TerminalState>(null);
 
-  const handleNext = useCallback(async () => {
+  const handleNext = useCallback(() => {
     // Review step (Step 6) is handled by ReviewApplyPage — no handleNext needed
     if (wizard.state.currentStep === WIZARD_STEPS.REVIEW) {
       return;
@@ -60,16 +60,6 @@ export default function WizardContainer({
       setErrors(validation.errors);
       setShowError(true);
       return;
-    }
-
-    // Hostname is always applied immediately (safe — no connectivity impact)
-    if (wizard.state.currentStep === WIZARD_STEPS.HOSTNAME && apiClient) {
-      const error = await wizard.applyStepImmediate(wizard.state.currentStep, apiClient);
-      if (error) {
-        setErrors([error]);
-        setShowError(true);
-        return;
-      }
     }
 
     wizard.goNext();

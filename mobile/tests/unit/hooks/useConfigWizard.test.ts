@@ -12,6 +12,9 @@ import {
   buildStepConfigFiles,
   buildStepCommands,
   buildDeferredBundle,
+  parseConnectivityResult,
+  formatConnectivityDetail,
+  isConnectivityFullPass,
 } from '../../../src/hooks/useConfigWizard';
 import { WizardProvider } from '../../../src/contexts/WizardContext';
 import { createInitialWizardState, WIZARD_STEPS } from '../../../src/types/wizard';
@@ -1073,6 +1076,100 @@ describe('useConfigWizard', () => {
         expect(content).toContain('Wants=network-online.target');
         expect(content).toContain('RemainAfterExit=no');
       });
+    });
+  });
+
+  describe('parseConnectivityResult', () => {
+    it('maps snake_case JSON to camelCase properties', () => {
+      const json =
+        '{"link_up":true,"ip_assigned":true,"gateway_reachable":true,"dns_resolves":false,"internet_reachable":false}';
+      const result = parseConnectivityResult(json);
+      expect(result).toEqual({
+        linkUp: true,
+        ipAssigned: true,
+        gatewayReachable: true,
+        dnsResolves: false,
+        internetReachable: false,
+      });
+    });
+
+    it('defaults missing fields to false', () => {
+      const result = parseConnectivityResult('{}');
+      expect(result.linkUp).toBe(false);
+      expect(result.ipAssigned).toBe(false);
+      expect(result.gatewayReachable).toBe(false);
+      expect(result.dnsResolves).toBe(false);
+      expect(result.internetReachable).toBe(false);
+    });
+  });
+
+  describe('formatConnectivityDetail', () => {
+    it('shows checkmarks for passing checks', () => {
+      const detail = formatConnectivityDetail({
+        linkUp: true,
+        ipAssigned: true,
+        gatewayReachable: true,
+        dnsResolves: true,
+        internetReachable: true,
+      });
+      expect(detail).toContain('\u2713 Link up (cable connected)');
+      expect(detail).toContain('\u2713 IP address assigned');
+      expect(detail).toContain('\u2713 Gateway reachable');
+      expect(detail).toContain('\u2713 DNS names resolve');
+      expect(detail).toContain('\u2713 Internet reachable');
+    });
+
+    it('shows crosses for failing checks', () => {
+      const detail = formatConnectivityDetail({
+        linkUp: false,
+        ipAssigned: false,
+        gatewayReachable: false,
+        dnsResolves: false,
+        internetReachable: false,
+      });
+      expect(detail).toContain('\u2717 Link down (no cable)');
+      expect(detail).toContain('\u2717 No IP address assigned');
+      expect(detail).toContain('\u2717 Gateway not reachable');
+      expect(detail).toContain('\u2717 DNS resolution failed');
+      expect(detail).toContain('\u2717 Internet not reachable');
+    });
+
+    it('formats as multi-line string', () => {
+      const detail = formatConnectivityDetail({
+        linkUp: true,
+        ipAssigned: true,
+        gatewayReachable: true,
+        dnsResolves: false,
+        internetReachable: false,
+      });
+      const lines = detail.split('\n');
+      expect(lines).toHaveLength(5);
+    });
+  });
+
+  describe('isConnectivityFullPass', () => {
+    it('returns true when all checks pass', () => {
+      expect(
+        isConnectivityFullPass({
+          linkUp: true,
+          ipAssigned: true,
+          gatewayReachable: true,
+          dnsResolves: true,
+          internetReachable: true,
+        })
+      ).toBe(true);
+    });
+
+    it('returns false when any check fails', () => {
+      expect(
+        isConnectivityFullPass({
+          linkUp: true,
+          ipAssigned: true,
+          gatewayReachable: true,
+          dnsResolves: false,
+          internetReachable: true,
+        })
+      ).toBe(false);
     });
   });
 });

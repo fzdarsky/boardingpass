@@ -32,6 +32,39 @@ import type { APIClient } from '../services/api/client';
 
 const CONNECTION_NAME = 'boardingpass-enrollment';
 
+/** Delay between action status updates for visual pacing (ms). */
+const ACTION_STATUS_DELAY_MS = 500;
+const statusDelay = () => new Promise(resolve => setTimeout(resolve, ACTION_STATUS_DELAY_MS));
+
+/** Parse the snake_case JSON from connectivity-test.sh into camelCase ConnectivityResult. */
+export function parseConnectivityResult(json: string): ConnectivityResult {
+  const raw = JSON.parse(json);
+  return {
+    linkUp: raw.link_up ?? false,
+    ipAssigned: raw.ip_assigned ?? false,
+    gatewayReachable: raw.gateway_reachable ?? false,
+    dnsResolves: raw.dns_resolves ?? false,
+    internetReachable: raw.internet_reachable ?? false,
+  };
+}
+
+/** Build a human-readable multi-line detail string from a ConnectivityResult. */
+export function formatConnectivityDetail(r: ConnectivityResult): string {
+  const check = (ok: boolean, yes: string, no: string) => (ok ? `\u2713 ${yes}` : `\u2717 ${no}`);
+  return [
+    check(r.linkUp, 'Link up (cable connected)', 'Link down (no cable)'),
+    check(r.ipAssigned, 'IP address assigned', 'No IP address assigned'),
+    check(r.gatewayReachable, 'Gateway reachable', 'Gateway not reachable'),
+    check(r.dnsResolves, 'DNS names resolve', 'DNS resolution failed'),
+    check(r.internetReachable, 'Internet reachable', 'Internet not reachable'),
+  ].join('\n');
+}
+
+/** Return true if all connectivity checks passed. */
+export function isConnectivityFullPass(r: ConnectivityResult): boolean {
+  return r.linkUp && r.ipAssigned && r.gatewayReachable && r.dnsResolves && r.internetReachable;
+}
+
 export interface StepValidation {
   isValid: boolean;
   errors: string[];
@@ -536,17 +569,15 @@ export function useConfigWizard() {
         let connectivityResult: ConnectivityResult | null = null;
         if (step === WIZARD_STEPS.ADDRESSING) {
           try {
-            const gateway = state.addressing.ipv4.gateway || '';
-            const iface = state.networkInterface.interfaceName;
-            if (gateway && iface) {
-              const testResult = await executeCommand(client, 'connectivity-test', [
-                iface,
-                gateway,
-              ]);
-              if (testResult.exit_code === 0 && testResult.stdout) {
-                connectivityResult = JSON.parse(testResult.stdout);
-              }
+            const params: string[] = [state.networkInterface.interfaceName];
+            if (state.addressing.ipv4.gateway) {
+              params.push(state.addressing.ipv4.gateway);
             }
+            const testResult = await executeCommand(client, 'connectivity-test', params);
+            if (testResult.stdout) {
+              connectivityResult = parseConnectivityResult(testResult.stdout);
+            }
+            // If stdout is empty the script exited early — connectivityResult stays null
           } catch {
             // Connectivity test is informational — don't fail the step
           }
@@ -611,14 +642,23 @@ export function useConfigWizard() {
       wizard.setApplyInProgress(true);
 
       try {
-        // Group actions by step for batch config/command operations
+        // Phase 1: Mark info-only actions (hostname unchanged, interface selection)
+        for (const a of actions) {
+          if (a.infoOnly && a.status === 'pending') {
+            wizard.updateActionStatus(a.id, 'success');
+            await statusDelay();
+          }
+        }
+
+        // Phase 2: Process steps in order, with checks interleaved after their
+        // respective steps so feedback follows the visual action list order.
         const stepsToApply = [
+          WIZARD_STEPS.HOSTNAME,
           WIZARD_STEPS.ADDRESSING,
           WIZARD_STEPS.SERVICES,
           WIZARD_STEPS.ENROLLMENT,
         ];
 
-        // Send config files for addressing + services + enrollment steps
         for (const step of stepsToApply) {
           const configFiles = buildStepConfigFiles(step, state);
           if (configFiles.length > 0) {
@@ -629,7 +669,6 @@ export function useConfigWizard() {
           // Execute commands for this step
           const commands = buildStepCommands(step, state);
           for (const cmd of commands) {
-            // Find matching action to update status
             const matchingAction = actions.find(
               a => !a.infoOnly && a.step === step && a.status === 'pending'
             );
@@ -643,7 +682,6 @@ export function useConfigWizard() {
               if (matchingAction) {
                 wizard.updateActionStatus(matchingAction.id, 'failed', errMsg);
               }
-              // Mark remaining pending actions as skipped
               for (const a of actions) {
                 if (a.status === 'pending' && !a.infoOnly) {
                   wizard.updateActionStatus(a.id, 'skipped');
@@ -654,110 +692,115 @@ export function useConfigWizard() {
 
             if (matchingAction) {
               wizard.updateActionStatus(matchingAction.id, 'success');
+              await statusDelay();
             }
           }
 
-          // Mark config-only actions for this step as success
+          // Mark remaining config-only actions for this step.
+          // Skip check/wait actions — they are handled inline below.
+          const inlineActionIds = new Set(['connectivity-check', 'clock-sync']);
           for (const a of actions) {
-            if (a.step === step && a.status === 'pending' && !a.infoOnly) {
+            if (
+              a.step === step &&
+              a.status === 'pending' &&
+              !a.infoOnly &&
+              !inlineActionIds.has(a.id)
+            ) {
               wizard.updateActionStatus(a.id, 'success');
+              await statusDelay();
             }
           }
-        }
 
-        // Connectivity check
-        const connectivityAction = actions.find(a => a.id === 'connectivity-check');
-        if (connectivityAction && !connectivityAction.infoOnly) {
-          wizard.updateActionStatus('connectivity-check', 'running');
-          try {
-            const gateway = state.addressing.ipv4.gateway || '';
-            const iface = state.networkInterface.interfaceName;
-            if (gateway && iface) {
-              const testResult = await executeCommand(client, 'connectivity-test', [
-                iface,
-                gateway,
-              ]);
-              if (testResult.exit_code === 0 && testResult.stdout) {
-                const result: ConnectivityResult = JSON.parse(testResult.stdout);
-                const detail = result.gatewayReachable
-                  ? 'Gateway reachable'
-                  : 'Gateway unreachable';
-                wizard.updateActionStatus('connectivity-check', 'success', detail);
-              } else {
-                wizard.updateActionStatus('connectivity-check', 'success', 'Test completed');
+          // ── Inline checks after their respective steps ──
+
+          if (step === WIZARD_STEPS.ADDRESSING) {
+            // Connectivity check — tests link, IP, gateway, DNS, and internet.
+            // Gateway is optional; the script auto-detects it from the routing table.
+            const connectivityAction = actions.find(a => a.id === 'connectivity-check');
+            if (connectivityAction && !connectivityAction.infoOnly) {
+              wizard.updateActionStatus('connectivity-check', 'running');
+              try {
+                const params: string[] = [state.networkInterface.interfaceName];
+                if (state.addressing.ipv4.gateway) {
+                  params.push(state.addressing.ipv4.gateway);
+                }
+                const testResult = await executeCommand(client, 'connectivity-test', params);
+                if (testResult.stdout) {
+                  const parsed = parseConnectivityResult(testResult.stdout);
+                  const status = isConnectivityFullPass(parsed) ? 'success' : 'warning';
+                  wizard.updateActionStatus(
+                    'connectivity-check',
+                    status,
+                    formatConnectivityDetail(parsed)
+                  );
+                } else {
+                  // Script exited before printing results (e.g. set -e triggered)
+                  const detail = testResult.stderr
+                    ? `Test failed: ${testResult.stderr.trim()}`
+                    : 'Test produced no output';
+                  wizard.updateActionStatus('connectivity-check', 'failed', detail);
+                }
+              } catch {
+                wizard.updateActionStatus('connectivity-check', 'failed', 'Could not run test');
               }
-            } else {
-              wizard.updateActionStatus('connectivity-check', 'success', 'Skipped (no gateway)');
+              await statusDelay();
             }
-          } catch {
-            // Connectivity test is informational — don't fail
-            wizard.updateActionStatus('connectivity-check', 'success', 'Could not verify');
           }
-        }
 
-        // DNS resolution check
-        const dnsCheckAction = actions.find(a => a.id === 'dns-check');
-        if (dnsCheckAction && !dnsCheckAction.infoOnly) {
-          wizard.updateActionStatus('dns-check', 'running');
-          try {
-            const dnsResult = await executeCommand(client, 'connectivity-test', [
-              state.networkInterface.interfaceName,
-              state.addressing.ipv4.gateway || '',
-            ]);
-            wizard.updateActionStatus(
-              'dns-check',
-              'success',
-              dnsResult.exit_code === 0 ? 'DNS resolution OK' : 'DNS check completed'
-            );
-          } catch {
-            wizard.updateActionStatus('dns-check', 'success', 'Could not verify');
-          }
-        }
+          if (step === WIZARD_STEPS.SERVICES) {
+            // Clock sync — poll /info until NTP is synchronised (up to 30 seconds)
+            const clockAction = actions.find(a => a.id === 'clock-sync');
+            if (clockAction && !clockAction.infoOnly) {
+              wizard.updateActionStatus('clock-sync', 'running');
+              let synced = false;
+              const maxAttempts = 10;
+              const pollInterval = 3000;
 
-        // Clock sync wait (poll /info for up to 30 seconds)
-        const clockAction = actions.find(a => a.id === 'clock-sync');
-        if (clockAction && !clockAction.infoOnly) {
-          wizard.updateActionStatus('clock-sync', 'running');
-          let synced = false;
-          const maxAttempts = 10;
-          const pollInterval = 3000;
-
-          for (let i = 0; i < maxAttempts; i++) {
-            try {
-              const info = await getSystemInfo(client);
-              if (info.os.clock_synchronized) {
-                synced = true;
-                break;
+              for (let i = 0; i < maxAttempts; i++) {
+                try {
+                  const info = await getSystemInfo(client);
+                  if (info.os.clock_synchronized) {
+                    synced = true;
+                    break;
+                  }
+                } catch {
+                  // Poll failure is not fatal
+                }
+                if (i < maxAttempts - 1) {
+                  await new Promise(resolve => setTimeout(resolve, pollInterval));
+                }
               }
-            } catch {
-              // Poll failure is not fatal
-            }
-            if (i < maxAttempts - 1) {
-              await new Promise(resolve => setTimeout(resolve, pollInterval));
-            }
-          }
 
-          wizard.updateActionStatus(
-            'clock-sync',
-            'success',
-            synced ? 'Clock synchronised' : 'Clock not yet synchronised (continuing)'
-          );
-        }
-
-        // Mark info-only actions as success
-        for (const a of actions) {
-          if (a.infoOnly && a.status === 'pending') {
-            wizard.updateActionStatus(a.id, 'success');
+              wizard.updateActionStatus(
+                'clock-sync',
+                synced ? 'success' : 'warning',
+                synced
+                  ? 'Clock synchronised'
+                  : 'Clock not yet synchronised — certificate checks and remote repos may fail'
+              );
+              await statusDelay();
+            }
           }
         }
 
-        // All actions complete — call /complete
-        await completeProvisioning(client, false);
+        // Caller is responsible for calling completeProvisioning() so the user
+        // can choose between "Finish" (no reboot) and "Finish & Reboot".
       } finally {
         wizard.setApplyInProgress(false);
       }
     },
     [state, wizard]
+  );
+
+  /**
+   * Signal provisioning complete to the service.
+   * Called by the UI after the user reviews results and chooses Finish or Finish & Reboot.
+   */
+  const finishProvisioning = useCallback(
+    async (client: APIClient, reboot: boolean): Promise<void> => {
+      await completeProvisioning(client, reboot);
+    },
+    []
   );
 
   return {
@@ -774,5 +817,6 @@ export function useConfigWizard() {
     applyDeferred,
     generateActionList,
     applyAllImmediate,
+    finishProvisioning,
   };
 }

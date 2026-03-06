@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Button, Text, Icon } from 'react-native-paper';
+import { Button, Text, Icon, useTheme } from 'react-native-paper';
 import * as Linking from 'expo-linking';
 import { AppError } from '../../utils/error-messages';
 
@@ -23,6 +23,7 @@ export const PermissionDeniedView: React.FC<PermissionDeniedViewProps> = ({
   onManualEntry,
   canAskAgain = true,
 }) => {
+  const theme = useTheme();
   const permissionType = error.context?.permission || 'permission';
   const isCameraPermission = permissionType === 'camera';
 
@@ -35,16 +36,16 @@ export const PermissionDeniedView: React.FC<PermissionDeniedViewProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.iconContainer}>
-        <Icon source="shield-alert" size={64} color="#FF6B6B" />
+        <Icon source="shield-alert" size={64} color={theme.colors.error} />
       </View>
 
-      <Text variant="headlineSmall" style={styles.title}>
+      <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.onSurface }]}>
         Permission Required
       </Text>
 
-      <Text variant="bodyMedium" style={styles.message}>
+      <Text variant="bodyMedium" style={[styles.message, { color: theme.colors.onSurfaceVariant }]}>
         {error.context?.canAskAgain === false
           ? `${
               permissionType.charAt(0).toUpperCase() + permissionType.slice(1)
@@ -53,9 +54,9 @@ export const PermissionDeniedView: React.FC<PermissionDeniedViewProps> = ({
       </Text>
 
       {error.context?.helpText && (
-        <View style={styles.helpBox}>
-          <Icon source="information" size={20} color="#4A90E2" />
-          <Text variant="bodySmall" style={styles.helpText}>
+        <View style={[styles.helpBox, { backgroundColor: theme.colors.secondaryContainer }]}>
+          <Icon source="information" size={20} color={theme.colors.primary} />
+          <Text variant="bodySmall" style={[styles.helpText, { color: theme.colors.secondary }]}>
             {error.context.helpText}
           </Text>
         </View>
@@ -99,7 +100,7 @@ export const PermissionDeniedView: React.FC<PermissionDeniedViewProps> = ({
         )}
       </View>
 
-      <Text variant="bodySmall" style={styles.footerText}>
+      <Text variant="bodySmall" style={[styles.footerText, { color: theme.colors.outline }]}>
         {isCameraPermission
           ? 'Camera access is required for QR scanning. You can also enter the connection code manually.'
           : `${
@@ -116,7 +117,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#FFFFFF',
   },
   iconContainer: {
     marginBottom: 24,
@@ -125,18 +125,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 12,
-    color: '#333333',
   },
   message: {
     textAlign: 'center',
     marginBottom: 24,
-    color: '#666666',
     lineHeight: 22,
   },
   helpBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#E3F2FD',
     padding: 16,
     borderRadius: 8,
     marginBottom: 24,
@@ -145,7 +142,6 @@ const styles = StyleSheet.create({
   helpText: {
     flex: 1,
     marginLeft: 12,
-    color: '#1976D2',
     lineHeight: 20,
   },
   actions: {
@@ -161,7 +157,6 @@ const styles = StyleSheet.create({
   footerText: {
     marginTop: 24,
     textAlign: 'center',
-    color: '#999999',
     lineHeight: 18,
   },
 });
