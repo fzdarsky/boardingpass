@@ -171,8 +171,8 @@ export default function InterfaceStep({ interfaces, children }: InterfaceStepPro
 
       {state.serviceInterfaceName && (
         <Text variant="bodySmall" style={styles.footnote}>
-          <Text style={{ color: theme.colors.error }}>{'* '}</Text>
-          = interface currently used for provisioning
+          <Text style={{ color: theme.colors.error }}>{'* '}</Text>= interface currently used for
+          provisioning
         </Text>
       )}
 

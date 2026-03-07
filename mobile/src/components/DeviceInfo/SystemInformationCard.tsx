@@ -202,8 +202,8 @@ export function SystemInformationCard({
             ))}
             {serviceIfaceName && (
               <Text variant="bodySmall" style={styles.footnote}>
-                <Text style={{ color: theme.colors.error }}>{'* '}</Text>
-                = interface currently used for provisioning
+                <Text style={{ color: theme.colors.error }}>{'* '}</Text>= interface currently used
+                for provisioning
               </Text>
             )}
           </>

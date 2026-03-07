@@ -29,6 +29,7 @@ export interface UseDeviceDiscoveryResult {
   stopDiscovery: () => void;
   refreshDevices: () => void;
   addManualDevice: (ip: string, port: number) => Device;
+  deleteDevice: (deviceId: string) => void;
 }
 
 /**
@@ -78,6 +79,7 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
 
   /**
    * Remove device from list (mark as offline)
+   * Used by mDNS when a device disappears from the network
    */
   const removeDevice = useCallback((deviceId: string) => {
     setDevices(prev => {
@@ -91,6 +93,25 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       });
 
       return prev.map(d => (d.id === deviceId ? { ...d, status: 'offline' as const } : d));
+    });
+  }, []);
+
+  /**
+   * Delete device from list entirely (user-initiated)
+   */
+  const deleteDevice = useCallback((deviceId: string) => {
+    setDevices(prev => {
+      const device = prev.find(d => d.id === deviceId);
+      if (!device) return prev;
+
+      // eslint-disable-next-line no-console
+      console.log('Device deleted by user:', {
+        deviceId,
+        discoveryMethod: device.discoveryMethod,
+        timestamp: new Date().toISOString(),
+      });
+
+      return prev.filter(d => d.id !== deviceId);
     });
   }, []);
 
@@ -307,5 +328,6 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
     stopDiscovery,
     refreshDevices,
     addManualDevice,
+    deleteDevice,
   };
 }
