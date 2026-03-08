@@ -4,9 +4,8 @@
  * Renders the current step component, StepIndicator, and Next/Back buttons.
  * Validates step before forward navigation and tracks maxReachedStep.
  *
- * Handles two apply modes:
- * - Immediate: applies config per-step via API, shows ApplyFeedback
- * - Deferred: shows ReviewPage after final step, sends atomic bundle + reboot
+ * Steps 1–5 navigate with "Next" only (no per-step apply).
+ * Step 6 (Review & Apply) handles both immediate and deferred apply flows.
  */
 
 import React, { useState, useCallback } from 'react';
@@ -21,10 +20,9 @@ import AddressingStep from './AddressingStep';
 import ServicesStep from './ServicesStep';
 import EnrollmentStep from './EnrollmentStep';
 import ApplyFeedback from './ApplyFeedback';
-import ReviewPage from './ReviewPage';
+import ReviewApplyPage from './ReviewApplyPage';
 import { useConfigWizard } from '../../hooks/useConfigWizard';
 import { WIZARD_STEPS } from '../../types/wizard';
-import { completeProvisioning } from '../../services/api/complete';
 import type { components } from '../../types/api';
 import type { APIClient } from '../../services/api/client';
 import { spacing } from '../../theme';
@@ -48,92 +46,24 @@ export default function WizardContainer({
   const theme = useTheme();
   const [errors, setErrors] = useState<string[]>([]);
   const [showError, setShowError] = useState(false);
-  const [showReview, setShowReview] = useState(false);
-  const [deferredApplying, setDeferredApplying] = useState(false);
   const [terminalState, setTerminalState] = useState<TerminalState>(null);
 
-  const isImmediate = wizard.state.applyMode === 'immediate';
-
-  // Hostname is always applied immediately (safe — doesn't affect connectivity).
-  // Other steps are applied immediately only when the wizard is in immediate mode.
-  // Interface step (Step 2) never has config to apply.
-  const willApplyOnNext =
-    !wizard.isLastStep &&
-    (wizard.state.currentStep === WIZARD_STEPS.HOSTNAME ||
-      (isImmediate && wizard.state.currentStep !== WIZARD_STEPS.INTERFACE));
-
-  const handleNext = useCallback(async () => {
-    if (wizard.isLastStep) {
-      const validation = wizard.validateStep(wizard.state.currentStep);
-      if (!validation.isValid) {
-        setErrors(validation.errors);
-        setShowError(true);
-        return;
-      }
-
-      if (isImmediate && apiClient) {
-        // Immediate mode: apply the final step, then call /complete
-        const applyError = await wizard.applyStepImmediate(wizard.state.currentStep, apiClient);
-        if (applyError) {
-          setErrors([applyError]);
-          setShowError(true);
-          return;
-        }
-
-        try {
-          await completeProvisioning(apiClient, false);
-          setTerminalState('shutting_down');
-          setTimeout(() => onComplete?.(), 5000);
-        } catch {
-          // If /complete fails, still allow retry via the Finish flow
-          setErrors(['Failed to finalize provisioning. The device may need manual attention.']);
-          setShowError(true);
-        }
-      } else if (wizard.state.applyMode === 'deferred') {
-        // Deferred mode: show review page
-        setShowReview(true);
-      } else {
-        // No apply mode (e.g. no apiClient) — just complete
-        onComplete?.();
-      }
-    } else {
-      // Validate current step before doing anything
-      const validation = wizard.validateStep(wizard.state.currentStep);
-      if (!validation.isValid) {
-        setErrors(validation.errors);
-        setShowError(true);
-        return;
-      }
-
-      // Apply config first (if needed), then navigate on success
-      const shouldApply = wizard.state.currentStep === WIZARD_STEPS.HOSTNAME || isImmediate;
-      if (shouldApply && apiClient) {
-        const error = await wizard.applyStepImmediate(wizard.state.currentStep, apiClient);
-        if (error) {
-          setErrors([error]);
-          setShowError(true);
-          return;
-        }
-      }
-
-      wizard.goNext();
+  const handleNext = useCallback(() => {
+    // Review step (Step 6) is handled by ReviewApplyPage — no handleNext needed
+    if (wizard.state.currentStep === WIZARD_STEPS.REVIEW) {
+      return;
     }
-  }, [wizard, isImmediate, apiClient, onComplete]);
 
-  const handleDeferredConfirm = useCallback(async () => {
-    if (!apiClient) return;
-
-    setDeferredApplying(true);
-    try {
-      await wizard.applyDeferred(apiClient);
-      setTerminalState('rebooting');
-      setTimeout(() => onComplete?.(), 8000);
-    } catch (err) {
-      setDeferredApplying(false);
-      setErrors([err instanceof Error ? err.message : 'Failed to apply configuration']);
+    // Validate current step before navigating
+    const validation = wizard.validateStep(wizard.state.currentStep);
+    if (!validation.isValid) {
+      setErrors(validation.errors);
       setShowError(true);
+      return;
     }
-  }, [apiClient, wizard, onComplete]);
+
+    wizard.goNext();
+  }, [wizard]);
 
   const handleStepPress = (step: number) => {
     if (wizard.canNavigateTo(step)) {
@@ -171,39 +101,8 @@ export default function WizardContainer({
     );
   }
 
-  // Deferred mode review page
-  if (showReview) {
-    return (
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={100}
-      >
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <ReviewPage
-            onConfirm={handleDeferredConfirm}
-            onBack={() => setShowReview(false)}
-            applying={deferredApplying}
-          />
-        </ScrollView>
-
-        <Snackbar
-          visible={showError}
-          onDismiss={() => setShowError(false)}
-          duration={4000}
-          action={{ label: 'Dismiss', onPress: () => setShowError(false) }}
-        >
-          {errors[0] || 'An error occurred.'}
-        </Snackbar>
-      </KeyboardAvoidingView>
-    );
-  }
-
   const isWifiSelected = wizard.state.networkInterface.interfaceType === 'wifi';
+  const isReviewStep = wizard.state.currentStep === WIZARD_STEPS.REVIEW;
 
   const renderStep = () => {
     switch (wizard.state.currentStep) {
@@ -221,12 +120,29 @@ export default function WizardContainer({
         return <ServicesStep />;
       case WIZARD_STEPS.ENROLLMENT:
         return <EnrollmentStep />;
+      case WIZARD_STEPS.REVIEW:
+        return (
+          <ReviewApplyPage
+            apiClient={apiClient}
+            onComplete={(terminal: TerminalState) => {
+              setTerminalState(terminal);
+              if (terminal) {
+                const delay = terminal === 'rebooting' ? 8000 : 5000;
+                setTimeout(() => onComplete?.(), delay);
+              }
+            }}
+            onError={(msg: string) => {
+              setErrors([msg]);
+              setShowError(true);
+            }}
+          />
+        );
       default:
         return null;
     }
   };
 
-  // Determine if current step is being applied (immediate mode)
+  // Determine if current step is being applied (hostname only)
   const currentApplyStatus = wizard.state.stepApplyStatus[wizard.state.currentStep];
   const isApplying = currentApplyStatus?.status === 'applying';
 
@@ -250,8 +166,9 @@ export default function WizardContainer({
       >
         {renderStep()}
 
-        {/* Show ApplyFeedback for failures (all steps) or connectivity results (Step 3) */}
-        {currentApplyStatus &&
+        {/* Show ApplyFeedback for hostname failures or connectivity results (Step 3) */}
+        {!isReviewStep &&
+          currentApplyStatus &&
           (currentApplyStatus.status === 'failed' ||
             (currentApplyStatus.status === 'success' && currentApplyStatus.connectivityResult)) && (
             <ApplyFeedback
@@ -265,42 +182,31 @@ export default function WizardContainer({
           )}
       </ScrollView>
 
-      <View style={[styles.navigation, { borderTopColor: theme.colors.outlineVariant }]}>
-        <Button
-          mode="outlined"
-          onPress={wizard.goBack}
-          disabled={wizard.isFirstStep || isApplying}
-          style={styles.navButton}
-          accessibilityLabel="Previous step"
-        >
-          Back
-        </Button>
+      {/* Hide nav buttons on Review step — ReviewApplyPage has its own buttons */}
+      {!isReviewStep && (
+        <View style={[styles.navigation, { borderTopColor: theme.colors.outlineVariant }]}>
+          <Button
+            mode="outlined"
+            onPress={wizard.goBack}
+            disabled={wizard.isFirstStep || isApplying}
+            style={styles.navButton}
+            accessibilityLabel="Previous step"
+          >
+            Back
+          </Button>
 
-        <Button
-          mode="contained"
-          onPress={handleNext}
-          disabled={isApplying}
-          loading={isApplying}
-          style={styles.navButton}
-          accessibilityLabel={
-            wizard.isLastStep
-              ? 'Finish wizard'
-              : willApplyOnNext
-                ? 'Apply and go to next step'
-                : 'Next step'
-          }
-        >
-          {isApplying
-            ? 'Applying...'
-            : wizard.isLastStep
-              ? wizard.state.applyMode === 'deferred'
-                ? 'Review'
-                : 'Finish'
-              : willApplyOnNext
-                ? 'Apply & Next'
-                : 'Next'}
-        </Button>
-      </View>
+          <Button
+            mode="contained"
+            onPress={handleNext}
+            disabled={isApplying}
+            loading={isApplying}
+            style={styles.navButton}
+            accessibilityLabel="Next step"
+          >
+            {isApplying ? 'Applying...' : 'Next'}
+          </Button>
+        </View>
+      )}
 
       <Snackbar
         visible={showError}

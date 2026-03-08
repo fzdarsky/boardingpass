@@ -40,8 +40,7 @@ export default function HostnameStep() {
         variant="bodyMedium"
         style={[styles.description, { color: theme.colors.onSurfaceVariant }]}
       >
-        Enter the hostname for this device. It must follow RFC 1123 naming rules: alphanumeric
-        characters and hyphens, 1-63 characters per label.
+        Enter the hostname for this device.
       </Text>
 
       <TextInput

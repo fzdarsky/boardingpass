@@ -1,7 +1,7 @@
 /**
  * WizardContext
  *
- * Ephemeral state management for the 5-step enrollment configuration wizard.
+ * Ephemeral state management for the 6-step enrollment configuration wizard.
  * Uses useReducer for predictable state transitions.
  * This context is local to the wizard screen — not part of the global app state.
  */
@@ -15,6 +15,7 @@ import type {
   ServicesConfig,
   EnrollmentConfig,
   ApplyStatus,
+  PlannedAction,
 } from '../types/wizard';
 import { createInitialWizardState } from '../types/wizard';
 
@@ -30,6 +31,12 @@ type WizardAction =
   | { type: 'SET_APPLY_MODE'; payload: 'immediate' | 'deferred' }
   | { type: 'SET_SERVICE_INTERFACE'; payload: string }
   | { type: 'SET_APPLY_STATUS'; payload: { step: number; status: ApplyStatus } }
+  | { type: 'SET_ACTION_LIST'; payload: PlannedAction[] }
+  | { type: 'SET_APPLY_IN_PROGRESS'; payload: boolean }
+  | {
+      type: 'UPDATE_ACTION_STATUS';
+      payload: { id: string; status: PlannedAction['status']; detail?: string | null };
+    }
   | { type: 'RESET' };
 
 // ── Reducer ──
@@ -73,6 +80,22 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
         },
       };
 
+    case 'SET_ACTION_LIST':
+      return { ...state, actionList: action.payload };
+
+    case 'SET_APPLY_IN_PROGRESS':
+      return { ...state, applyInProgress: action.payload };
+
+    case 'UPDATE_ACTION_STATUS':
+      return {
+        ...state,
+        actionList: state.actionList.map(a =>
+          a.id === action.payload.id
+            ? { ...a, status: action.payload.status, detail: action.payload.detail ?? a.detail }
+            : a
+        ),
+      };
+
     case 'RESET':
       return createInitialWizardState();
 
@@ -94,6 +117,9 @@ interface WizardContextValue {
   setApplyMode: (mode: 'immediate' | 'deferred') => void;
   setServiceInterface: (name: string) => void;
   setApplyStatus: (step: number, status: ApplyStatus) => void;
+  setActionList: (actions: PlannedAction[]) => void;
+  setApplyInProgress: (inProgress: boolean) => void;
+  updateActionStatus: (id: string, status: PlannedAction['status'], detail?: string | null) => void;
   reset: () => void;
 }
 
@@ -145,6 +171,21 @@ export function WizardProvider({ children, initialState }: WizardProviderProps) 
     dispatch({ type: 'SET_APPLY_STATUS', payload: { step, status } });
   }, []);
 
+  const setActionList = useCallback((actions: PlannedAction[]) => {
+    dispatch({ type: 'SET_ACTION_LIST', payload: actions });
+  }, []);
+
+  const setApplyInProgress = useCallback((inProgress: boolean) => {
+    dispatch({ type: 'SET_APPLY_IN_PROGRESS', payload: inProgress });
+  }, []);
+
+  const updateActionStatus = useCallback(
+    (id: string, status: PlannedAction['status'], detail?: string | null) => {
+      dispatch({ type: 'UPDATE_ACTION_STATUS', payload: { id, status, detail } });
+    },
+    []
+  );
+
   const reset = useCallback(() => {
     dispatch({ type: 'RESET' });
   }, []);
@@ -160,6 +201,9 @@ export function WizardProvider({ children, initialState }: WizardProviderProps) 
     setApplyMode,
     setServiceInterface,
     setApplyStatus,
+    setActionList,
+    setApplyInProgress,
+    updateActionStatus,
     reset,
   };
 

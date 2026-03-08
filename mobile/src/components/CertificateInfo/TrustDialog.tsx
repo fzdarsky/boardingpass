@@ -98,7 +98,7 @@ export function CertificateTrustDialog({
             <CertificateInfoDisplay certificate={certificate} compact={false} />
 
             {/* Security Notice */}
-            <View style={styles.securityNotice}>
+            <View style={[styles.securityNotice, { backgroundColor: theme.colors.surfaceVariant }]}>
               <Text variant="labelMedium" style={styles.securityTitle}>
                 Security Notice:
               </Text>
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   securityNotice: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: undefined, // set dynamically via theme.colors.surfaceVariant
     borderRadius: 8,
   },
   securityTitle: {

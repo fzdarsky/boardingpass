@@ -4,7 +4,8 @@ import 'react-native-get-random-values';
 
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
 import * as SplashScreen from 'expo-splash-screen';
 import { AppProvider } from '@/contexts/AppProvider';
@@ -26,45 +27,53 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <PaperProvider theme={theme}>
-      <AppProvider>
-        <Stack
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: theme.colors.primary,
-            },
-            headerTintColor: theme.colors.onPrimary,
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        >
-          <Stack.Screen
-            name="index"
-            options={{
-              title: 'Devices',
+    <GestureHandlerRootView style={styles.container}>
+      <PaperProvider theme={theme}>
+        <AppProvider>
+          <Stack
+            screenOptions={{
+              headerStyle: {
+                backgroundColor: theme.colors.primary,
+              },
+              headerTintColor: theme.colors.onPrimary,
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
             }}
-          />
-          <Stack.Screen
-            name="device/[id]"
-            options={{
-              title: 'Device Details',
-            }}
-          />
-          <Stack.Screen
-            name="device/authenticate"
-            options={{
-              title: 'Authenticate',
-            }}
-          />
-          <Stack.Screen
-            name="device/configure"
-            options={{
-              title: 'Configure Device',
-            }}
-          />
-        </Stack>
-      </AppProvider>
-    </PaperProvider>
+          >
+            <Stack.Screen
+              name="index"
+              options={{
+                title: 'Devices',
+              }}
+            />
+            <Stack.Screen
+              name="device/[id]"
+              options={{
+                title: 'Device Details',
+              }}
+            />
+            <Stack.Screen
+              name="device/authenticate"
+              options={{
+                title: 'Authenticate',
+              }}
+            />
+            <Stack.Screen
+              name="device/configure"
+              options={{
+                title: 'Configure Device',
+              }}
+            />
+          </Stack>
+        </AppProvider>
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

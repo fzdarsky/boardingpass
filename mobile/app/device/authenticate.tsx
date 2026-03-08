@@ -37,7 +37,7 @@ import {
   useTheme,
 } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { spacing, theme } from '@/theme';
+import { spacing } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useCertificateValidation } from '@/hooks/useCertificateValidation';
 import QRScanner from '@/components/QRScanner';
@@ -519,9 +519,18 @@ export default function AuthenticateScreen(): React.ReactElement {
    */
   if (isCertValidating) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: paperTheme.colors.background },
+        ]}
+      >
         <ActivityIndicator animating={true} size="large" />
-        <Text variant="bodyMedium" style={styles.loadingText}>
+        <Text
+          variant="bodyMedium"
+          style={[styles.loadingText, { color: paperTheme.colors.onSurfaceVariant }]}
+        >
           Verifying device certificate...
         </Text>
       </View>
@@ -533,11 +542,23 @@ export default function AuthenticateScreen(): React.ReactElement {
    */
   if (certError && !requiresTrust && !certReady) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: paperTheme.colors.background },
+        ]}
+      >
         <Text variant="headlineSmall" style={styles.deviceName}>
           Connection Failed
         </Text>
-        <Text variant="bodyMedium" style={[styles.instructions, { marginTop: spacing.md }]}>
+        <Text
+          variant="bodyMedium"
+          style={[
+            styles.instructions,
+            { marginTop: spacing.md, color: paperTheme.colors.onSurfaceVariant },
+          ]}
+        >
           {certError}
         </Text>
         <Button mode="contained" onPress={() => router.back()} style={styles.authenticateButton}>
@@ -555,13 +576,17 @@ export default function AuthenticateScreen(): React.ReactElement {
     const isCertChanged = certificate.trustStatus === 'changed';
 
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: paperTheme.colors.background }]}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.trustContent}>
           {/* Header */}
           <View style={styles.trustHeader}>
             <Text
               variant="headlineSmall"
-              style={isCertChanged ? styles.errorText : styles.deviceName}
+              style={
+                isCertChanged
+                  ? [styles.errorText, { color: paperTheme.colors.error }]
+                  : styles.deviceName
+              }
             >
               {isCertChanged ? 'Certificate Changed' : 'Trust Certificate?'}
             </Text>
@@ -569,8 +594,13 @@ export default function AuthenticateScreen(): React.ReactElement {
 
           {/* Warning for changed certificates */}
           {isCertChanged && (
-            <View style={styles.warningBox}>
-              <Text variant="bodyMedium" style={styles.warningText}>
+            <View
+              style={[styles.warningBox, { backgroundColor: paperTheme.colors.errorContainer }]}
+            >
+              <Text
+                variant="bodyMedium"
+                style={[styles.warningText, { color: paperTheme.colors.onErrorContainer }]}
+              >
                 The certificate for this device has changed since your last connection. This could
                 indicate a security issue or that the device was reconfigured.
               </Text>
@@ -579,8 +609,13 @@ export default function AuthenticateScreen(): React.ReactElement {
 
           {/* Info for new self-signed certificates */}
           {!isCertChanged && certificate.isSelfSigned && (
-            <View style={styles.infoBox}>
-              <Text variant="bodyMedium" style={styles.infoText}>
+            <View
+              style={[styles.infoBox, { backgroundColor: paperTheme.colors.secondaryContainer }]}
+            >
+              <Text
+                variant="bodyMedium"
+                style={[styles.infoText, { color: paperTheme.colors.onSecondaryContainer }]}
+              >
                 This device uses a self-signed certificate. Verify the fingerprint matches the
                 device before trusting it.
               </Text>
@@ -591,7 +626,9 @@ export default function AuthenticateScreen(): React.ReactElement {
           <CertificateInfoDisplay certificate={certificate} compact={false} />
 
           {/* Security notice */}
-          <View style={styles.securityNotice}>
+          <View
+            style={[styles.securityNotice, { backgroundColor: paperTheme.colors.surfaceVariant }]}
+          >
             <Text variant="labelMedium" style={styles.securityTitle}>
               Security Notice:
             </Text>
@@ -611,7 +648,7 @@ export default function AuthenticateScreen(): React.ReactElement {
               mode="contained"
               onPress={handleTrustCertificate}
               style={styles.trustButton}
-              buttonColor={isCertChanged ? theme.colors.error : undefined}
+              buttonColor={isCertChanged ? paperTheme.colors.error : undefined}
             >
               {isCertChanged ? 'Trust Anyway' : 'Trust Certificate'}
             </Button>
@@ -638,7 +675,7 @@ export default function AuthenticateScreen(): React.ReactElement {
    * Render manual entry mode (only after certificate is trusted)
    */
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: paperTheme.colors.background }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -649,7 +686,10 @@ export default function AuthenticateScreen(): React.ReactElement {
           <Text variant="headlineSmall" style={styles.deviceName}>
             {deviceName}
           </Text>
-          <Text variant="bodyMedium" style={styles.deviceHost}>
+          <Text
+            variant="bodyMedium"
+            style={[styles.deviceHost, { color: paperTheme.colors.onSurfaceVariant }]}
+          >
             {host}:{portNumber}
           </Text>
         </View>
@@ -674,7 +714,10 @@ export default function AuthenticateScreen(): React.ReactElement {
         />
 
         {/* Instructions */}
-        <Text variant="bodyMedium" style={styles.instructions}>
+        <Text
+          variant="bodyMedium"
+          style={[styles.instructions, { color: paperTheme.colors.onSurfaceVariant }]}
+        >
           Enter the connection code displayed on the device, or scan a code for faster
           authentication.
         </Text>
@@ -691,8 +734,11 @@ export default function AuthenticateScreen(): React.ReactElement {
 
         {/* Delay message (T074) */}
         {isDelaying && (
-          <View style={styles.delayBanner}>
-            <Text variant="bodyMedium" style={styles.delayText}>
+          <View style={[styles.delayBanner, { backgroundColor: paperTheme.colors.errorContainer }]}>
+            <Text
+              variant="bodyMedium"
+              style={[styles.delayText, { color: paperTheme.colors.onErrorContainer }]}
+            >
               {getDelayMessage()}
             </Text>
           </View>
@@ -730,7 +776,6 @@ export default function AuthenticateScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   centerContent: {
     justifyContent: 'center' as const,
@@ -753,26 +798,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: spacing.xs,
   },
-  deviceHost: {
-    color: theme.colors.onSurfaceVariant,
-  },
+  deviceHost: {},
   modeSelector: {
     marginBottom: spacing.lg,
   },
   instructions: {
     marginBottom: spacing.lg,
     textAlign: 'center',
-    color: theme.colors.onSurfaceVariant,
   },
   delayBanner: {
     marginTop: spacing.md,
     marginBottom: spacing.md,
     padding: spacing.md,
     borderRadius: 8,
-    backgroundColor: theme.colors.errorContainer,
   },
   delayText: {
-    color: theme.colors.onErrorContainer,
     textAlign: 'center',
     fontWeight: '500',
   },
@@ -784,7 +824,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: spacing.md,
-    color: theme.colors.onSurfaceVariant,
   },
   trustContent: {
     flexGrow: 1,
@@ -796,31 +835,24 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontWeight: 'bold',
-    color: theme.colors.error,
   },
   warningBox: {
     padding: spacing.md,
     borderRadius: 8,
-    backgroundColor: theme.colors.errorContainer,
     marginBottom: spacing.md,
   },
   warningText: {
-    color: theme.colors.onErrorContainer,
     fontWeight: '600',
   },
   infoBox: {
     padding: spacing.md,
     borderRadius: 8,
-    backgroundColor: theme.colors.secondaryContainer,
     marginBottom: spacing.md,
   },
-  infoText: {
-    color: theme.colors.onSecondaryContainer,
-  },
+  infoText: {},
   securityNotice: {
     marginTop: spacing.md,
     padding: spacing.md,
-    backgroundColor: theme.colors.surfaceVariant,
     borderRadius: 8,
   },
   securityTitle: {

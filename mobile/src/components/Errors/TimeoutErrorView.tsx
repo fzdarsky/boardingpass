@@ -6,8 +6,9 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Button, Text, Icon } from 'react-native-paper';
+import { Button, Text, Icon, useTheme } from 'react-native-paper';
 import { AppError, getErrorMessage, getErrorHelpText } from '../../utils/error-messages';
+import { statusColors } from '../../theme';
 
 interface TimeoutErrorViewProps {
   error: AppError;
@@ -22,46 +23,59 @@ export const TimeoutErrorView: React.FC<TimeoutErrorViewProps> = ({
   onCancel,
   operation,
 }) => {
+  const theme = useTheme();
   const errorMessage = getErrorMessage(error);
   const helpText = getErrorHelpText(error);
 
   const operationName = operation || error.context?.operation || 'request';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.iconContainer}>
-        <Icon source="clock-alert" size={64} color="#FFA726" />
+        <Icon source="clock-alert" size={64} color={statusColors.selfSignedNew} />
       </View>
 
-      <Text variant="headlineSmall" style={styles.title}>
+      <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.onSurface }]}>
         Request Timed Out
       </Text>
 
-      <Text variant="bodyMedium" style={styles.message}>
+      <Text variant="bodyMedium" style={[styles.message, { color: theme.colors.onSurfaceVariant }]}>
         {errorMessage}
       </Text>
 
       {helpText && (
-        <View style={styles.helpBox}>
-          <Icon source="information" size={20} color="#4A90E2" />
-          <Text variant="bodySmall" style={styles.helpText}>
+        <View style={[styles.helpBox, { backgroundColor: theme.colors.secondaryContainer }]}>
+          <Icon source="information" size={20} color={theme.colors.primary} />
+          <Text variant="bodySmall" style={[styles.helpText, { color: theme.colors.secondary }]}>
             {helpText}
           </Text>
         </View>
       )}
 
       {/* Timeout-specific guidance */}
-      <View style={styles.guidanceBox}>
-        <Text variant="titleSmall" style={styles.guidanceTitle}>
+      <View style={[styles.guidanceBox, { backgroundColor: theme.colors.tertiaryContainer }]}>
+        <Text
+          variant="titleSmall"
+          style={[styles.guidanceTitle, { color: theme.colors.onTertiaryContainer }]}
+        >
           What can cause timeouts?
         </Text>
-        <Text variant="bodySmall" style={styles.guidanceItem}>
+        <Text
+          variant="bodySmall"
+          style={[styles.guidanceItem, { color: theme.colors.onTertiaryContainer }]}
+        >
           • Slow or unstable network connection
         </Text>
-        <Text variant="bodySmall" style={styles.guidanceItem}>
+        <Text
+          variant="bodySmall"
+          style={[styles.guidanceItem, { color: theme.colors.onTertiaryContainer }]}
+        >
           • Device is busy processing other tasks
         </Text>
-        <Text variant="bodySmall" style={styles.guidanceItem}>
+        <Text
+          variant="bodySmall"
+          style={[styles.guidanceItem, { color: theme.colors.onTertiaryContainer }]}
+        >
           • Weak WiFi signal
         </Text>
       </View>
@@ -80,7 +94,7 @@ export const TimeoutErrorView: React.FC<TimeoutErrorViewProps> = ({
         )}
       </View>
 
-      <Text variant="bodySmall" style={styles.footerText}>
+      <Text variant="bodySmall" style={[styles.footerText, { color: theme.colors.outline }]}>
         The {operationName} took longer than expected
       </Text>
     </View>
@@ -93,7 +107,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#FFFFFF',
   },
   iconContainer: {
     marginBottom: 24,
@@ -102,18 +115,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 12,
-    color: '#333333',
   },
   message: {
     textAlign: 'center',
     marginBottom: 24,
-    color: '#666666',
     lineHeight: 22,
   },
   helpBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#E3F2FD',
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
@@ -122,11 +132,9 @@ const styles = StyleSheet.create({
   helpText: {
     flex: 1,
     marginLeft: 12,
-    color: '#1976D2',
     lineHeight: 20,
   },
   guidanceBox: {
-    backgroundColor: '#FFF8E1',
     padding: 16,
     borderRadius: 8,
     marginBottom: 24,
@@ -135,11 +143,9 @@ const styles = StyleSheet.create({
   guidanceTitle: {
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#F57F17',
   },
   guidanceItem: {
     marginBottom: 4,
-    color: '#F9A825',
     lineHeight: 20,
   },
   actions: {
@@ -155,7 +161,6 @@ const styles = StyleSheet.create({
   footerText: {
     marginTop: 24,
     textAlign: 'center',
-    color: '#999999',
     lineHeight: 18,
   },
 });

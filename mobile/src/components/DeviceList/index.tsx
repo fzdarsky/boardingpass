@@ -4,6 +4,7 @@
  * Displays list of discovered devices with:
  * - Device cards with status indicators
  * - Pull-to-refresh functionality
+ * - Swipe-to-delete functionality
  * - Empty state ("no devices found")
  * - Scanning state (loading indicator)
  * - Auto-refresh on device changes
@@ -14,7 +15,7 @@ import React, { useCallback } from 'react';
 import { StyleSheet, FlatList, RefreshControl, View } from 'react-native';
 import { Text, ActivityIndicator, Button, useTheme } from 'react-native-paper';
 import { Device } from '@/types/device';
-import { DeviceCard } from './DeviceCard';
+import { SwipeableDeviceCard } from './SwipeableDeviceCard';
 import { SkeletonDeviceList } from '../Skeleton';
 
 export interface DeviceListProps {
@@ -22,6 +23,7 @@ export interface DeviceListProps {
   isScanning: boolean;
   onRefresh?: () => void;
   onDevicePress?: (device: Device) => void;
+  onDeleteDevice?: (device: Device) => void;
   onStartScan?: () => void;
   onAddDevice?: () => void;
   authenticatedDeviceIds?: Set<string>;
@@ -32,6 +34,7 @@ export function DeviceList({
   isScanning,
   onRefresh,
   onDevicePress,
+  onDeleteDevice,
   onStartScan,
   onAddDevice,
   authenticatedDeviceIds,
@@ -57,14 +60,15 @@ export function DeviceList({
   // Render item callback (memoized to avoid re-creation)
   const renderDeviceCard = useCallback(
     ({ item }: { item: Device }) => (
-      <DeviceCard
+      <SwipeableDeviceCard
         device={item}
         onPress={() => onDevicePress?.(item)}
+        onDelete={onDeleteDevice ? () => onDeleteDevice(item) : undefined}
         showDuplicateIndicator={hasDuplicateNames && deviceNamesCount[item.name] > 1}
         isAuthenticated={authenticatedDeviceIds?.has(item.id) ?? false}
       />
     ),
-    [onDevicePress, hasDuplicateNames, deviceNamesCount, authenticatedDeviceIds]
+    [onDevicePress, onDeleteDevice, hasDuplicateNames, deviceNamesCount, authenticatedDeviceIds]
   );
 
   // Render empty state

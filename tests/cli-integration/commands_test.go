@@ -44,10 +44,17 @@ func TestInfoCommand(t *testing.T) {
 			TPM: protocol.TPMInfo{
 				Present: true,
 			},
-			Board: protocol.BoardInfo{
-				Manufacturer: "Test Manufacturer",
-				Model:        "Test Board",
-				Serial:       "TEST123",
+			Firmware: protocol.FirmwareInfo{
+				Vendor:  "Test BIOS Vendor",
+				Version: "1.0",
+				Date:    "01/01/2024",
+			},
+			Product: protocol.ProductInfo{
+				Vendor:  "Test Manufacturer",
+				Family:  "Test Family",
+				Name:    "Test Board",
+				Version: "1.0",
+				Serial:  "TEST123",
 			},
 			CPU: protocol.CPUInfo{
 				Architecture: "x86_64",
@@ -72,8 +79,8 @@ func TestInfoCommand(t *testing.T) {
 
 	// Verify response
 	assert.True(t, info.TPM.Present)
-	assert.Equal(t, "Test Manufacturer", info.Board.Manufacturer)
-	assert.Equal(t, "Test Board", info.Board.Model)
+	assert.Equal(t, "Test Manufacturer", info.Product.Vendor)
+	assert.Equal(t, "Test Board", info.Product.Name)
 	assert.Equal(t, "x86_64", info.CPU.Architecture)
 	assert.Equal(t, "Ubuntu", info.OS.Distribution)
 	assert.False(t, info.OS.FIPSEnabled)

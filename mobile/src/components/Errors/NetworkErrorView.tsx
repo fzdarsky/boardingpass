@@ -6,8 +6,9 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Button, Text, Icon } from 'react-native-paper';
+import { Button, Text, Icon, useTheme } from 'react-native-paper';
 import { AppError, getErrorMessage, getErrorHelpText } from '../../utils/error-messages';
+import { statusColors } from '../../theme';
 
 interface NetworkErrorViewProps {
   error: AppError;
@@ -22,32 +23,33 @@ export const NetworkErrorView: React.FC<NetworkErrorViewProps> = ({
   onCancel,
   deviceName,
 }) => {
+  const theme = useTheme();
   const errorMessage = getErrorMessage(error);
   const helpText = getErrorHelpText(error);
   const isDeviceUnreachable = error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.iconContainer}>
         <Icon
           source={isDeviceUnreachable ? 'access-point-network-off' : 'wifi-off'}
           size={64}
-          color="#FF9800"
+          color={statusColors.selfSignedNew}
         />
       </View>
 
-      <Text variant="headlineSmall" style={styles.title}>
+      <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.onSurface }]}>
         Connection Problem
       </Text>
 
-      <Text variant="bodyMedium" style={styles.message}>
+      <Text variant="bodyMedium" style={[styles.message, { color: theme.colors.onSurfaceVariant }]}>
         {errorMessage}
       </Text>
 
       {helpText && (
-        <View style={styles.helpBox}>
-          <Icon source="information" size={20} color="#4A90E2" />
-          <Text variant="bodySmall" style={styles.helpText}>
+        <View style={[styles.helpBox, { backgroundColor: theme.colors.secondaryContainer }]}>
+          <Icon source="information" size={20} color={theme.colors.primary} />
+          <Text variant="bodySmall" style={[styles.helpText, { color: theme.colors.secondary }]}>
             {helpText}
           </Text>
         </View>
@@ -55,17 +57,29 @@ export const NetworkErrorView: React.FC<NetworkErrorViewProps> = ({
 
       {/* Device-specific troubleshooting tips */}
       {isDeviceUnreachable && deviceName && (
-        <View style={styles.tipsBox}>
-          <Text variant="titleSmall" style={styles.tipsTitle}>
+        <View style={[styles.tipsBox, { backgroundColor: theme.colors.tertiaryContainer }]}>
+          <Text
+            variant="titleSmall"
+            style={[styles.tipsTitle, { color: theme.colors.onTertiaryContainer }]}
+          >
             Troubleshooting Tips:
           </Text>
-          <Text variant="bodySmall" style={styles.tipItem}>
+          <Text
+            variant="bodySmall"
+            style={[styles.tipItem, { color: theme.colors.onTertiaryContainer }]}
+          >
             • Verify {deviceName} is powered on
           </Text>
-          <Text variant="bodySmall" style={styles.tipItem}>
+          <Text
+            variant="bodySmall"
+            style={[styles.tipItem, { color: theme.colors.onTertiaryContainer }]}
+          >
             • Check both devices are on the same network
           </Text>
-          <Text variant="bodySmall" style={styles.tipItem}>
+          <Text
+            variant="bodySmall"
+            style={[styles.tipItem, { color: theme.colors.onTertiaryContainer }]}
+          >
             • Ensure no firewall is blocking the connection
           </Text>
         </View>
@@ -85,7 +99,7 @@ export const NetworkErrorView: React.FC<NetworkErrorViewProps> = ({
         )}
       </View>
 
-      <Text variant="bodySmall" style={styles.footerText}>
+      <Text variant="bodySmall" style={[styles.footerText, { color: theme.colors.outline }]}>
         Check your network connection and try again
       </Text>
     </View>
@@ -98,7 +112,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#FFFFFF',
   },
   iconContainer: {
     marginBottom: 24,
@@ -107,18 +120,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 12,
-    color: '#333333',
   },
   message: {
     textAlign: 'center',
     marginBottom: 24,
-    color: '#666666',
     lineHeight: 22,
   },
   helpBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#E3F2FD',
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
@@ -127,11 +137,9 @@ const styles = StyleSheet.create({
   helpText: {
     flex: 1,
     marginLeft: 12,
-    color: '#1976D2',
     lineHeight: 20,
   },
   tipsBox: {
-    backgroundColor: '#FFF3E0',
     padding: 16,
     borderRadius: 8,
     marginBottom: 24,
@@ -140,11 +148,9 @@ const styles = StyleSheet.create({
   tipsTitle: {
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#E65100',
   },
   tipItem: {
     marginBottom: 4,
-    color: '#F57C00',
     lineHeight: 20,
   },
   actions: {
@@ -160,7 +166,6 @@ const styles = StyleSheet.create({
   footerText: {
     marginTop: 24,
     textAlign: 'center',
-    color: '#999999',
     lineHeight: 18,
   },
 });

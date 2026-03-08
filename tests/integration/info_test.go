@@ -33,23 +33,18 @@ func TestInfoEndpoint(t *testing.T) {
 	err := json.NewDecoder(w.Body).Decode(&info)
 	assert.NoError(t, err, "Response should be valid JSON")
 
-	// Verify response structure
-	assert.NotNil(t, info.TPM, "TPM info should not be nil")
-	assert.NotNil(t, info.Board, "Board info should not be nil")
-	assert.NotNil(t, info.CPU, "CPU info should not be nil")
-	assert.NotNil(t, info.OS, "OS info should not be nil")
-
 	// Verify required fields
-	assert.NotEmpty(t, info.Board.Manufacturer, "Board manufacturer should not be empty")
-	assert.NotEmpty(t, info.Board.Model, "Board model should not be empty")
-	assert.NotEmpty(t, info.Board.Serial, "Board serial should not be empty")
+	assert.NotEmpty(t, info.Firmware.Vendor, "Firmware vendor should not be empty")
+	assert.NotEmpty(t, info.Product.Vendor, "Product vendor should not be empty")
+	assert.NotEmpty(t, info.Product.Name, "Product name should not be empty")
+	assert.NotEmpty(t, info.Product.Serial, "Product serial should not be empty")
 	assert.NotEmpty(t, info.CPU.Architecture, "CPU architecture should not be empty")
 	assert.NotEmpty(t, info.OS.Distribution, "OS distribution should not be empty")
 	assert.NotEmpty(t, info.OS.Version, "OS version should not be empty")
 
-	t.Logf("SystemInfo response: TPM Present=%v, Board=%s %s, CPU=%s, OS=%s %s, FIPS=%v",
+	t.Logf("SystemInfo response: TPM Present=%v, Product=%s %s, CPU=%s, OS=%s %s, FIPS=%v",
 		info.TPM.Present,
-		info.Board.Manufacturer, info.Board.Model,
+		info.Product.Vendor, info.Product.Name,
 		info.CPU.Architecture,
 		info.OS.Distribution, info.OS.Version,
 		info.OS.FIPSEnabled)

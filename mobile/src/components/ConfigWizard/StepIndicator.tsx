@@ -1,7 +1,7 @@
 /**
  * StepIndicator Component
  *
- * Shows current wizard step (1-5), step labels, and completion progress.
+ * Shows current wizard step (1-6), step labels, and completion progress.
  * Supports tapping completed steps for direct navigation.
  */
 

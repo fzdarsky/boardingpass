@@ -15,16 +15,18 @@ func TestGetTPMInfo(t *testing.T) {
 
 	// TPM may or may not be present on test system
 	if info.Present {
-		// If TPM is present, manufacturer, model, and version may be populated
-		t.Logf("TPM detected: Manufacturer=%v, Model=%v, Version=%v",
+		// If TPM is present, type, spec_version, manufacturer, model may be populated
+		t.Logf("TPM detected: Type=%v, SpecVersion=%v, Manufacturer=%v, Model=%v",
+			ptrToString(info.Type),
+			ptrToString(info.SpecVersion),
 			ptrToString(info.Manufacturer),
-			ptrToString(info.Model),
-			ptrToString(info.Version))
+			ptrToString(info.Model))
 	} else {
-		// If no TPM, manufacturer, model, and version should be nil
+		// If no TPM, all optional fields should be nil
+		assert.Nil(t, info.Type, "Type should be nil when TPM not present")
+		assert.Nil(t, info.SpecVersion, "SpecVersion should be nil when TPM not present")
 		assert.Nil(t, info.Manufacturer, "Manufacturer should be nil when TPM not present")
 		assert.Nil(t, info.Model, "Model should be nil when TPM not present")
-		assert.Nil(t, info.Version, "Version should be nil when TPM not present")
 	}
 }
 
@@ -218,6 +220,93 @@ func TestParseModelFromModalias(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := inventory.ParseModelFromModalias(tt.modalias)
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestParseTPM2GetCap(t *testing.T) {
+	tests := []struct {
+		name             string
+		output           string
+		wantManufacturer string
+		wantModel        string
+		wantSpecVersion  string
+	}{
+		{
+			name: "Infineon discrete TPM",
+			output: `TPM2_PT_FAMILY_INDICATOR:
+  raw: 0x322E3000
+  value: "2.0"
+TPM2_PT_MANUFACTURER:
+  raw: 0x49465800
+  value: "IFX"
+TPM2_PT_VENDOR_STRING_1:
+  raw: 0x534C4239
+  value: "SLB9"
+TPM2_PT_VENDOR_STRING_2:
+  raw: 0x36373000
+  value: "670"
+TPM2_PT_VENDOR_STRING_3:
+  raw: 0x00000000
+  value: ""
+TPM2_PT_VENDOR_STRING_4:
+  raw: 0x00000000
+  value: ""
+`,
+			wantManufacturer: "Infineon",
+			wantModel:        "SLB9670",
+			wantSpecVersion:  "2.0",
+		},
+		{
+			name: "STMicroelectronics TPM",
+			output: `TPM2_PT_FAMILY_INDICATOR:
+  raw: 0x322E3000
+  value: "2.0"
+TPM2_PT_MANUFACTURER:
+  raw: 0x53544d20
+  value: "STM "
+TPM2_PT_VENDOR_STRING_1:
+  raw: 0x53543333
+  value: "ST33"
+TPM2_PT_VENDOR_STRING_2:
+  raw: 0x48545048
+  value: "HTPH"
+TPM2_PT_VENDOR_STRING_3:
+  raw: 0x32453332
+  value: "2E32"
+TPM2_PT_VENDOR_STRING_4:
+  raw: 0x00000000
+  value: ""
+`,
+			wantManufacturer: "STMicroelectronics",
+			wantModel:        "ST33HTPH2E32",
+			wantSpecVersion:  "2.0",
+		},
+		{
+			name:             "empty output",
+			output:           "",
+			wantManufacturer: "",
+			wantModel:        "",
+			wantSpecVersion:  "",
+		},
+		{
+			name: "partial output (manufacturer only)",
+			output: `TPM2_PT_MANUFACTURER:
+  raw: 0x4d534654
+  value: "MSFT"
+`,
+			wantManufacturer: "Microsoft",
+			wantModel:        "",
+			wantSpecVersion:  "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := inventory.ParseTPM2GetCap(tt.output)
+			assert.Equal(t, tt.wantManufacturer, result.Manufacturer)
+			assert.Equal(t, tt.wantModel, result.Model)
+			assert.Equal(t, tt.wantSpecVersion, result.SpecVersion)
 		})
 	}
 }

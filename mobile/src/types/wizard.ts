@@ -1,10 +1,10 @@
 /**
  * Wizard Types
  *
- * TypeScript types for the 5-step enrollment configuration wizard.
+ * TypeScript types for the 6-step enrollment configuration wizard.
  * All types are ephemeral — wizard state is not persisted.
  *
- * Steps: Hostname → Interface → Addressing → Services → Enrollment
+ * Steps: Hostname → Interface → Addressing → Services → Enrollment → Review
  */
 
 // ── Step 1: Hostname ──
@@ -108,6 +108,18 @@ export interface FlightControlConfig {
   password: string;
 }
 
+// ── Planned Action (Review & Apply) ──
+
+export interface PlannedAction {
+  id: string;
+  description: string;
+  category: 'config' | 'command' | 'check' | 'wait';
+  status: 'pending' | 'running' | 'success' | 'warning' | 'failed' | 'skipped';
+  detail: string | null;
+  step: number;
+  infoOnly: boolean;
+}
+
 // ── Apply Status ──
 
 export interface ApplyStatus {
@@ -118,6 +130,7 @@ export interface ApplyStatus {
 
 /** Result from connectivity-test command */
 export interface ConnectivityResult {
+  linkUp: boolean;
   ipAssigned: boolean;
   gatewayReachable: boolean;
   dnsResolves: boolean;
@@ -137,6 +150,8 @@ export interface WizardState {
   services: ServicesConfig;
   enrollment: EnrollmentConfig;
   stepApplyStatus: Record<number, ApplyStatus>;
+  actionList: PlannedAction[];
+  applyInProgress: boolean;
 }
 
 // ── Constants ──
@@ -156,9 +171,10 @@ export const STEP_LABELS: Record<number, string> = {
   [WIZARD_STEPS.ADDRESSING]: 'Addressing',
   [WIZARD_STEPS.SERVICES]: 'Services',
   [WIZARD_STEPS.ENROLLMENT]: 'Enrollment',
+  [WIZARD_STEPS.REVIEW]: 'Review',
 };
 
-export const TOTAL_STEPS = 5;
+export const TOTAL_STEPS = 6;
 
 export const DEFAULT_INSIGHTS_ENDPOINT = 'https://cert-api.access.redhat.com';
 
@@ -205,5 +221,7 @@ export function createInitialWizardState(): WizardState {
       flightControl: null,
     },
     stepApplyStatus: {},
+    actionList: [],
+    applyInProgress: false,
   };
 }

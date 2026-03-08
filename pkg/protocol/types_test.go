@@ -20,14 +20,22 @@ func TestSystemInfo_JSON(t *testing.T) {
 			input: protocol.SystemInfo{
 				TPM: protocol.TPMInfo{
 					Present:      true,
+					Type:         stringPtr("discrete"),
+					SpecVersion:  stringPtr("2.0"),
 					Manufacturer: stringPtr("STMicroelectronics"),
 					Model:        stringPtr("ST33HTPH2E32"),
-					Version:      stringPtr("2.0"),
 				},
-				Board: protocol.BoardInfo{
-					Manufacturer: "Raspberry Pi Foundation",
-					Model:        "Raspberry Pi 4 Model B",
-					Serial:       "10000000abcdef01",
+				Firmware: protocol.FirmwareInfo{
+					Vendor:  "American Megatrends",
+					Version: "F20",
+					Date:    "08/31/2023",
+				},
+				Product: protocol.ProductInfo{
+					Vendor:  "Raspberry Pi Foundation",
+					Family:  "Unknown",
+					Name:    "Raspberry Pi 4 Model B",
+					Version: "Unknown",
+					Serial:  "10000000abcdef01",
 				},
 				CPU: protocol.CPUInfo{
 					Architecture: "aarch64",
@@ -38,21 +46,29 @@ func TestSystemInfo_JSON(t *testing.T) {
 					FIPSEnabled:  true,
 				},
 			},
-			expected: `{"hostname":"","tpm":{"present":true,"manufacturer":"STMicroelectronics","model":"ST33HTPH2E32","version":"2.0"},"board":{"manufacturer":"Raspberry Pi Foundation","model":"Raspberry Pi 4 Model B","serial":"10000000abcdef01"},"cpu":{"architecture":"aarch64"},"os":{"distribution":"Red Hat Enterprise Linux","version":"9.3","fips_enabled":true}}`,
+			expected: `{"hostname":"","tpm":{"present":true,"type":"discrete","spec_version":"2.0","manufacturer":"STMicroelectronics","model":"ST33HTPH2E32"},"firmware":{"vendor":"American Megatrends","version":"F20","date":"08/31/2023"},"product":{"vendor":"Raspberry Pi Foundation","family":"Unknown","name":"Raspberry Pi 4 Model B","version":"Unknown","serial":"10000000abcdef01"},"cpu":{"architecture":"aarch64"},"os":{"distribution":"Red Hat Enterprise Linux","version":"9.3","fips_enabled":true,"system_time":"","clock_synchronized":false}}`,
 		},
 		{
 			name: "without TPM",
 			input: protocol.SystemInfo{
 				TPM: protocol.TPMInfo{
 					Present:      false,
+					Type:         nil,
+					SpecVersion:  nil,
 					Manufacturer: nil,
 					Model:        nil,
-					Version:      nil,
 				},
-				Board: protocol.BoardInfo{
-					Manufacturer: "Dell Inc.",
-					Model:        "OptiPlex 7090",
-					Serial:       "ABC123DEF456",
+				Firmware: protocol.FirmwareInfo{
+					Vendor:  "Dell Inc.",
+					Version: "2.18.0",
+					Date:    "03/15/2024",
+				},
+				Product: protocol.ProductInfo{
+					Vendor:  "Dell Inc.",
+					Family:  "OptiPlex",
+					Name:    "OptiPlex 7090",
+					Version: "1.0",
+					Serial:  "ABC123DEF456",
 				},
 				CPU: protocol.CPUInfo{
 					Architecture: "x86_64",
@@ -63,7 +79,7 @@ func TestSystemInfo_JSON(t *testing.T) {
 					FIPSEnabled:  false,
 				},
 			},
-			expected: `{"hostname":"","tpm":{"present":false,"manufacturer":null,"model":null,"version":null},"board":{"manufacturer":"Dell Inc.","model":"OptiPlex 7090","serial":"ABC123DEF456"},"cpu":{"architecture":"x86_64"},"os":{"distribution":"Ubuntu","version":"22.04","fips_enabled":false}}`,
+			expected: `{"hostname":"","tpm":{"present":false,"type":null,"spec_version":null,"manufacturer":null,"model":null},"firmware":{"vendor":"Dell Inc.","version":"2.18.0","date":"03/15/2024"},"product":{"vendor":"Dell Inc.","family":"OptiPlex","name":"OptiPlex 7090","version":"1.0","serial":"ABC123DEF456"},"cpu":{"architecture":"x86_64"},"os":{"distribution":"Ubuntu","version":"22.04","fips_enabled":false,"system_time":"","clock_synchronized":false}}`,
 		},
 	}
 

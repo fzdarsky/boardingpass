@@ -2,7 +2,7 @@
  * TPMInfo Component
  *
  * Displays TPM (Trusted Platform Module) information including presence,
- * manufacturer, model, and version.
+ * type, spec version, manufacturer, and model.
  *
  * Related: T086 - Create TPMInfo display component
  */
@@ -22,7 +22,7 @@ export interface TPMInfoProps {
  * TPMInfo Display Component
  *
  * Renders TPM information in a Material Design card.
- * Shows presence status, and optionally manufacturer, model, and version.
+ * Shows presence status, and optionally type, spec version, manufacturer, and model.
  */
 export function TPMInfo({ tpmInfo }: TPMInfoProps) {
   const theme = useTheme();
@@ -63,6 +63,17 @@ export function TPMInfo({ tpmInfo }: TPMInfoProps) {
         {/* TPM Details (only if present) */}
         {hasTPM && (
           <>
+            {(tpmInfo.type || tpmInfo.spec_version) && (
+              <View style={styles.row}>
+                <Text variant="titleSmall" style={styles.label}>
+                  Type
+                </Text>
+                <Text variant="bodyLarge" style={styles.value}>
+                  {formatTPMType(tpmInfo.type, tpmInfo.spec_version)}
+                </Text>
+              </View>
+            )}
+
             {tpmInfo.manufacturer && (
               <View style={styles.row}>
                 <Text variant="titleSmall" style={styles.label}>
@@ -84,17 +95,6 @@ export function TPMInfo({ tpmInfo }: TPMInfoProps) {
                 </Text>
               </View>
             )}
-
-            {tpmInfo.version && (
-              <View style={styles.row}>
-                <Text variant="titleSmall" style={styles.label}>
-                  Version
-                </Text>
-                <Text variant="bodyLarge" style={styles.value}>
-                  TPM {tpmInfo.version}
-                </Text>
-              </View>
-            )}
           </>
         )}
 
@@ -108,6 +108,16 @@ export function TPMInfo({ tpmInfo }: TPMInfoProps) {
       </Card.Content>
     </Card>
   );
+}
+
+function formatTPMType(type?: string | null, specVersion?: string | null): string {
+  const typeNames: Record<string, string> = {
+    discrete: 'Discrete TPM',
+    firmware: 'Firmware TPM',
+    virtual: 'Virtual TPM',
+  };
+  const typePart = type ? typeNames[type] || type : 'TPM';
+  return specVersion ? `${typePart} ${specVersion}` : typePart;
 }
 
 const styles = StyleSheet.create({

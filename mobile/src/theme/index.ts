@@ -9,112 +9,114 @@ import { configureFonts } from 'react-native-paper';
 import type { MD3Theme } from 'react-native-paper';
 
 /**
- * Light color palette — exported from Material Theme Builder
+ * Light color palette — Material Theme Builder export 2026-03-06
+ * Seed: #2C4154, Tertiary: #968E9B, Neutral: #F3EFE3
  */
 const lightColors = {
-  primary: '#2D628B',
+  primary: '#2C4154',
   onPrimary: '#FFFFFF',
-  primaryContainer: '#CDE5FF',
-  onPrimaryContainer: '#0A4A72',
+  primaryContainer: '#2C4154',
+  onPrimaryContainer: '#97ADC3',
 
-  secondary: '#2D628C',
+  secondary: '#575F68',
   onSecondary: '#FFFFFF',
-  secondaryContainer: '#CDE5FF',
-  onSecondaryContainer: '#0A4A72',
+  secondaryContainer: '#D9E0EB',
+  onSecondaryContainer: '#5C636C',
 
-  tertiary: '#715188',
+  tertiary: '#635C68',
   onTertiary: '#FFFFFF',
-  tertiaryContainer: '#F3DAFF',
-  onTertiaryContainer: '#583A6F',
+  tertiaryContainer: '#968E9B',
+  onTertiaryContainer: '#2D2832',
 
   error: '#BA1A1A',
   onError: '#FFFFFF',
   errorContainer: '#FFDAD6',
   onErrorContainer: '#93000A',
 
-  background: '#F7F9FF',
-  onBackground: '#181C20',
+  background: '#FBF9FA',
+  onBackground: '#1B1C1D',
 
-  surface: '#FDF9EC',
-  onSurface: '#1C1C14',
-  surfaceVariant: '#E7E3D1',
-  onSurfaceVariant: '#49473A',
+  surface: '#FDF8F6',
+  onSurface: '#1C1B1B',
+  surfaceVariant: '#DFE3E9',
+  onSurfaceVariant: '#43474C',
 
-  outline: '#7A7768',
-  outlineVariant: '#CAC7B5',
+  outline: '#73777D',
+  outlineVariant: '#C3C7CD',
 
   shadow: '#000000',
   scrim: '#000000',
-  inverseSurface: '#323128',
-  inverseOnSurface: '#F5F1E3',
-  inversePrimary: '#9ACBFA',
+  inverseSurface: '#31302F',
+  inverseOnSurface: '#F4F0EE',
+  inversePrimary: '#B3C9E0',
 
-  surfaceDisabled: '#1C1C141F',
-  onSurfaceDisabled: '#1C1C1461',
+  surfaceDisabled: '#1C1B1B1F',
+  onSurfaceDisabled: '#1C1B1B61',
   backdrop: '#00000066',
 
   elevation: {
     level0: 'transparent',
-    level1: '#F8F4E6',
-    level2: '#F2EEE0',
-    level3: '#ECE8DA',
-    level4: '#EAE6D7',
-    level5: '#E6E2D3',
+    level1: '#F7F3F1', // surfaceContainerLow
+    level2: '#F1EDEB', // surfaceContainer
+    level3: '#EBE7E5', // surfaceContainerHigh
+    level4: '#E9E5E3',
+    level5: '#E6E2E0', // surfaceContainerHighest
   },
 };
 
 /**
- * Dark color palette — exported from Material Theme Builder
+ * Dark color palette — Material Theme Builder export 2026-03-06
+ * Seed: #2C4154, Tertiary: #968E9B, Neutral: #F3EFE3
  */
 const darkColors = {
-  primary: '#9ACBFA',
-  onPrimary: '#003352',
-  primaryContainer: '#0A4A72',
-  onPrimaryContainer: '#CDE5FF',
+  primary: '#B3C9E0',
+  onPrimary: '#1D3245',
+  primaryContainer: '#2C4154',
+  onPrimaryContainer: '#97ADC3',
 
-  secondary: '#9ACBFA',
-  onSecondary: '#003352',
-  secondaryContainer: '#0A4A72',
-  onSecondaryContainer: '#CDE5FF',
+  secondary: '#BFC7D1',
+  onSecondary: '#293139',
+  secondaryContainer: '#424A52',
+  onSecondaryContainer: '#B1B9C3',
 
-  tertiary: '#DEB8F7',
-  onTertiary: '#412357',
-  tertiaryContainer: '#583A6F',
-  onTertiaryContainer: '#F3DAFF',
+  tertiary: '#CDC3D1',
+  onTertiary: '#342E39',
+  tertiaryContainer: '#968E9B',
+  onTertiaryContainer: '#2D2832',
 
   error: '#FFB4AB',
   onError: '#690005',
   errorContainer: '#93000A',
   onErrorContainer: '#FFDAD6',
 
-  background: '#101418',
-  onBackground: '#E0E2E8',
+  background: '#121315',
+  onBackground: '#E3E2E4',
 
-  surface: '#14140C',
-  onSurface: '#E6E2D5',
-  surfaceVariant: '#49473A',
-  onSurfaceVariant: '#CAC7B5',
+  surface: '#141312',
+  onSurface: '#E6E2E0',
+  surfaceVariant: '#43474C',
+  onSurfaceVariant: '#C3C7CD',
 
-  outline: '#949181',
-  outlineVariant: '#49473A',
+  outline: '#8D9197',
+  outlineVariant: '#43474C',
 
   shadow: '#000000',
   scrim: '#000000',
-  inverseSurface: '#E6E2D5',
-  inverseOnSurface: '#323128',
-  inversePrimary: '#2D628B',
+  inverseSurface: '#E6E2E0',
+  inverseOnSurface: '#31302F',
+  inversePrimary: '#4C6075',
 
-  surfaceDisabled: '#E6E2D51F',
-  onSurfaceDisabled: '#E6E2D561',
+  surfaceDisabled: '#E6E2E01F',
+  onSurfaceDisabled: '#E6E2E061',
   backdrop: '#00000066',
 
   elevation: {
     level0: 'transparent',
-    level1: '#1E1E15',
-    level2: '#23231C',
-    level3: '#282822',
-    level4: '#2A2A24',
-    level5: '#2D2D27',
+    level1: '#1C1B1B', // surfaceContainerLow
+    level2: '#201F1F', // surfaceContainer
+    level3: '#2B2A29', // surfaceContainerHigh
+    level4: '#302F2E',
+    level5: '#363433', // surfaceContainerHighest
   },
 };
 
@@ -297,6 +299,7 @@ export const deviceStatusColors = {
   offline: '#9E9E9E', // Grey
   authenticating: '#2196F3', // Blue
   authenticated: '#4CAF50', // Green
+  warning: '#FB8C00', // Amber
   error: '#F44336', // Red
 } as const;
 

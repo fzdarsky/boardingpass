@@ -4,6 +4,10 @@
  * React Error Boundary to catch and handle rendering errors gracefully.
  * Enhanced with recovery actions: retry, navigate back, and custom error views.
  * Implements FR-024 (error messages), FR-025 (retry mechanism)
+ *
+ * Note: Class components cannot use useTheme(), so this uses the static theme
+ * import. Colors will match the light theme. For full dark mode support,
+ * wrap this component in a themed provider or use a functional wrapper.
  */
 
 import React, { Component, ReactNode } from 'react';
@@ -11,6 +15,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Button, Icon } from 'react-native-paper';
 import { router } from 'expo-router';
 import { toAppError, getErrorMessage, getErrorTitle } from '../../utils/error-messages';
+import { theme, statusColors } from '../../theme';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -61,9 +66,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
-
-    // Could send to error tracking service here
-    // e.g., Sentry.captureException(error, { extra: errorInfo });
   }
 
   resetError = (): void => {
@@ -97,7 +99,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.container}>
             <View style={styles.iconContainer}>
-              <Icon source="alert-circle" size={64} color="#D32F2F" />
+              <Icon source="alert-circle" size={64} color={theme.colors.error} />
             </View>
 
             <View style={styles.content}>
@@ -107,7 +109,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               {/* Multiple error warning */}
               {this.state.errorCount > 1 && (
                 <View style={styles.warningBox}>
-                  <Icon source="alert" size={20} color="#FF9800" />
+                  <Icon source="alert" size={20} color={statusColors.selfSignedNew} />
                   <Text style={styles.warningText}>
                     This error has occurred {this.state.errorCount} times. If it persists, try going
                     back or restarting the app.
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     padding: 24,
   },
   iconContainer: {
@@ -186,13 +188,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.onSurface,
     marginBottom: 12,
     textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.onSurfaceVariant,
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 24,
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
   warningBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFF3E0',
+    backgroundColor: theme.colors.tertiaryContainer,
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
@@ -208,12 +210,12 @@ const styles = StyleSheet.create({
   warningText: {
     flex: 1,
     marginLeft: 12,
-    color: '#E65100',
+    color: theme.colors.onTertiaryContainer,
     fontSize: 14,
     lineHeight: 20,
   },
   errorDetails: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.surfaceVariant,
     padding: 16,
     borderRadius: 8,
     marginBottom: 24,
@@ -221,12 +223,12 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#d32f2f',
+    color: theme.colors.error,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.onSurfaceVariant,
     fontFamily: 'monospace',
     marginBottom: 8,
   },
@@ -235,7 +237,7 @@ const styles = StyleSheet.create({
   },
   stackTrace: {
     fontSize: 10,
-    color: '#999',
+    color: theme.colors.outline,
     fontFamily: 'monospace',
   },
   actions: {
@@ -248,7 +250,7 @@ const styles = StyleSheet.create({
   footerText: {
     marginTop: 16,
     textAlign: 'center',
-    color: '#999',
+    color: theme.colors.outline,
     fontSize: 14,
     lineHeight: 20,
   },

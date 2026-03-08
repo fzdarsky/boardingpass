@@ -579,7 +579,7 @@ npx react-native-bundle-visualizer  # Analyze bundle
 ```
 
 ## Recent Changes
+- 005-review-apply-step: Added Go 1.25+ (service), TypeScript 5.x with React Native 0.74+ (mobile app) + Go stdlib, `gopkg.in/yaml.v3` (service); React Native, React Native Paper, Expo Router, Axios (app)
 - 004-enrollment-flow: Added Go 1.25+ (service), TypeScript 5.x with React Native 0.74+ (mobile app) + Go stdlib, `gopkg.in/yaml.v3` (service); React Native, React Native Paper, Expo Router, Axios (app)
 
 - 003-mobile-onboarding-app: Added TypeScript 5.x with React Native 0.74+, targeting ES2022
-- 003-mobile-onboarding-app: Implemented device discovery (mDNS + fallback), SRP-6a authentication, certificate pinning, device information display

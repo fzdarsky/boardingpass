@@ -13,7 +13,7 @@ import { View, StyleSheet } from 'react-native';
 import { Text, ActivityIndicator, Button, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import type { ApplyStatus, ConnectivityResult } from '../../types/wizard';
-import { spacing } from '../../theme';
+import { spacing, deviceStatusColors } from '../../theme';
 
 interface ApplyFeedbackProps {
   applyStatus: ApplyStatus | undefined;
@@ -43,7 +43,7 @@ function ConnectivityResults({ result }: { result: ConnectivityResult }) {
           <MaterialCommunityIcons
             name={check.passed ? 'check-circle' : 'close-circle'}
             size={18}
-            color={check.passed ? '#4CAF50' : theme.colors.error}
+            color={check.passed ? deviceStatusColors.online : theme.colors.error}
           />
           <Text
             variant="bodyMedium"
@@ -82,7 +82,7 @@ export default function ApplyFeedback({ applyStatus, onRetry }: ApplyFeedbackPro
     return (
       <View style={styles.container}>
         <View style={styles.statusRow}>
-          <MaterialCommunityIcons name="check-circle" size={22} color="#4CAF50" />
+          <MaterialCommunityIcons name="check-circle" size={22} color={deviceStatusColors.online} />
           <Text variant="bodyMedium" style={[styles.statusText, styles.successText]}>
             Configuration applied successfully
           </Text>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
   successText: {
-    color: '#4CAF50',
+    color: deviceStatusColors.online,
   },
   errorDetail: {
     marginTop: spacing.xs,

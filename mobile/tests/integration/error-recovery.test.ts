@@ -200,7 +200,7 @@ describe.skip('Network Error Recovery Integration Tests', () => {
           return Promise.resolve({
             data: {
               tpm: { present: true },
-              board: { manufacturer: 'Test' },
+              product: { vendor: 'Test' },
               cpu: { model: 'Test CPU' },
               os: { distribution: 'RHEL' },
               fips: { enabled: true },

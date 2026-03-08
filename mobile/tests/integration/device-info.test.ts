@@ -58,13 +58,21 @@ describe('Device Information Retrieval Integration', () => {
       const mockResponse = {
         tpm: {
           present: true,
+          type: 'discrete',
+          spec_version: '2.0',
           manufacturer: 'STMicroelectronics',
           model: 'ST33HTPH2E32',
-          version: '2.0',
         },
-        board: {
-          manufacturer: 'Raspberry Pi Foundation',
-          model: 'Raspberry Pi 4 Model B',
+        firmware: {
+          vendor: 'American Megatrends International, LLC.',
+          version: 'F20',
+          date: '08/31/2023',
+        },
+        product: {
+          vendor: 'Raspberry Pi Foundation',
+          family: 'Unknown',
+          name: 'Raspberry Pi 4 Model B',
+          version: 'Unknown',
           serial: '10000000abcdef01',
         },
         cpu: {
@@ -79,14 +87,15 @@ describe('Device Information Retrieval Integration', () => {
 
       // Validate response structure
       expect(mockResponse).toHaveProperty('tpm');
-      expect(mockResponse).toHaveProperty('board');
+      expect(mockResponse).toHaveProperty('firmware');
+      expect(mockResponse).toHaveProperty('product');
       expect(mockResponse).toHaveProperty('cpu');
       expect(mockResponse).toHaveProperty('os');
       expect(mockResponse.os).toHaveProperty('fips_enabled');
 
       // Validate data types
       expect(typeof mockResponse.os.fips_enabled).toBe('boolean');
-      expect(typeof mockResponse.board.serial).toBe('string');
+      expect(typeof mockResponse.product.serial).toBe('string');
       expect(typeof mockResponse.cpu.architecture).toBe('string');
     });
 
@@ -251,11 +260,11 @@ describe('Device Information Retrieval Integration', () => {
     it('should handle missing required fields in response', async () => {
       const incompleteResponse = {
         tpm: { present: true },
-        // Missing: board, cpu, os
+        // Missing: firmware, product, cpu, os
       };
 
       expect(incompleteResponse).toHaveProperty('tpm');
-      expect(incompleteResponse).not.toHaveProperty('board');
+      expect(incompleteResponse).not.toHaveProperty('product');
       // Implementation should detect incomplete data and show error
     });
   });
@@ -266,7 +275,7 @@ describe('Device Information Retrieval Integration', () => {
         success: true,
         data: {
           tpm: { present: true },
-          board: { manufacturer: 'Test', model: 'Test', serial: '123' },
+          product: { vendor: 'Test', name: 'Test', serial: '123' },
           cpu: { architecture: 'x86_64' },
           os: { distribution: 'RHEL', version: '9.3', fips_enabled: true },
         },

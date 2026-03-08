@@ -119,7 +119,7 @@ export default function InterfaceStep({ interfaces, children }: InterfaceStepPro
               <DataTable.Row
                 key={iface.name}
                 onPress={() => handleSelect(iface)}
-                style={isSelected ? { backgroundColor: theme.colors.primaryContainer } : undefined}
+                style={isSelected ? { backgroundColor: theme.colors.surfaceVariant } : undefined}
               >
                 <DataTable.Cell style={styles.radioCol}>
                   <RadioButton
@@ -129,7 +129,12 @@ export default function InterfaceStep({ interfaces, children }: InterfaceStepPro
                   />
                 </DataTable.Cell>
                 <DataTable.Cell style={styles.nameCol}>
-                  <Text variant="bodySmall">{iface.name}</Text>
+                  <Text variant="bodySmall">
+                    {iface.name}
+                    {iface.name === state.serviceInterfaceName && (
+                      <Text style={{ color: theme.colors.error }}>{' *'}</Text>
+                    )}
+                  </Text>
                 </DataTable.Cell>
                 <DataTable.Cell style={styles.typeCol}>{iface.type}</DataTable.Cell>
                 <DataTable.Cell style={styles.macCol}>
@@ -142,7 +147,19 @@ export default function InterfaceStep({ interfaces, children }: InterfaceStepPro
                   {iface.speed > 0 ? `${iface.speed} Mbps` : '-'}
                 </DataTable.Cell>
                 <DataTable.Cell style={styles.stateCol}>
-                  <Badge style={iface.carrier ? styles.badgeConnected : styles.badgeDisconnected}>
+                  <Badge
+                    style={[
+                      styles.badgeFontSize,
+                      {
+                        backgroundColor: iface.carrier
+                          ? theme.colors.tertiary
+                          : theme.colors.surfaceVariant,
+                        color: iface.carrier
+                          ? theme.colors.onTertiary
+                          : theme.colors.onSurfaceVariant,
+                      },
+                    ]}
+                  >
                     {iface.carrier ? 'CONNECTED' : 'DISCONNECTED'}
                   </Badge>
                 </DataTable.Cell>
@@ -151,6 +168,13 @@ export default function InterfaceStep({ interfaces, children }: InterfaceStepPro
           })}
         </DataTable>
       </ScrollView>
+
+      {state.serviceInterfaceName && (
+        <Text variant="bodySmall" style={styles.footnote}>
+          <Text style={{ color: theme.colors.error }}>{'* '}</Text>= interface currently used for
+          provisioning
+        </Text>
+      )}
 
       {/* Injected sub-step (e.g. WiFi network selection) */}
       {children}
@@ -209,15 +233,15 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: 11,
   },
-  badgeConnected: {
-    backgroundColor: '#2D628B',
+  badgeFontSize: {
     fontSize: 10,
-  },
-  badgeDisconnected: {
-    backgroundColor: '#9e9e9e',
-    fontSize: 10,
+    paddingHorizontal: 8,
   },
   vlanSection: {
     marginTop: spacing.md,
+  },
+  footnote: {
+    fontStyle: 'italic',
+    opacity: 0.7,
   },
 });

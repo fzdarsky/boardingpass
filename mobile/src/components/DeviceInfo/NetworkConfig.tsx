@@ -16,7 +16,6 @@ import type {
   NetworkInterface,
 } from '../../services/api/network';
 import {
-  isInterfaceUp,
   formatMACAddress,
   formatIPAddress,
   getInterfaceTypeHint,
@@ -63,8 +62,7 @@ export function NetworkConfig({ networkConfig, showStatusIndicators = true }: Ne
 
 function CompactInterface({ iface, showStatus }: { iface: NetworkInterface; showStatus: boolean }) {
   const theme = useTheme();
-  const isUp = isInterfaceUp(iface);
-  const statusColor = isUp ? '#4CAF50' : '#F44336';
+  const isUp = iface.carrier;
   const typeHint = getInterfaceTypeHint(iface.name);
 
   const ipv4Addresses = getIPv4Addresses(iface);
@@ -74,15 +72,32 @@ function CompactInterface({ iface, showStatus }: { iface: NetworkInterface; show
     <View style={styles.ifaceContainer}>
       {/* Header: status dot + name (type) ... UP/DOWN badge */}
       <View style={styles.ifaceHeader}>
-        {showStatus && <View style={[styles.statusDot, { backgroundColor: statusColor }]} />}
+        {showStatus && (
+          <View
+            style={[
+              styles.statusDot,
+              {
+                backgroundColor: isUp ? theme.colors.tertiary : theme.colors.surfaceVariant,
+              },
+            ]}
+          />
+        )}
         <Text variant="bodyMedium" style={[styles.ifaceName, { color: theme.colors.onSurface }]}>
           {iface.name}
         </Text>
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
           ({typeHint})
         </Text>
-        <Badge style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-          {iface.link_state.toUpperCase()}
+        <Badge
+          style={[
+            styles.statusBadge,
+            {
+              backgroundColor: isUp ? theme.colors.tertiary : theme.colors.surfaceVariant,
+              color: isUp ? theme.colors.onTertiary : theme.colors.onSurfaceVariant,
+            },
+          ]}
+        >
+          {isUp ? 'UP' : 'DOWN'}
         </Badge>
       </View>
 
@@ -148,6 +163,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     marginLeft: 'auto',
     fontSize: 10,
+    paddingHorizontal: 8,
   },
   ifaceDetails: {
     paddingLeft: 14,

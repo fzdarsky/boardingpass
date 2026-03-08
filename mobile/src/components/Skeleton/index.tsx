@@ -7,7 +7,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Animated, ViewStyle } from 'react-native';
-import { spacing } from '@/theme';
+import { spacing, theme } from '@/theme';
 
 /**
  * Skeleton Base Props
@@ -174,12 +174,12 @@ export function SkeletonDeviceList({ count = 3 }: { count?: number }) {
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: theme.colors.surfaceVariant,
   },
 
   // Device Card Skeleton
   deviceCard: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 8,
     padding: spacing.md,
     marginVertical: spacing.xs,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
 
   // Info Section Skeleton
   infoSection: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     borderRadius: 8,
     padding: spacing.md,
     marginBottom: spacing.md,
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
 
   // Network Interface Skeleton
   networkCard: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.surfaceVariant,
     borderRadius: 8,
     padding: spacing.md,
     marginBottom: spacing.sm,

@@ -16,6 +16,14 @@ boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart NetworkManager
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart chronyd
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/chronyc makestep
 
+# Allow reading permission-restricted DMI fields (board_serial, product_serial)
+# Note: path traversal prevented by Go-side validation (defense-in-depth)
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/cat /sys/class/dmi/id/*
+
+# Allow querying TPM 2.0 fixed properties for device inventory
+boardingpass ALL=(ALL) NOPASSWD: /usr/sbin/tpm2_getcap properties-fixed
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/tpm2_getcap properties-fixed
+
 # Allow file provisioning to /etc/ (path validation enforced by Go allow-list)
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/install
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/mkdir

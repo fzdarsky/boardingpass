@@ -3,26 +3,40 @@ package protocol
 // SystemInfo represents hardware and software characteristics of the device.
 // Derived from system inspection (/sys, /proc, DMI, TPM).
 type SystemInfo struct {
-	Hostname string    `json:"hostname"`
-	TPM      TPMInfo   `json:"tpm"`
-	Board    BoardInfo `json:"board"`
-	CPU      CPUInfo   `json:"cpu"`
-	OS       OSInfo    `json:"os"`
+	Hostname string       `json:"hostname"`
+	TPM      TPMInfo      `json:"tpm"`
+	Firmware FirmwareInfo `json:"firmware"`
+	Product  ProductInfo  `json:"product"`
+	CPU      CPUInfo      `json:"cpu"`
+	OS       OSInfo       `json:"os"`
 }
 
 // TPMInfo represents TPM (Trusted Platform Module) information.
 type TPMInfo struct {
 	Present      bool    `json:"present"`
+	Type         *string `json:"type"`         // "discrete", "firmware", or "virtual"
+	SpecVersion  *string `json:"spec_version"` // "1.2" or "2.0"
 	Manufacturer *string `json:"manufacturer"`
 	Model        *string `json:"model"`
-	Version      *string `json:"version"`
 }
 
-// BoardInfo represents motherboard/baseboard information from DMI.
-type BoardInfo struct {
-	Manufacturer string `json:"manufacturer"`
-	Model        string `json:"model"`
-	Serial       string `json:"serial"`
+// FirmwareInfo represents system firmware information (BIOS, UEFI, or U-Boot).
+// Curated cross-platform view with "Unknown" for unavailable fields.
+type FirmwareInfo struct {
+	Vendor  string `json:"vendor"`
+	Version string `json:"version"`
+	Date    string `json:"date"`
+}
+
+// ProductInfo represents the product/system identity as seen from the outside.
+// Uses fallback chain: product fields → board fields → device tree.
+// Curated cross-platform view with "Unknown" for unavailable fields.
+type ProductInfo struct {
+	Vendor  string `json:"vendor"`
+	Family  string `json:"family"`
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Serial  string `json:"serial"`
 }
 
 // CPUInfo represents CPU architecture information.
@@ -32,9 +46,11 @@ type CPUInfo struct {
 
 // OSInfo represents operating system information.
 type OSInfo struct {
-	Distribution string `json:"distribution"`
-	Version      string `json:"version"`
-	FIPSEnabled  bool   `json:"fips_enabled"`
+	Distribution      string `json:"distribution"`
+	Version           string `json:"version"`
+	FIPSEnabled       bool   `json:"fips_enabled"`
+	SystemTime        string `json:"system_time"`
+	ClockSynchronized bool   `json:"clock_synchronized"`
 }
 
 // NetworkConfig represents current network interface state.

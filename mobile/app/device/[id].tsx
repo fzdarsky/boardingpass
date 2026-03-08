@@ -23,7 +23,7 @@ import { ScrollView, View, StyleSheet, RefreshControl, Pressable } from 'react-n
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Text, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { SystemInformationCard, NetworkConfig } from '../../src/components/DeviceInfo';
+import { SystemInformationCard } from '../../src/components/DeviceInfo';
 import { useDeviceInfo, useDeviceInfoAvailability } from '../../src/hooks/useDeviceInfo';
 import { createAPIClient } from '../../src/services/api/client';
 import { sessionManager } from '../../src/services/auth/session';
@@ -298,55 +298,58 @@ export default function DeviceDetailScreen() {
         )}
 
         {/* System Information (if available) */}
-        {deviceInfo.systemInfo && <SystemInformationCard systemInfo={deviceInfo.systemInfo} />}
-
-        {/* Loading Indicator for System Info (if loading individually) */}
-        {deviceInfo.loadingStates.info && !deviceInfo.systemInfo && (
-          <View style={styles.sectionLoading}>
-            <ActivityIndicator size="small" animating={true} />
-            <Text variant="bodyMedium" style={styles.loadingText}>
-              Loading system information...
-            </Text>
-          </View>
+        {deviceInfo.systemInfo && (
+          <SystemInformationCard
+            systemInfo={deviceInfo.systemInfo}
+            networkConfig={deviceInfo.networkConfig}
+            connectionHost={host}
+          />
         )}
 
-        {/* Error for System Info Only (if network succeeded) */}
+        {/* Loading Indicator (if neither query has returned yet) */}
+        {deviceInfo.loadingStates.info &&
+          !deviceInfo.systemInfo &&
+          deviceInfo.loadingStates.network &&
+          !deviceInfo.networkConfig && (
+            <View style={styles.sectionLoading}>
+              <ActivityIndicator size="small" animating={true} />
+              <Text variant="bodyMedium" style={styles.loadingText}>
+                Loading device information...
+              </Text>
+            </View>
+          )}
+
+        {/* Error for System Info (if network succeeded) */}
         {deviceInfo.errors.info && deviceInfo.networkConfig && (
-          <View style={styles.sectionError}>
-            <Text variant="titleMedium" style={styles.sectionErrorTitle}>
+          <View style={[styles.sectionError, { backgroundColor: theme.colors.errorContainer }]}>
+            <Text
+              variant="titleMedium"
+              style={[styles.sectionErrorTitle, { color: theme.colors.onErrorContainer }]}
+            >
               System Information Unavailable
             </Text>
-            <Text variant="bodySmall" style={styles.sectionErrorMessage}>
+            <Text
+              variant="bodySmall"
+              style={[styles.sectionErrorMessage, { color: theme.colors.onErrorContainer }]}
+            >
               {deviceInfo.errors.info.message}
             </Text>
           </View>
         )}
 
-        {/* Network Configuration (if available) */}
-        {deviceInfo.networkConfig && (
-          <NetworkConfig
-            networkConfig={deviceInfo.networkConfig}
-            showStatusIndicators={true} // T095
-          />
-        )}
-
-        {/* Loading Indicator for Network Config (if loading individually) */}
-        {deviceInfo.loadingStates.network && !deviceInfo.networkConfig && (
-          <View style={styles.sectionLoading}>
-            <ActivityIndicator size="small" animating={true} />
-            <Text variant="bodyMedium" style={styles.loadingText}>
-              Loading network configuration...
-            </Text>
-          </View>
-        )}
-
-        {/* Error for Network Config Only (if system info succeeded) */}
+        {/* Error for Network Config (if system info succeeded) */}
         {deviceInfo.errors.network && deviceInfo.systemInfo && (
-          <View style={styles.sectionError}>
-            <Text variant="titleMedium" style={styles.sectionErrorTitle}>
+          <View style={[styles.sectionError, { backgroundColor: theme.colors.errorContainer }]}>
+            <Text
+              variant="titleMedium"
+              style={[styles.sectionErrorTitle, { color: theme.colors.onErrorContainer }]}
+            >
               Network Configuration Unavailable
             </Text>
-            <Text variant="bodySmall" style={styles.sectionErrorMessage}>
+            <Text
+              variant="bodySmall"
+              style={[styles.sectionErrorMessage, { color: theme.colors.onErrorContainer }]}
+            >
               {deviceInfo.errors.network.message}
             </Text>
           </View>
@@ -404,16 +407,13 @@ const styles = StyleSheet.create({
   sectionError: {
     padding: spacing.md,
     marginVertical: spacing.sm,
-    backgroundColor: '#FFEBEE', // Light red background
     borderRadius: 8,
   },
   sectionErrorTitle: {
     marginBottom: spacing.xs,
-    color: '#C62828', // Dark red text
   },
   sectionErrorMessage: {
     opacity: 0.8,
-    color: '#C62828',
   },
   headerRight: {
     flexDirection: 'row',

@@ -13,7 +13,8 @@ import type { APIClient } from './client';
 // Type aliases from OpenAPI generated types
 export type SystemInfo = components['schemas']['SystemInfo'];
 export type TPMInfo = components['schemas']['TPMInfo'];
-export type BoardInfo = components['schemas']['BoardInfo'];
+export type FirmwareInfo = components['schemas']['FirmwareInfo'];
+export type ProductInfo = components['schemas']['ProductInfo'];
 export type CPUInfo = components['schemas']['CPUInfo'];
 export type OSInfo = components['schemas']['OSInfo'];
 
@@ -78,8 +79,12 @@ function validateSystemInfo(data: unknown): asserts data is SystemInfo {
     throw new Error('Invalid response: missing or invalid tpm field');
   }
 
-  if (!info.board || typeof info.board !== 'object') {
-    throw new Error('Invalid response: missing or invalid board field');
+  if (!info.firmware || typeof info.firmware !== 'object') {
+    throw new Error('Invalid response: missing or invalid firmware field');
+  }
+
+  if (!info.product || typeof info.product !== 'object') {
+    throw new Error('Invalid response: missing or invalid product field');
   }
 
   if (!info.cpu || typeof info.cpu !== 'object') {
@@ -96,16 +101,24 @@ function validateSystemInfo(data: unknown): asserts data is SystemInfo {
     throw new Error('Invalid response: TPM present field must be boolean');
   }
 
-  // Validate Board structure (all required)
-  const board = info.board as Record<string, unknown>;
-  if (typeof board.manufacturer !== 'string') {
-    throw new Error('Invalid response: Board manufacturer must be string');
+  // Validate Firmware structure (all required)
+  const firmware = info.firmware as Record<string, unknown>;
+  if (typeof firmware.vendor !== 'string') {
+    throw new Error('Invalid response: Firmware vendor must be string');
   }
-  if (typeof board.model !== 'string') {
-    throw new Error('Invalid response: Board model must be string');
+  if (typeof firmware.version !== 'string') {
+    throw new Error('Invalid response: Firmware version must be string');
   }
-  if (typeof board.serial !== 'string') {
-    throw new Error('Invalid response: Board serial must be string');
+  if (typeof firmware.date !== 'string') {
+    throw new Error('Invalid response: Firmware date must be string');
+  }
+
+  // Validate Product structure (all required)
+  const product = info.product as Record<string, unknown>;
+  for (const field of ['vendor', 'family', 'name', 'version', 'serial']) {
+    if (typeof product[field] !== 'string') {
+      throw new Error(`Invalid response: Product ${field} must be string`);
+    }
   }
 
   // Validate CPU structure
@@ -158,18 +171,38 @@ export function hasTPM(systemInfo: SystemInfo): boolean {
 }
 
 /**
- * Get TPM version string
+ * Get TPM spec version string
  *
- * Helper function to extract TPM version for display
+ * Helper function to extract TPM specification version for display
  *
  * @param systemInfo - System information object
- * @returns TPM version string or null if not present
+ * @returns TPM spec version string ("1.2" or "2.0") or null if not present
  */
-export function getTPMVersion(systemInfo: SystemInfo): string | null {
+export function getTPMSpecVersion(systemInfo: SystemInfo): string | null {
   if (!systemInfo.tpm.present) {
     return null;
   }
-  return systemInfo.tpm.version || null;
+  return systemInfo.tpm.spec_version || null;
+}
+
+/**
+ * Get TPM type display name
+ *
+ * Helper function to convert TPM type to a human-readable string
+ *
+ * @param systemInfo - System information object
+ * @returns Human-readable TPM type or null if not present/unknown
+ */
+export function getTPMTypeDisplayName(systemInfo: SystemInfo): string | null {
+  if (!systemInfo.tpm.present || !systemInfo.tpm.type) {
+    return null;
+  }
+  const displayNames: Record<string, string> = {
+    discrete: 'Discrete',
+    firmware: 'Firmware (fTPM)',
+    virtual: 'Virtual',
+  };
+  return displayNames[systemInfo.tpm.type] || systemInfo.tpm.type;
 }
 
 /**

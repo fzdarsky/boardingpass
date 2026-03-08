@@ -43,6 +43,7 @@ export default function DeviceDiscoveryScreen() {
     startDiscovery,
     refreshDevices,
     addManualDevice,
+    deleteDevice,
   } = useDeviceDiscovery();
 
   const [snackbarVisible, setSnackbarVisible] = useState(false);
@@ -107,6 +108,13 @@ export default function DeviceDiscoveryScreen() {
       setMdnsInfoShown(true);
     }
   }, [mdnsUnavailableReason, mdnsInfoShown]);
+
+  /**
+   * Handle device deletion (swipe-to-delete)
+   */
+  const handleDeleteDevice = (device: Device) => {
+    deleteDevice(device.id);
+  };
 
   /**
    * Handle device press - navigate to details if authenticated, otherwise to auth screen
@@ -202,6 +210,7 @@ export default function DeviceDiscoveryScreen() {
         isScanning={isScanning}
         onRefresh={refreshDevices}
         onDevicePress={handleDevicePress}
+        onDeleteDevice={handleDeleteDevice}
         onStartScan={handleStartScan}
         onAddDevice={handleOpenAddDialog}
         authenticatedDeviceIds={authenticatedDevices}
