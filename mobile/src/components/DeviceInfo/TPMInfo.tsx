@@ -116,7 +116,7 @@ function formatTPMType(type?: string | null, specVersion?: string | null): strin
     firmware: 'Firmware TPM',
     virtual: 'Virtual TPM',
   };
-  const typePart = type ? (typeNames[type] || type) : 'TPM';
+  const typePart = type ? typeNames[type] || type : 'TPM';
   return specVersion ? `${typePart} ${specVersion}` : typePart;
 }
 

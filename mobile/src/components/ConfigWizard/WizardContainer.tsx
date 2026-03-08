@@ -63,7 +63,7 @@ export default function WizardContainer({
     }
 
     wizard.goNext();
-  }, [wizard, apiClient]);
+  }, [wizard]);
 
   const handleStepPress = (step: number) => {
     if (wizard.canNavigateTo(step)) {

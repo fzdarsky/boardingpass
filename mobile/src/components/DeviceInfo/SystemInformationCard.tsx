@@ -340,16 +340,13 @@ function InfoRow({
 /**
  * Format TPM type and spec version into a combined string, e.g. "Discrete TPM 2.0"
  */
-function formatTPMType(
-  type?: string | null,
-  specVersion?: string | null,
-): string {
+function formatTPMType(type?: string | null, specVersion?: string | null): string {
   const typeNames: Record<string, string> = {
     discrete: 'Discrete TPM',
     firmware: 'Firmware TPM',
     virtual: 'Virtual TPM',
   };
-  const typePart = type ? (typeNames[type] || type) : 'TPM';
+  const typePart = type ? typeNames[type] || type : 'TPM';
   return specVersion ? `${typePart} ${specVersion}` : typePart;
 }
 
