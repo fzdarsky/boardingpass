@@ -7,5 +7,5 @@
 export { SystemInfo, type SystemInfoProps } from './SystemInfo';
 export { NetworkConfig, type NetworkConfigProps } from './NetworkConfig';
 export { TPMInfo, type TPMInfoProps } from './TPMInfo';
-export { BoardInfo, type BoardInfoProps } from './BoardInfo';
+export { ProductInfo, type ProductInfoProps } from './BoardInfo';
 export { SystemInformationCard, type SystemInformationCardProps } from './SystemInformationCard';

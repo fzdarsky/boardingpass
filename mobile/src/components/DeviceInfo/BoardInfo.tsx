@@ -1,65 +1,67 @@
 /**
- * BoardInfo Component
+ * ProductInfo Component
  *
- * Displays board/hardware information including manufacturer, model, and serial number.
+ * Displays product identity information including vendor, name, and serial number.
  * Formats serial numbers for readability per FR-018 and T089.
  *
- * Related: T087 - Create BoardInfo display component
+ * Related: T087 - Create ProductInfo display component
  */
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Text, Icon, useTheme } from 'react-native-paper';
-import type { BoardInfo as BoardInfoType } from '../../services/api/info';
+import type { ProductInfo as ProductInfoType } from '../../services/api/info';
 import { spacing } from '../../theme';
 
-export interface BoardInfoProps {
-  /** Board information data from SystemInfo */
-  boardInfo: BoardInfoType;
+export interface ProductInfoProps {
+  /** Product information data from SystemInfo */
+  productInfo: ProductInfoType;
 
   /** Whether to format serial number for readability (default: true) */
   formatSerial?: boolean;
 }
 
 /**
- * BoardInfo Display Component
+ * ProductInfo Display Component
  *
- * Renders board information in a Material Design card.
- * Shows manufacturer, model, and serial number with proper formatting.
+ * Renders product information in a Material Design card.
+ * Shows vendor, name, and serial number with proper formatting.
  */
-export function BoardInfo({ boardInfo, formatSerial = true }: BoardInfoProps) {
+export function ProductInfo({ productInfo, formatSerial = true }: ProductInfoProps) {
   const theme = useTheme();
 
   // Format serial number for readability (T089)
-  const formattedSerial = formatSerial ? formatSerialNumber(boardInfo.serial) : boardInfo.serial;
+  const formattedSerial = formatSerial
+    ? formatSerialNumber(productInfo.serial)
+    : productInfo.serial;
 
   return (
     <Card style={styles.card}>
       <Card.Title
-        title="Board Information"
+        title="Product Information"
         titleVariant="titleLarge"
         subtitle="Hardware details"
         // eslint-disable-next-line react/no-unstable-nested-components
         left={() => <Icon source="chip" size={24} color={theme.colors.primary} />}
       />
       <Card.Content>
-        {/* Manufacturer */}
+        {/* Vendor */}
         <View style={styles.row}>
           <Text variant="titleSmall" style={styles.label}>
-            Manufacturer
+            Vendor
           </Text>
           <Text variant="bodyLarge" style={styles.value}>
-            {boardInfo.manufacturer}
+            {productInfo.vendor}
           </Text>
         </View>
 
-        {/* Model */}
+        {/* Name */}
         <View style={styles.row}>
           <Text variant="titleSmall" style={styles.label}>
-            Model
+            Name
           </Text>
           <Text variant="bodyLarge" style={styles.value}>
-            {boardInfo.model}
+            {productInfo.name}
           </Text>
         </View>
 

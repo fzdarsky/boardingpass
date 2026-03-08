@@ -31,7 +31,8 @@
       "mcp__ios-simulator__ui_view",
       "Bash(make help)",
       "Bash(make -n lint-service)",
-      "Bash(make -n lint-app)"
+      "Bash(make -n lint-app)",
+      "Bash(make generate-app)"
     ]
   }
 }

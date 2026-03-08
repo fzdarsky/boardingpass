@@ -81,13 +81,17 @@ func gatherSystemInfo() (protocol.SystemInfo, error) {
 		tpmInfo = protocol.TPMInfo{Present: false}
 	}
 
-	boardInfo, err := inventory.GetBoardInfo()
+	firmwareInfo := inventory.GetFirmwareInfo()
+
+	productInfo, err := inventory.GetProductInfo()
 	if err != nil {
-		// Non-fatal: continue with unknown board info
-		boardInfo = protocol.BoardInfo{
-			Manufacturer: "Unknown",
-			Model:        "Unknown",
-			Serial:       "Unknown",
+		// Non-fatal: continue with unknown product info
+		productInfo = protocol.ProductInfo{
+			Vendor:  "Unknown",
+			Family:  "Unknown",
+			Name:    "Unknown",
+			Version: "Unknown",
+			Serial:  "Unknown",
 		}
 	}
 
@@ -115,7 +119,8 @@ func gatherSystemInfo() (protocol.SystemInfo, error) {
 	return protocol.SystemInfo{
 		Hostname: hostname,
 		TPM:      tpmInfo,
-		Board:    boardInfo,
+		Firmware: firmwareInfo,
+		Product:  productInfo,
 		CPU:      cpuInfo,
 		OS:       osInfo,
 	}, nil

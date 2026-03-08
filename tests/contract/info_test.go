@@ -40,23 +40,37 @@ func TestInfoContractValidation(t *testing.T) {
 	assert.NotNil(t, info.TPM, "tpm field is required")
 	// TPM.Present is required
 	if info.TPM.Present {
-		// When present=true, manufacturer, model, version MAY be populated
-		t.Logf("TPM present with details: Manufacturer=%v, Model=%v, Version=%v",
+		// When present=true, type, spec_version, manufacturer, model MAY be populated
+		t.Logf("TPM present: Type=%v, SpecVersion=%v, Manufacturer=%v, Model=%v",
+			ptrToString(info.TPM.Type),
+			ptrToString(info.TPM.SpecVersion),
 			ptrToString(info.TPM.Manufacturer),
-			ptrToString(info.TPM.Model),
-			ptrToString(info.TPM.Version))
+			ptrToString(info.TPM.Model))
+		if info.TPM.Type != nil {
+			validTypes := []string{"discrete", "firmware", "virtual"}
+			assert.Contains(t, validTypes, *info.TPM.Type, "tpm.type must be a valid value")
+		}
+		if info.TPM.SpecVersion != nil {
+			validVersions := []string{"1.2", "2.0"}
+			assert.Contains(t, validVersions, *info.TPM.SpecVersion, "tpm.spec_version must be a valid value")
+		}
 	} else {
-		// When present=false, manufacturer, model, version should be nil
+		// When present=false, all optional fields should be nil
+		assert.Nil(t, info.TPM.Type, "Type should be nil when TPM not present")
+		assert.Nil(t, info.TPM.SpecVersion, "SpecVersion should be nil when TPM not present")
 		assert.Nil(t, info.TPM.Manufacturer, "Manufacturer should be nil when TPM not present")
 		assert.Nil(t, info.TPM.Model, "Model should be nil when TPM not present")
-		assert.Nil(t, info.TPM.Version, "Version should be nil when TPM not present")
 	}
 
-	// Board field validation
-	assert.NotNil(t, info.Board, "board field is required")
-	assert.NotEmpty(t, info.Board.Manufacturer, "board.manufacturer is required")
-	assert.NotEmpty(t, info.Board.Model, "board.model is required")
-	assert.NotEmpty(t, info.Board.Serial, "board.serial is required")
+	// Firmware field validation
+	assert.NotEmpty(t, info.Firmware.Vendor, "firmware.vendor is required")
+	assert.NotEmpty(t, info.Firmware.Version, "firmware.version is required")
+	assert.NotEmpty(t, info.Firmware.Date, "firmware.date is required")
+
+	// Product field validation
+	assert.NotEmpty(t, info.Product.Vendor, "product.vendor is required")
+	assert.NotEmpty(t, info.Product.Name, "product.name is required")
+	assert.NotEmpty(t, info.Product.Serial, "product.serial is required")
 
 	// CPU field validation
 	assert.NotNil(t, info.CPU, "cpu field is required")

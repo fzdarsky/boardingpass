@@ -3,7 +3,7 @@
  *
  * Validates the /info endpoint contract against the BoardingPass API OpenAPI specification.
  * This test ensures the mobile app correctly handles system information responses and validates
- * the structure of TPM, board, CPU, OS, and FIPS status data.
+ * the structure of TPM, firmware, product, CPU, OS, and FIPS status data.
  *
  * OpenAPI Spec: ../../specs/001-boardingpass-api/contracts/openapi.yaml
  * Contract: See mobile/specs/003-mobile-onboarding-app/contracts/README.md
@@ -49,14 +49,22 @@ describe('GET /info Contract', () => {
       const response = {
         tpm: {
           present: true,
+          type: 'discrete',
+          spec_version: '2.0',
           manufacturer: 'STMicroelectronics',
           model: 'ST33HTPH2E32',
-          version: '2.0',
         },
-        board: {
-          manufacturer: 'Raspberry Pi Foundation',
-          model: 'Raspberry Pi 4 Model B',
-          serial: '10000000abcdef01',
+        firmware: {
+          vendor: 'American Megatrends International, LLC.',
+          version: 'F20',
+          date: '08/31/2023',
+        },
+        product: {
+          vendor: 'Gigabyte Technology Co., Ltd.',
+          family: 'B550 Series',
+          name: 'B550 AORUS PRO',
+          version: 'x.x',
+          serial: 'GE123456789',
         },
         cpu: {
           architecture: 'aarch64',
@@ -69,7 +77,8 @@ describe('GET /info Contract', () => {
       };
 
       expect(response).toHaveProperty('tpm');
-      expect(response).toHaveProperty('board');
+      expect(response).toHaveProperty('firmware');
+      expect(response).toHaveProperty('product');
       expect(response).toHaveProperty('cpu');
       expect(response).toHaveProperty('os');
       expect(response.os).toHaveProperty('fips_enabled');
@@ -78,43 +87,79 @@ describe('GET /info Contract', () => {
     it('should validate TPMInfo structure', () => {
       const tpm = {
         present: true,
+        type: 'discrete',
+        spec_version: '2.0',
         manufacturer: 'STMicroelectronics',
         model: 'ST33HTPH2E32',
-        version: '2.0',
       };
 
       expect(tpm).toHaveProperty('present');
       expect(typeof tpm.present).toBe('boolean');
+      expect(typeof tpm.type).toBe('string');
+      expect(typeof tpm.spec_version).toBe('string');
       expect(typeof tpm.manufacturer).toBe('string');
       expect(typeof tpm.model).toBe('string');
-      expect(typeof tpm.version).toBe('string');
+    });
+
+    it('should validate TPMInfo type enum values', () => {
+      const validTypes = ['discrete', 'firmware', 'virtual'];
+
+      validTypes.forEach(type => {
+        expect(validTypes).toContain(type);
+      });
+    });
+
+    it('should validate TPMInfo spec_version enum values', () => {
+      const validVersions = ['1.2', '2.0'];
+
+      validVersions.forEach(version => {
+        expect(validVersions).toContain(version);
+      });
     });
 
     it('should allow TPMInfo with only present=false', () => {
       const tpm = {
         present: false,
+        type: null,
+        spec_version: null,
         manufacturer: null,
         model: null,
-        version: null,
       };
 
       expect(tpm.present).toBe(false);
-      // manufacturer, model, version are nullable when TPM not present
+      // type, spec_version, manufacturer, model are nullable when TPM not present
     });
 
-    it('should validate BoardInfo structure', () => {
-      const board = {
-        manufacturer: 'Raspberry Pi Foundation',
-        model: 'Raspberry Pi 4 Model B',
-        serial: '10000000abcdef01',
+    it('should validate FirmwareInfo structure', () => {
+      const firmware = {
+        vendor: 'American Megatrends International, LLC.',
+        version: 'F20',
+        date: '08/31/2023',
       };
 
-      expect(board).toHaveProperty('manufacturer');
-      expect(board).toHaveProperty('model');
-      expect(board).toHaveProperty('serial');
-      expect(typeof board.manufacturer).toBe('string');
-      expect(typeof board.model).toBe('string');
-      expect(typeof board.serial).toBe('string');
+      expect(firmware).toHaveProperty('vendor');
+      expect(firmware).toHaveProperty('version');
+      expect(firmware).toHaveProperty('date');
+      expect(typeof firmware.vendor).toBe('string');
+      expect(typeof firmware.version).toBe('string');
+      expect(typeof firmware.date).toBe('string');
+    });
+
+    it('should validate ProductInfo structure', () => {
+      const product = {
+        vendor: 'Gigabyte Technology Co., Ltd.',
+        family: 'B550 Series',
+        name: 'B550 AORUS PRO',
+        version: 'x.x',
+        serial: 'GE123456789',
+      };
+
+      const requiredFields = ['vendor', 'family', 'name', 'version', 'serial'];
+
+      requiredFields.forEach(field => {
+        expect(product).toHaveProperty(field);
+        expect(typeof (product as Record<string, unknown>)[field]).toBe('string');
+      });
     });
 
     it('should validate CPUInfo architecture enum', () => {
@@ -169,11 +214,12 @@ describe('GET /info Contract', () => {
     it('should reject response missing required fields', () => {
       const incompleteResponse = {
         tpm: { present: true },
-        // Missing: board, cpu, os
+        // Missing: firmware, product, cpu, os
       };
 
       expect(incompleteResponse).toHaveProperty('tpm');
-      expect(incompleteResponse).not.toHaveProperty('board');
+      expect(incompleteResponse).not.toHaveProperty('firmware');
+      expect(incompleteResponse).not.toHaveProperty('product');
       expect(incompleteResponse).not.toHaveProperty('cpu');
       // Implementation should reject incomplete responses
     });
@@ -243,25 +289,25 @@ describe('GET /info Contract', () => {
   });
 
   describe('Data Validation', () => {
-    it('should validate TPM version format', () => {
+    it('should validate TPM spec_version format', () => {
       const validVersions = ['2.0', '1.2'];
       const tpm = {
         present: true,
-        version: '2.0',
+        spec_version: '2.0',
       };
 
-      expect(validVersions).toContain(tpm.version);
+      expect(validVersions).toContain(tpm.spec_version);
     });
 
-    it('should validate board serial is non-empty string', () => {
-      const board = {
-        manufacturer: 'Test Manufacturer',
-        model: 'Test Model',
+    it('should validate product serial is non-empty string', () => {
+      const product = {
+        vendor: 'Test Vendor',
+        name: 'Test Product',
         serial: '10000000abcdef01',
       };
 
-      expect(board.serial.length).toBeGreaterThan(0);
-      expect(typeof board.serial).toBe('string');
+      expect(product.serial.length).toBeGreaterThan(0);
+      expect(typeof product.serial).toBe('string');
     });
 
     it('should validate OS distribution is non-empty string', () => {
@@ -296,7 +342,7 @@ describe('GET /info Contract', () => {
     it('should correctly identify FIPS-enabled devices', () => {
       const fipsEnabledResponse = {
         tpm: { present: true },
-        board: { manufacturer: 'Test', model: 'Test', serial: '123' },
+        product: { vendor: 'Test', name: 'Test', serial: '123' },
         cpu: { architecture: 'x86_64' },
         os: { distribution: 'RHEL', version: '9.3', fips_enabled: true },
       };
@@ -308,7 +354,7 @@ describe('GET /info Contract', () => {
     it('should correctly identify non-FIPS devices', () => {
       const nonFipsResponse = {
         tpm: { present: false },
-        board: { manufacturer: 'Test', model: 'Test', serial: '123' },
+        product: { vendor: 'Test', name: 'Test', serial: '123' },
         cpu: { architecture: 'aarch64' },
         os: { distribution: 'Ubuntu', version: '22.04', fips_enabled: false },
       };

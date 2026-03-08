@@ -418,7 +418,8 @@ components:
       required:
         - hostname
         - tpm
-        - board
+        - firmware
+        - product
         - cpu
         - os
       properties:
@@ -428,8 +429,10 @@ components:
           example: "localhost.localdomain"
         tpm:
           $ref: '#/components/schemas/TPMInfo'
-        board:
-          $ref: '#/components/schemas/BoardInfo'
+        firmware:
+          $ref: '#/components/schemas/FirmwareInfo'
+        product:
+          $ref: '#/components/schemas/ProductInfo'
         cpu:
           $ref: '#/components/schemas/CPUInfo'
         os:
@@ -444,6 +447,18 @@ components:
           type: boolean
           description: Whether TPM is present on device
           example: true
+        type:
+          type: string
+          nullable: true
+          enum: [discrete, firmware, virtual]
+          description: TPM type classification (null if unknown or not present)
+          example: "discrete"
+        spec_version:
+          type: string
+          nullable: true
+          enum: ["1.2", "2.0"]
+          description: TPM specification version (null if not present)
+          example: "2.0"
         manufacturer:
           type: string
           nullable: true
@@ -452,33 +467,60 @@ components:
         model:
           type: string
           nullable: true
-          description: TPM model/version (null if not present)
-          example: "ST33HTPH2E32"
+          description: TPM model identifier (null if not present)
+          example: "SLB9670"
+
+    FirmwareInfo:
+      type: object
+      description: System firmware information (BIOS, UEFI, or U-Boot)
+      required:
+        - vendor
+        - version
+        - date
+      properties:
+        vendor:
+          type: string
+          description: Firmware vendor name
+          example: "American Megatrends International, LLC."
         version:
           type: string
-          nullable: true
-          description: TPM specification version (null if not present)
-          example: "2.0"
+          description: Firmware version string
+          example: "F20"
+        date:
+          type: string
+          description: Firmware release date
+          example: "08/31/2023"
 
-    BoardInfo:
+    ProductInfo:
       type: object
+      description: Product identity as seen from the outside. Uses fallback chain from product to board fields.
       required:
-        - manufacturer
-        - model
+        - vendor
+        - family
+        - name
+        - version
         - serial
       properties:
-        manufacturer:
+        vendor:
           type: string
-          description: Board manufacturer
-          example: "Raspberry Pi Foundation"
-        model:
+          description: System/product vendor
+          example: "Gigabyte Technology Co., Ltd."
+        family:
           type: string
-          description: Board model
-          example: "Raspberry Pi 4 Model B"
+          description: Product family
+          example: "B550 Series"
+        name:
+          type: string
+          description: Product name
+          example: "B550 AORUS PRO"
+        version:
+          type: string
+          description: Product version
+          example: "x.x"
         serial:
           type: string
-          description: Board serial number
-          example: "10000000abcdef01"
+          description: Product serial number
+          example: "GE123456789"
 
     CPUInfo:
       type: object

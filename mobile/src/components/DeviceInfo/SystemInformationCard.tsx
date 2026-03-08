@@ -130,10 +130,10 @@ export function SystemInformationCard({
         </Text>
         {hasTPM ? (
           <>
-            {systemInfo.tpm.version && (
+            {(systemInfo.tpm.type || systemInfo.tpm.spec_version) && (
               <InfoRow
-                label="Version"
-                value={systemInfo.tpm.version}
+                label="Type"
+                value={formatTPMType(systemInfo.tpm.type, systemInfo.tpm.spec_version)}
                 labelStyle={dynamicStyles.label}
                 valueStyle={dynamicStyles.value}
               />
@@ -163,25 +163,50 @@ export function SystemInformationCard({
 
         <Divider style={styles.sectionDivider} />
 
-        {/* Board */}
+        {/* Firmware */}
         <Text variant="titleSmall" style={[styles.sectionHeader, dynamicStyles.sectionHeader]}>
-          Board:
+          Firmware:
         </Text>
         <InfoRow
-          label="Manufacturer"
-          value={systemInfo.board.manufacturer}
+          label="Vendor"
+          value={systemInfo.firmware.vendor}
           labelStyle={dynamicStyles.label}
           valueStyle={dynamicStyles.value}
         />
         <InfoRow
-          label="Model"
-          value={systemInfo.board.model}
+          label="Version"
+          value={systemInfo.firmware.version}
+          labelStyle={dynamicStyles.label}
+          valueStyle={dynamicStyles.value}
+        />
+        <InfoRow
+          label="Date"
+          value={systemInfo.firmware.date}
+          labelStyle={dynamicStyles.label}
+          valueStyle={dynamicStyles.value}
+        />
+
+        <Divider style={styles.sectionDivider} />
+
+        {/* Product */}
+        <Text variant="titleSmall" style={[styles.sectionHeader, dynamicStyles.sectionHeader]}>
+          Product:
+        </Text>
+        <InfoRow
+          label="Vendor"
+          value={systemInfo.product.vendor}
+          labelStyle={dynamicStyles.label}
+          valueStyle={dynamicStyles.value}
+        />
+        <InfoRow
+          label="Name"
+          value={systemInfo.product.name}
           labelStyle={dynamicStyles.label}
           valueStyle={dynamicStyles.value}
         />
         <InfoRow
           label="Serial"
-          value={formatSerialNumber(systemInfo.board.serial)}
+          value={formatSerialNumber(systemInfo.product.serial)}
           labelStyle={dynamicStyles.label}
           valueStyle={dynamicStyles.value}
           monospace
@@ -310,6 +335,22 @@ function InfoRow({
       </Text>
     </View>
   );
+}
+
+/**
+ * Format TPM type and spec version into a combined string, e.g. "Discrete TPM 2.0"
+ */
+function formatTPMType(
+  type?: string | null,
+  specVersion?: string | null,
+): string {
+  const typeNames: Record<string, string> = {
+    discrete: 'Discrete TPM',
+    firmware: 'Firmware TPM',
+    virtual: 'Virtual TPM',
+  };
+  const typePart = type ? (typeNames[type] || type) : 'TPM';
+  return specVersion ? `${typePart} ${specVersion}` : typePart;
 }
 
 /**
