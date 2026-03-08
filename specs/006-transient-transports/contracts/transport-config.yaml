@@ -1,0 +1,135 @@
+# Transport Configuration Contract
+#
+# Defines the config.yaml schema extension for transient transports.
+# This is the interface between the system builder and the BoardingPass service.
+#
+# Location: /etc/boardingpass/config.yaml (transports section)
+
+# Example config.yaml with all transports:
+#
+# transports:
+#   ethernet:
+#     enabled: true
+#     interfaces: ["eth0"]
+#     address: "0.0.0.0"
+#     port: 8443
+#     tls_cert: "/etc/boardingpass/tls/cert.pem"
+#     tls_key: "/etc/boardingpass/tls/key.pem"
+#
+#   wifi:
+#     enabled: true
+#     interface: "wlan0"
+#     ssid: "BoardingPass-mydevice"
+#     # password: "optional-wpa2-password"  # omit for open AP
+#     channel: 6
+#     address: "10.0.0.1"
+#
+#   bluetooth:
+#     enabled: true
+#     adapter: "hci0"
+#     device_name: "BoardingPass-mydevice"
+#     address: "10.0.1.1"
+#
+#   usb:
+#     enabled: true
+#     interface_prefix: "usb"
+#     # address: auto-detected from tethered interface
+
+---
+# JSON Schema for the transports section
+type: object
+properties:
+  transports:
+    type: object
+    properties:
+      ethernet:
+        description: "Pre-existing wired Ethernet transport (existing behavior)"
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: true
+          interfaces:
+            type: array
+            items:
+              type: string
+          address:
+            type: string
+            default: "0.0.0.0"
+          port:
+            type: integer
+            minimum: 1
+            maximum: 65535
+            default: 8443
+          tls_cert:
+            type: string
+          tls_key:
+            type: string
+
+      wifi:
+        description: "WiFi access point transport - creates a transient WiFi hotspot"
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          interface:
+            type: string
+            description: "WiFi interface name supporting AP mode (e.g., wlan0)"
+          ssid:
+            type: string
+            description: "Access point SSID; defaults to BoardingPass-<hostname>"
+          password:
+            type: string
+            description: "WPA2-PSK password; omit for open (passwordless) AP"
+            minLength: 8
+          channel:
+            type: integer
+            minimum: 1
+            maximum: 165
+            default: 6
+          address:
+            type: string
+            default: "10.0.0.1"
+            description: "IP address assigned to the WiFi AP interface"
+        required:
+          - enabled
+          - interface
+
+      bluetooth:
+        description: "Bluetooth PAN transport - creates a transient Bluetooth network"
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          adapter:
+            type: string
+            default: "hci0"
+            description: "Bluetooth adapter name"
+          device_name:
+            type: string
+            description: "Bluetooth discoverable name; defaults to BoardingPass-<hostname>"
+          address:
+            type: string
+            default: "10.0.1.1"
+            description: "IP address assigned to the PAN interface"
+        required:
+          - enabled
+
+      usb:
+        description: "USB tethering transport - detects phone tethering interfaces"
+        type: object
+        properties:
+          enabled:
+            type: boolean
+            default: false
+          interface_prefix:
+            type: string
+            default: "usb"
+            description: "Prefix to match USB network interface names"
+          address:
+            type: string
+            description: "IP address; auto-detected from tethered interface if omitted"
+        required:
+          - enabled
