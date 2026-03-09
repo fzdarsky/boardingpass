@@ -151,11 +151,6 @@ func (u *USBHandler) pollLoop(ctx context.Context) {
 }
 
 func (u *USBHandler) scanInterfaces() {
-	prefix := u.cfg.InterfacePrefix
-	if prefix == "" {
-		prefix = "usb"
-	}
-
 	// Read /sys/class/net/ for matching interfaces
 	entries, err := os.ReadDir(sysClassNet)
 	if err != nil {
@@ -169,12 +164,15 @@ func (u *USBHandler) scanInterfaces() {
 
 	for _, entry := range entries {
 		name := entry.Name()
-		if !u.matchesPrefix(name, prefix) {
+
+		// Primary detection: check if interface is backed by a known USB driver.
+		// This works regardless of naming scheme (usb0, rndis0, enp0s20f0u1c4i2, etc.)
+		if !u.isUSBInterface(name) {
 			continue
 		}
 
-		// Check if interface is USB-backed
-		if !u.isUSBInterface(name) {
+		// Optional prefix filter: if configured, restrict to matching interfaces
+		if u.cfg.InterfacePrefix != "" && !u.matchesPrefix(name) {
 			continue
 		}
 
@@ -202,6 +200,19 @@ func (u *USBHandler) scanInterfaces() {
 
 		if addCallback != nil {
 			if err := addCallback(addr, u.port); err != nil {
+				if strings.Contains(err.Error(), "address already in use") {
+					// Another transport's listener (e.g., wildcard) already covers this address.
+					// Track the interface so we don't retry, but no dedicated listener needed.
+					u.mu.Lock()
+					u.knownInterfaces[name] = bindAddr
+					u.mu.Unlock()
+
+					u.logger.Info("USB tethering interface detected (covered by existing listener)", map[string]any{
+						"interface": name,
+						"address":   bindAddr,
+					})
+					continue
+				}
 				u.logger.Warn("failed to add USB listener", map[string]any{
 					"interface": name,
 					"address":   bindAddr,
@@ -253,15 +264,8 @@ func (u *USBHandler) scanInterfaces() {
 	}
 }
 
-func (u *USBHandler) matchesPrefix(name, prefix string) bool {
-	// Match both the configured prefix and "rndis" (Android RNDIS)
-	if strings.HasPrefix(name, prefix) {
-		return true
-	}
-	if strings.HasPrefix(name, "rndis") {
-		return true
-	}
-	return false
+func (u *USBHandler) matchesPrefix(name string) bool {
+	return strings.HasPrefix(name, u.cfg.InterfacePrefix)
 }
 
 func (u *USBHandler) isUSBInterface(name string) bool {

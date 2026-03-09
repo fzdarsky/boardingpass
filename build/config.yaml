@@ -63,13 +63,15 @@ transports:
   # Auto-detects USB tethering interfaces when a phone is connected via cable.
   # No systemd units needed -- the service polls /sys/class/net/ every 2 seconds
   # for USB-backed network interfaces and dynamically adds/removes HTTPS listeners.
+  # Detection is driver-based (cdc_ether, rndis_host, ipheth), so it works with any
+  # interface naming scheme (usb0, rndis0, enp0s20f0u1c4i2, etc.)
   #
   # Required system packages: none (uses kernel USB networking drivers)
   # Required hardware: USB port
   # Supported USB drivers: cdc_ether (standard), rndis_host (Android), ipheth (iOS)
   usb:
     enabled: false
-    interface_prefix: "usb"      # Interface name prefix to match (also matches "rndis" automatically)
+    interface_prefix: ""         # Optional: restrict to interfaces with this name prefix (empty = all USB interfaces)
 
 # Command allow-list
 # Each entry defines a command that authenticated clients can execute on the device.
