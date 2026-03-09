@@ -15,14 +15,19 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
+      - darwin
     goarch:
       - amd64
       - arm64
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.Commit}}
-      - -X main.date={{.Date}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.versionFromGit={{.Version}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.commitFromGit={{.Commit}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.buildDate={{.Date}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.gitTreeState=clean
+      - -X github.com/fzdarsky/boardingpass/pkg/version.majorFromGit={{.Major}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.minorFromGit={{.Minor}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.patchFromGit={{.Patch}}
     flags:
       - -trimpath
 
@@ -40,7 +45,13 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.versionFromGit={{.Version}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.commitFromGit={{.Commit}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.buildDate={{.Date}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.gitTreeState=clean
+      - -X github.com/fzdarsky/boardingpass/pkg/version.majorFromGit={{.Major}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.minorFromGit={{.Minor}}
+      - -X github.com/fzdarsky/boardingpass/pkg/version.patchFromGit={{.Patch}}
     flags:
       - -trimpath
 
@@ -206,7 +217,7 @@ changelog:
       - Merge branch
 
 snapshot:
-  version_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ .Summary }}.{{ .Branch }}"
 
 dist: _output/dist
 

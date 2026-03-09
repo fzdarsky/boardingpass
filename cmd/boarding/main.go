@@ -11,9 +11,8 @@ import (
 
 	"github.com/fzdarsky/boardingpass/internal/cli/clicontext"
 	"github.com/fzdarsky/boardingpass/internal/cli/commands"
+	"github.com/fzdarsky/boardingpass/pkg/version"
 )
-
-const version = "1.0.0"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -29,8 +28,15 @@ func main() {
 	case "--help", "-h", "help":
 		printUsage()
 		os.Exit(0)
-	case "--version", "-v", "version":
-		fmt.Printf("boarding version %s\n", version)
+	case "version":
+		v := version.Get()
+		fmt.Printf("gitVersion: %s\n", v.GitVersion)
+		fmt.Printf("gitCommit: %s\n", v.GitCommit)
+		fmt.Printf("gitTreeState: %s\n", v.GitTreeState)
+		fmt.Printf("buildDate: %s\n", v.BuildDate)
+		fmt.Printf("goVersion: %s\n", v.GoVersion)
+		fmt.Printf("compiler: %s\n", v.Compiler)
+		fmt.Printf("platform: %s\n", v.Platform)
 		os.Exit(0)
 	}
 
@@ -106,10 +112,10 @@ Available Commands:
   load         Upload configuration directory to device
   command      Execute allow-listed command on device
   complete     Complete provisioning and terminate session
+  version      Show version information
 
 Global Flags:
   --help, -h        Show help information
-  --version, -v     Show version information
   --assumeyes, -y   Automatically answer 'yes' to prompts (non-interactive mode)
 
 Examples:

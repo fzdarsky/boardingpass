@@ -21,13 +21,7 @@ import (
 	"github.com/fzdarsky/boardingpass/internal/logging"
 	"github.com/fzdarsky/boardingpass/internal/mdns"
 	"github.com/fzdarsky/boardingpass/internal/transport"
-)
-
-var (
-	// version is set by build flags
-	version = "dev"
-	// commit is set by build flags
-	commit = "none"
+	"github.com/fzdarsky/boardingpass/pkg/version"
 )
 
 func main() {
@@ -38,6 +32,10 @@ func main() {
 	}
 
 	switch subcommand {
+	case "version":
+		printVersion()
+		return
+
 	case "init":
 		// Run initialization
 		if err := runInit(); err != nil {
@@ -80,9 +78,10 @@ func run(configPath, verifierPath string) error {
 	logger := logging.New(logLevel, logFormat)
 
 	// Log startup information
+	versionInfo := version.Get()
 	logger.Info("BoardingPass service starting", map[string]any{
-		"version":        version,
-		"commit":         commit,
+		"version":        versionInfo.String(),
+		"commit":         versionInfo.GitCommit,
 		"log_level":      cfg.Logging.Level,
 		"log_format":     cfg.Logging.Format,
 		"port":           cfg.Service.Port,
@@ -218,7 +217,7 @@ func run(configPath, verifierPath string) error {
 			Service:  "_boardingpass._tcp",
 			Domain:   "local",
 			Port:     cfg.Service.Port,
-			TXT:      map[string]string{"version": version},
+			TXT:      map[string]string{"version": version.Get().String()},
 			Addrs:    collectTransportAddresses(cfg),
 		}, logger)
 	}
@@ -421,6 +420,17 @@ func collectTransportAddresses(cfg *config.Config) []net.IP {
 		addrs = discoverInterfaceAddresses()
 	}
 	return addrs
+}
+
+func printVersion() {
+	v := version.Get()
+	fmt.Printf("gitVersion: %s\n", v.GitVersion)
+	fmt.Printf("gitCommit: %s\n", v.GitCommit)
+	fmt.Printf("gitTreeState: %s\n", v.GitTreeState)
+	fmt.Printf("buildDate: %s\n", v.BuildDate)
+	fmt.Printf("goVersion: %s\n", v.GoVersion)
+	fmt.Printf("compiler: %s\n", v.Compiler)
+	fmt.Printf("platform: %s\n", v.Platform)
 }
 
 // discoverInterfaceAddresses returns IPv4 addresses from all non-loopback interfaces.

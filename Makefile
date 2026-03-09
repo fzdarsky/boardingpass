@@ -46,9 +46,7 @@ GOMOD := $(GOCMD) mod
 GOVET := $(GOCMD) vet
 GOTESTSUM := go tool gotestsum
 
-# Build flags
-LDFLAGS := -s -w
-BUILD_FLAGS := -trimpath -ldflags="$(LDFLAGS)"
+# Build flags (version injection handled by GoReleaser via goreleaser build --snapshot)
 
 # Mobile app (npm ci in CI, npm install locally)
 NPM_INSTALL := $(if $(CI),npm ci,npm install)
@@ -267,7 +265,7 @@ lint-all: lint-service lint-app
 build-service:
 	@echo "Building $(SERVICE_BINARY_NAME)..."
 	@mkdir -p $(BIN_DIR)
-	@CGO_ENABLED=0 $(GOBUILD) $(BUILD_FLAGS) -o $(BIN_DIR)/$(SERVICE_BINARY_NAME) ./cmd/boardingpass
+	@goreleaser build --snapshot --single-target --id boardingpass --clean -o $(BIN_DIR)/$(SERVICE_BINARY_NAME)
 	@echo "Binary built: $(BIN_DIR)/$(SERVICE_BINARY_NAME)"
 	@ls -lh $(BIN_DIR)/$(SERVICE_BINARY_NAME)
 
@@ -275,7 +273,7 @@ build-service:
 build-cli:
 	@echo "Building $(CLI_BINARY_NAME)..."
 	@mkdir -p $(BIN_DIR)
-	@CGO_ENABLED=0 $(GOBUILD) $(BUILD_FLAGS) -o $(BIN_DIR)/$(CLI_BINARY_NAME) ./cmd/boarding
+	@goreleaser build --snapshot --single-target --id boarding --clean -o $(BIN_DIR)/$(CLI_BINARY_NAME)
 	@echo "Binary built: $(BIN_DIR)/$(CLI_BINARY_NAME)"
 	@ls -lh $(BIN_DIR)/$(CLI_BINARY_NAME)
 
