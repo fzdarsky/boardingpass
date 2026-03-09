@@ -113,7 +113,7 @@ BoardingPass can automatically create and tear down network transports so that a
 | --- | --- | --- | --- |
 | Ethernet | *(none)* | Wired NIC | *(none)* |
 | WiFi AP | `hostapd`, `dnsmasq` | WiFi adapter with AP mode | `boardingpass-wifi@`, `boardingpass-dnsmasq@` |
-| Bluetooth PAN | `bluez` | Bluetooth adapter (HCI) | `boardingpass-bt@`, `boardingpass-ble@` |
+| Bluetooth PAN | `bluez` | Bluetooth adapter (HCI) | `boardingpass-bt@`, `boardingpass-ble@` (requires `ecdh_generic` kernel module for pairing; see FIPS note) |
 | USB Tethering | *(none)* | USB port | *(none, kernel drivers only)* |
 
 #### WiFi Access Point
@@ -148,6 +148,17 @@ transports:
 ```
 
 Two systemd units manage this transport: `boardingpass-bt@` for the PAN bridge (uses BlueZ D-Bus API via `busctl`) and `boardingpass-ble@` for BLE advertisement. BLE advertisement failure is non-fatal — the PAN still works if the phone pairs manually.
+
+> **FIPS limitation**: Bluetooth pairing requires the kernel `ecdh_generic` module for Secure Simple Pairing (SSP). On FIPS-enabled systems this module may be unavailable, making Bluetooth PAN unusable. BLE advertisement (discovery only) is unaffected — the PAN failure is graceful and BLE still starts. To use BLE as a discovery beacon for WiFi AP, set `bluetooth.address` to the WiFi AP address:
+>
+> ```yaml
+> bluetooth:
+>   enabled: true
+>   address: "10.0.0.1"   # Point to WiFi AP instead of PAN bridge
+> wifi:
+>   enabled: true
+>   address: "10.0.0.1"
+> ```
 
 #### USB Tethering
 

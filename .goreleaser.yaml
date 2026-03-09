@@ -179,6 +179,10 @@ nfpms:
         dst: /usr/lib/boardingpass/scripts/bt-pan.sh
         file_info:
           mode: 0755
+      - src: build/scripts/ble-advertise.sh
+        dst: /usr/lib/boardingpass/scripts/ble-advertise.sh
+        file_info:
+          mode: 0755
     scripts:
       preinstall: build/scripts/preinstall.sh
       postinstall: build/scripts/postinstall.sh

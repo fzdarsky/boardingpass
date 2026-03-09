@@ -39,12 +39,25 @@ transports:
   #
   # Required system packages: bluez (provides bluetoothctl and BlueZ D-Bus API)
   # Required hardware: Bluetooth adapter (HCI)
+  # Required kernel modules: bnep (Bluetooth network encapsulation), ecdh_generic (for pairing)
   # Systemd units: boardingpass-bt@.service, boardingpass-ble@.service
+  #
+  # FIPS limitation: Bluetooth pairing requires the kernel ecdh_generic module for
+  # Secure Simple Pairing (SSP). On FIPS-enabled systems this module may be unavailable,
+  # making Bluetooth PAN unusable. BLE advertisement (discovery only) is unaffected.
+  # On FIPS systems, enable bluetooth for BLE discovery and set address to the WiFi AP
+  # or Ethernet address so the phone knows where to connect:
+  #   bluetooth:
+  #     enabled: true
+  #     address: "10.0.0.1"     # WiFi AP address — PAN will fail gracefully
+  #   wifi:
+  #     enabled: true
+  #     address: "10.0.0.1"
   bluetooth:
     enabled: false
     adapter: "hci0"              # Bluetooth adapter name (from /sys/class/bluetooth/)
     device_name: ""              # BLE advertised name (default: "BoardingPass-<hostname>")
-    address: "10.0.1.1"          # PAN bridge IP; phones get addresses in this /24 subnet
+    address: "10.0.1.1"          # Address advertised via BLE; also used as PAN bridge IP
 
   # USB tethering transport
   # Auto-detects USB tethering interfaces when a phone is connected via cable.

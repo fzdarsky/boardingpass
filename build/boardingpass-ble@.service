@@ -4,6 +4,7 @@ PartOf=boardingpass.service
 
 [Service]
 Type=simple
+EnvironmentFile=-/run/boardingpass/ble-env
 # Advertise BoardingPass BLE service UUID with device connection info
 # GATT characteristics: device name, IP address, port, cert fingerprint
 ExecStart=/usr/lib/boardingpass/scripts/ble-advertise.sh %i

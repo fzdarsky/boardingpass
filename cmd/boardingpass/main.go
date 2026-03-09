@@ -216,7 +216,7 @@ func run(configPath, verifierPath string) error {
 		transportMgr.Register(transport.NewWiFiHandler(cfg.Transports.WiFi, logger))
 	}
 	if cfg.Transports.Bluetooth.Enabled {
-		transportMgr.Register(transport.NewBluetoothHandler(cfg.Transports.Bluetooth, logger))
+		transportMgr.Register(transport.NewBluetoothHandler(cfg.Transports.Bluetooth, cfg.Service.Port, logger))
 	}
 	if cfg.Transports.USB.Enabled {
 		usbHandler := transport.NewUSBHandler(cfg.Transports.USB, cfg.Service.Port, logger)
