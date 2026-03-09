@@ -7,7 +7,7 @@
 
 import { CertificateInfo } from './certificate';
 
-export type DiscoveryMethod = 'mdns' | 'fallback' | 'manual';
+export type DiscoveryMethod = 'mdns' | 'fallback' | 'manual' | 'wifi' | 'bluetooth' | 'usb';
 
 export type DeviceStatus = 'online' | 'offline' | 'authenticating' | 'authenticated' | 'error';
 

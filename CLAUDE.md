@@ -99,9 +99,10 @@ The project uses Go 1.25+ with CGO disabled for static linking. GoReleaser handl
 
 - `cmd/boardingpass/` - Main service binary entry point
 - `internal/` - Private packages (not importable externally):
-  - `api/` - HTTP handlers, middleware (auth, logging, errors), server lifecycle
+  - `api/` - HTTP handlers, middleware (auth, logging, errors), server lifecycle, captive portal
   - `auth/` - SRP-6a implementation, session tokens (30-min TTL), rate limiting
   - `tls/` - Self-signed cert generation, TLS 1.3+ config
+  - `transport/` - Transport manager and handlers (WiFi AP, Bluetooth PAN, USB tethering)
   - `inventory/` - System info extraction (TPM, board, CPU, OS, FIPS)
   - `network/` - Interface enumeration, link state, IP addresses
   - `provisioning/` - Config bundle parsing, path allow-list validation, atomic file ops
@@ -111,7 +112,7 @@ The project uses Go 1.25+ with CGO disabled for static linking. GoReleaser handl
   - `logging/` - JSON logging to stdout/stderr with secret redaction
 - `pkg/protocol/` - Shared types for future mobile app integration
 - `tests/` - Unit, integration, contract, and e2e tests
-- `build/` - systemd unit file, sudoers config, Containerfile
+- `build/` - systemd unit/template files, sudoers config, Containerfile
 
 ### Key Technical Details
 
@@ -119,7 +120,9 @@ The project uses Go 1.25+ with CGO disabled for static linking. GoReleaser handl
 - **Brute Force Protection**: Progressive delays (1s → 2s → 5s → 60s lockout)
 - **Session Tokens**: 30-minute TTL, in-memory storage
 - **Config Provisioning**: Atomic ops (temp → validate → rename), path allow-list enforcement
-- **Logging**: JSON to stdout/stderr (systemd captures), secrets always redacted
+- **Transports**: WiFi AP, Bluetooth PAN, and USB tethering managed via `internal/transport/` package; WiFi/Bluetooth use systemd template units (`boardingpass-wifi@.service`, `boardingpass-bt@.service`, `boardingpass-ble@.service`); USB polls `/sys/class/net/` and dynamically adds/removes server listeners via callbacks
+- **Captive Portal**: Suppresses iOS (`/hotspot-detect.html`) and Android (`/generate_204`) captive portal detection when phones connect to BoardingPass WiFi AP
+- **Logging**: JSON to stdout/stderr (systemd captures), secrets always redacted (including `wifi_password`, `pairing_code`)
 
 ## Go Coding Standards
 
@@ -182,16 +185,18 @@ After completing work on a task or list of tasks, **always** run `make test-all`
 - `.golangci.yaml` - Linter config (v2 format) with gosec, staticcheck, revive
 - `.goreleaser.yaml` - Build orchestration for Linux amd64/arm64, RPM/DEB packaging
 - `build/boardingpass.service` - systemd unit with sentinel file check
+- `build/boardingpass-wifi@.service` - systemd template unit for WiFi AP transport
+- `build/boardingpass-bt@.service` - systemd template unit for Bluetooth PAN transport
+- `build/boardingpass-ble@.service` - systemd template unit for BLE advertisement
 - `build/boardingpass.sudoers` - Restricted sudo permissions for commands
+- `build/config.yaml` - Example service config with all transport options
 
 ## Active Technologies
-- Go 1.25+ (service), TypeScript 5.x with React Native 0.74+ (mobile app) + Go stdlib, `gopkg.in/yaml.v3` (service); React Native, React Native Paper, Expo Router, Axios (app) (004-enrollment-flow)
-- N/A — wizard state is ephemeral (in-memory), config files written to `/etc/` via existing provisioning (004-enrollment-flow)
-- Go 1.25+ (service), TypeScript 5.x with React Native 0.74+ (mobile app) + Go stdlib + `gopkg.in/yaml.v3` (service); React Native, React Native Paper, Expo Router, Axios, `@react-native-community/netinfo`, `react-native-ble-plx` (app) (006-transient-transports)
-- N/A — transport state is ephemeral (in-memory); config read from `/etc/boardingpass/config.yaml` (006-transient-transports)
 
-- Go 1.25+ (BoardingPass service)
+- Go 1.25+ (BoardingPass service) — stdlib + `gopkg.in/yaml.v3` only
 - TypeScript 5.x with React Native 0.74+, targeting ES2022 (Mobile onboarding app)
+- App dependencies: React Native Paper, Expo Router, Axios, `@react-native-community/netinfo`, `react-native-ble-plx`
+- All state is ephemeral (in-memory); config read from `/etc/boardingpass/config.yaml`
 
 ## Mobile App Development Workflow
 
@@ -221,7 +226,7 @@ npm run ios                    # Run on iOS simulator
 
 ### Project Structure
 
-```
+```text
 mobile/
 ├── app/                      # Expo Router screens (file-based routing)
 │   ├── index.tsx            # Device discovery screen
@@ -229,9 +234,18 @@ mobile/
 │   └── device/authenticate.tsx  # Authentication screen
 ├── src/
 │   ├── components/          # Reusable UI components
-│   ├── services/            # Business logic (discovery, auth, API, certificates)
+│   ├── services/
+│   │   ├── discovery/       # Multi-transport device discovery
+│   │   │   ├── manager.ts   # Orchestrates all discovery methods
+│   │   │   ├── wifi.ts      # WiFi AP SSID detection
+│   │   │   ├── bluetooth.ts # BLE scanning
+│   │   │   ├── usb.ts       # USB tethering detection
+│   │   │   └── preference.ts # Transport priority & de-duplication
+│   │   ├── auth/            # SRP-6a authentication
+│   │   ├── api/             # REST API client
+│   │   └── certificates/    # TLS certificate pinning (TOFU)
 │   ├── hooks/               # Custom React hooks
-│   ├── contexts/            # React Context providers
+│   ├── contexts/            # React Context providers (DeviceContext uses deduplicateDevices)
 │   ├── types/               # TypeScript type definitions
 │   └── utils/               # Utility functions
 └── tests/                   # Unit, integration, contract, and E2E tests
@@ -581,7 +595,7 @@ npx react-native-bundle-visualizer  # Analyze bundle
 ```
 
 ## Recent Changes
-- 006-transient-transports: Added Go 1.25+ (service), TypeScript 5.x with React Native 0.74+ (mobile app) + Go stdlib + `gopkg.in/yaml.v3` (service); React Native, React Native Paper, Expo Router, Axios, `@react-native-community/netinfo`, `react-native-ble-plx` (app)
-- 005-review-apply-step: Added Go 1.25+ (service), TypeScript 5.x with React Native 0.74+ (mobile app) + Go stdlib, `gopkg.in/yaml.v3` (service); React Native, React Native Paper, Expo Router, Axios (app)
-- 004-enrollment-flow: Added Go 1.25+ (service), TypeScript 5.x with React Native 0.74+ (mobile app) + Go stdlib, `gopkg.in/yaml.v3` (service); React Native, React Native Paper, Expo Router, Axios (app)
 
+- 006-transient-transports: Added `internal/transport/` package (WiFi, Bluetooth, USB handlers), captive portal routes, multi-transport discovery in mobile app (WiFi/BLE/USB), transport de-duplication, transport indicator badges in UI. New deps: `@react-native-community/netinfo`, `react-native-ble-plx`
+- 005-review-apply-step: Added review-and-apply workflow for configuration provisioning
+- 004-enrollment-flow: Added guided enrollment wizard (hostname, DNS, NTP, WiFi, enrollment steps)

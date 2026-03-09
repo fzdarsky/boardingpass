@@ -161,7 +161,7 @@ Transport setup and teardown is delegated to systemd units rather than executing
 ## Assumptions
 
 - The system builder is responsible for ensuring that WiFi and Bluetooth hardware interfaces specified in config.yaml are present and not in use by other services (e.g., NetworkManager managing WiFi client connections on the same interface).
-- The headless Linux device has the necessary userspace tools installed (`hostapd` for WiFi AP, `bluetoothctl`/`bt-network` for Bluetooth PAN, `ip` for interface management) and the corresponding systemd unit templates deployed alongside the BoardingPass service. The service does not install these tools or units — they are part of the system image or deployment package.
+- The headless Linux device has the necessary userspace tools installed (`hostapd` for WiFi AP, `bluetoothctl`/`busctl` for Bluetooth PAN, `ip` for interface management) and the corresponding systemd unit templates deployed alongside the BoardingPass service. The service does not install these tools or units — they are part of the system image or deployment package.
 - WiFi AP mode requires a wireless interface that supports AP mode (most modern WiFi chipsets do). The system builder verifies this when selecting the interface.
 - USB tethering is initiated by the phone user — the service only needs to detect and listen on the resulting USB network interface; it does not configure the phone.
 - Bluetooth PAN uses the Network Access Point (NAP) profile, which is widely supported on both iOS and Android.

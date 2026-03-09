@@ -67,7 +67,7 @@ This feature adds WiFi AP, Bluetooth PAN, and USB tethering as transient transpo
 - **No new Go dependencies** — systemd interaction via `os/exec` calling `systemctl`
 - **System packages** (installed by system builder, not by BoardingPass):
   - `hostapd` — WiFi AP daemon
-  - `bluez` / `bluez-tools` — Bluetooth PAN utilities
+  - `bluez` — Bluetooth stack (provides `bluetoothctl` and BlueZ D-Bus API)
   - systemd unit template files (shipped with BoardingPass package)
 
 ### App-Side

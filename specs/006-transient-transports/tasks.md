@@ -19,10 +19,10 @@
 
 **Purpose**: Extend existing project structure with transport package skeleton and app dependencies
 
-- [ ] T001 [P] Add WiFi, Bluetooth, and USB transport config structs to `internal/config/config.go` per data-model.md (WiFiTransport, BluetoothTransport, USBTransport fields in TransportSettings; include validation for password length, channel range, interface prefix)
-- [ ] T002 [P] Create `internal/transport/` package directory and add `transport.go` with TransportType enum, TransportState enum, and Transport struct per data-model.md state machine
-- [ ] T003 [P] Extend `DiscoveryMethod` type in `mobile/src/types/device.ts` to include `'wifi' | 'bluetooth' | 'usb'` values; update `DeviceContext.tsx` local Device type to match
-- [ ] T004 [P] Install `@react-native-community/netinfo` and `react-native-ble-plx` in `mobile/package.json`; update `mobile/app.json` with iOS entitlements (`com.apple.developer.networking.wifi-info`) and Bluetooth permission descriptions (`NSBluetoothAlwaysUsageDescription`); run `npx expo prebuild --platform ios`
+- [x] T001 [P] Add WiFi, Bluetooth, and USB transport config structs to `internal/config/config.go` per data-model.md (WiFiTransport, BluetoothTransport, USBTransport fields in TransportSettings; include validation for password length, channel range, interface prefix)
+- [x] T002 [P] Create `internal/transport/` package directory and add `transport.go` with TransportType enum, TransportState enum, and Transport struct per data-model.md state machine
+- [x] T003 [P] Extend `DiscoveryMethod` type in `mobile/src/types/device.ts` to include `'wifi' | 'bluetooth' | 'usb'` values; update `DeviceContext.tsx` local Device type to match
+- [x] T004 [P] Install `@react-native-community/netinfo` and `react-native-ble-plx` in `mobile/package.json`; update `mobile/app.json` with iOS entitlements (`com.apple.developer.networking.wifi-info`) and Bluetooth permission descriptions (`NSBluetoothAlwaysUsageDescription`); run `npx expo prebuild --platform ios`
 
 ---
 
@@ -30,10 +30,10 @@
 
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
-- [ ] T005 Implement TransportManager in `internal/transport/manager.go` with: constructor accepting `*config.Config` and `*logging.Logger`; `StartAll(ctx context.Context) error` that iterates enabled transports and starts each (calling transport-specific Start methods); `StopAll(ctx context.Context) error` for shutdown; `ActiveTransports() []Transport` returning transports in active state; non-fatal error handling per FR-011 (log warning, continue with remaining transports)
-- [ ] T006 Modify `internal/api/server.go` to support multiple listeners: extract listener creation into a method that accepts a list of `(address, port)` bindings; start one goroutine per listener calling `server.Serve(listener)`; collect all listeners for graceful shutdown; keep backward compatibility with single Ethernet binding (FR-012)
-- [ ] T007 Create discovery manager in `mobile/src/services/discovery/manager.ts` following existing singleton pattern from `mdns.ts`: `DiscoveryManager` class that coordinates mDNS, fallback, WiFi, BLE, and USB discovery services; `startAll()` / `stopAll()` methods; `onDeviceFound(callback)` that aggregates devices from all sources; pass-through to existing mDNS and fallback services initially
-- [ ] T008 Create transport preference and de-duplication logic in `mobile/src/services/discovery/preference.ts`: `getTransportPriority(method: DiscoveryMethod): number` returning USB=1, bluetooth=2, wifi=3, mdns/fallback=4, manual=5; `deduplicateDevices(devices: Device[]): Device[]` merging entries with same certificate fingerprint or hostname; `selectPreferredTransport(transports: Device[]): Device` picking highest priority
+- [x] T005 Implement TransportManager in `internal/transport/manager.go` with: constructor accepting `*config.Config` and `*logging.Logger`; `StartAll(ctx context.Context) error` that iterates enabled transports and starts each (calling transport-specific Start methods); `StopAll(ctx context.Context) error` for shutdown; `ActiveTransports() []Transport` returning transports in active state; non-fatal error handling per FR-011 (log warning, continue with remaining transports)
+- [x] T006 Modify `internal/api/server.go` to support multiple listeners: extract listener creation into a method that accepts a list of `(address, port)` bindings; start one goroutine per listener calling `server.Serve(listener)`; collect all listeners for graceful shutdown; keep backward compatibility with single Ethernet binding (FR-012)
+- [x] T007 Create discovery manager in `mobile/src/services/discovery/manager.ts` following existing singleton pattern from `mdns.ts`: `DiscoveryManager` class that coordinates mDNS, fallback, WiFi, BLE, and USB discovery services; `startAll()` / `stopAll()` methods; `onDeviceFound(callback)` that aggregates devices from all sources; pass-through to existing mDNS and fallback services initially
+- [x] T008 Create transport preference and de-duplication logic in `mobile/src/services/discovery/preference.ts`: `getTransportPriority(method: DiscoveryMethod): number` returning USB=1, bluetooth=2, wifi=3, mdns/fallback=4, manual=5; `deduplicateDevices(devices: Device[]): Device[]` merging entries with same certificate fingerprint or hostname; `selectPreferredTransport(transports: Device[]): Device` picking highest priority
 
 **Checkpoint**: Foundation ready - transport manager skeleton and multi-listener server support in place
 
@@ -47,14 +47,14 @@
 
 ### Implementation for User Story 1
 
-- [ ] T009 [P] [US1] Create WiFi transport implementation in `internal/transport/wifi.go`: `WiFiTransport` struct implementing transport interface; `Start(ctx)` calls `sudo systemctl start boardingpass-wifi@<interface>` via `os/exec`; `Stop(ctx)` calls `sudo systemctl stop boardingpass-wifi@<interface>`; validate interface exists in `/sys/class/net/` before starting; generate SSID default `BoardingPass-<hostname>` if not configured (FR-001 through FR-004)
-- [ ] T010 [P] [US1] Create systemd WiFi AP template unit in `build/boardingpass-wifi@.service` per contracts/systemd-units.md: `PartOf=boardingpass.service`, `BindsTo=boardingpass.service`, `After=boardingpass.service`; `ExecStartPre` brings interface up; `ExecStart` runs hostapd with `/etc/boardingpass/hostapd-%i.conf`; `ExecStopPost` flushes IP and brings interface down
-- [ ] T011 [P] [US1] Create captive portal handler in `internal/api/captive.go`: register route for `/hotspot-detect.html` responding with `<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>` (suppresses iOS captive portal popup per research.md R4); register route for Android `/generate_204` returning HTTP 204
-- [ ] T012 [P] [US1] Add WiFi transport systemd unit permissions to `build/boardingpass.sudoers`: `boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl start boardingpass-wifi@*` and `boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop boardingpass-wifi@*`
-- [ ] T013 [US1] Register WiFi transport in TransportManager (`internal/transport/manager.go`): when `config.Transports.WiFi.Enabled` is true, create WiFiTransport instance and add to managed transports; wire Start/Stop into StartAll/StopAll lifecycle
-- [ ] T014 [P] [US1] Create WiFi discovery service in `mobile/src/services/discovery/wifi.ts` following `fallback.ts` singleton pattern: use `@react-native-community/netinfo` to detect WiFi connection; check SSID pattern `BoardingPass-*`; if SSID unavailable, probe gateway IP with HTTPS HEAD on port 8443; return Device with `discoveryMethod: 'wifi'` and `host` set to gateway IP (FR-014)
-- [ ] T015 [US1] Integrate WiFi discovery into discovery manager (`mobile/src/services/discovery/manager.ts`): call WiFi discovery on `startAll()`; subscribe to netinfo WiFi state changes to trigger re-scan; pass discovered devices through to `onDeviceFound` callback
-- [ ] T016 [US1] Wire transport config validation into `internal/config/config.go` validation: if WiFi enabled, `interface` must be non-empty; if `password` set, must be >= 8 chars; `channel` must be 1-165; `address` must be valid IP; add WiFi password to secret redaction list in `internal/logging/` (FR-021)
+- [x] T009 [P] [US1] Create WiFi transport implementation in `internal/transport/wifi.go`: `WiFiTransport` struct implementing transport interface; `Start(ctx)` calls `sudo systemctl start boardingpass-wifi@<interface>` via `os/exec`; `Stop(ctx)` calls `sudo systemctl stop boardingpass-wifi@<interface>`; validate interface exists in `/sys/class/net/` before starting; generate SSID default `BoardingPass-<hostname>` if not configured (FR-001 through FR-004)
+- [x] T010 [P] [US1] Create systemd WiFi AP template unit in `build/boardingpass-wifi@.service` per contracts/systemd-units.md: `PartOf=boardingpass.service`, `BindsTo=boardingpass.service`, `After=boardingpass.service`; `ExecStartPre` brings interface up; `ExecStart` runs hostapd with `/etc/boardingpass/hostapd-%i.conf`; `ExecStopPost` flushes IP and brings interface down
+- [x] T011 [P] [US1] Create captive portal handler in `internal/api/captive.go`: register route for `/hotspot-detect.html` responding with `<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>` (suppresses iOS captive portal popup per research.md R4); register route for Android `/generate_204` returning HTTP 204
+- [x] T012 [P] [US1] Add WiFi transport systemd unit permissions to `build/boardingpass.sudoers`: `boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl start boardingpass-wifi@*` and `boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop boardingpass-wifi@*`
+- [x] T013 [US1] Register WiFi transport in TransportManager (`internal/transport/manager.go`): when `config.Transports.WiFi.Enabled` is true, create WiFiTransport instance and add to managed transports; wire Start/Stop into StartAll/StopAll lifecycle
+- [x] T014 [P] [US1] Create WiFi discovery service in `mobile/src/services/discovery/wifi.ts` following `fallback.ts` singleton pattern: use `@react-native-community/netinfo` to detect WiFi connection; check SSID pattern `BoardingPass-*`; if SSID unavailable, probe gateway IP with HTTPS HEAD on port 8443; return Device with `discoveryMethod: 'wifi'` and `host` set to gateway IP (FR-014)
+- [x] T015 [US1] Integrate WiFi discovery into discovery manager (`mobile/src/services/discovery/manager.ts`): call WiFi discovery on `startAll()`; subscribe to netinfo WiFi state changes to trigger re-scan; pass discovered devices through to `onDeviceFound` callback
+- [x] T016 [US1] Wire transport config validation into `internal/config/config.go` validation: if WiFi enabled, `interface` must be non-empty; if `password` set, must be >= 8 chars; `channel` must be 1-165; `address` must be valid IP; add WiFi password to secret redaction list in `internal/logging/` (FR-021)
 
 **Checkpoint**: WiFi AP transport fully functional end-to-end. Service creates AP on start, app discovers device on WiFi, AP torn down on shutdown.
 
@@ -68,14 +68,14 @@
 
 ### Implementation for User Story 2
 
-- [ ] T017 [P] [US2] Create Bluetooth transport implementation in `internal/transport/bluetooth.go`: `BluetoothTransport` struct; `Start(ctx)` calls `sudo systemctl start boardingpass-bt@<adapter>` and `sudo systemctl start boardingpass-ble@<adapter>`; `Stop(ctx)` stops both units; validate adapter exists in `/sys/class/bluetooth/` before starting; generate device_name default `BoardingPass-<hostname>` if not configured (FR-005 through FR-007)
-- [ ] T018 [P] [US2] Create systemd Bluetooth PAN template unit in `build/boardingpass-bt@.service` per contracts/systemd-units.md: `PartOf=boardingpass.service`, `BindsTo=boardingpass.service`; `ExecStartPre` powers on adapter, sets discoverable, sets device name; `ExecStart` creates NAP bridge and assigns IP; `ExecStopPost` removes bridge, disables discoverability
-- [ ] T019 [P] [US2] Create systemd BLE advertisement template unit in `build/boardingpass-ble@.service` per contracts/systemd-units.md: advertises BoardingPass BLE service UUID; GATT characteristics for device name, IP address, port, certificate fingerprint per contracts/discovery-methods.md
-- [ ] T020 [P] [US2] Add Bluetooth/BLE transport systemd unit permissions to `build/boardingpass.sudoers`: start/stop permissions for `boardingpass-bt@*` and `boardingpass-ble@*`
-- [ ] T021 [US2] Register Bluetooth transport in TransportManager (`internal/transport/manager.go`): when `config.Transports.Bluetooth.Enabled` is true, create BluetoothTransport instance and add to managed transports
-- [ ] T022 [P] [US2] Create BLE discovery service in `mobile/src/services/discovery/bluetooth.ts` following singleton pattern: use `react-native-ble-plx` to scan for BoardingPass BLE service UUID; on device found, connect to GATT server and read device info characteristics (name, IP, port, cert fingerprint); return Device with `discoveryMethod: 'bluetooth'` and host/port from GATT data (FR-015)
-- [ ] T023 [US2] Integrate BLE discovery into discovery manager (`mobile/src/services/discovery/manager.ts`): call BLE discovery `start()` on `startAll()`; handle BLE permission requests; pass discovered devices through to `onDeviceFound` callback
-- [ ] T024 [US2] Wire Bluetooth config validation into `internal/config/config.go`: if Bluetooth enabled, validate adapter name; add Bluetooth pairing details to secret redaction list (FR-021)
+- [x] T017 [P] [US2] Create Bluetooth transport implementation in `internal/transport/bluetooth.go`: `BluetoothTransport` struct; `Start(ctx)` calls `sudo systemctl start boardingpass-bt@<adapter>` and `sudo systemctl start boardingpass-ble@<adapter>`; `Stop(ctx)` stops both units; validate adapter exists in `/sys/class/bluetooth/` before starting; generate device_name default `BoardingPass-<hostname>` if not configured (FR-005 through FR-007)
+- [x] T018 [P] [US2] Create systemd Bluetooth PAN template unit in `build/boardingpass-bt@.service` per contracts/systemd-units.md: `PartOf=boardingpass.service`, `BindsTo=boardingpass.service`; `ExecStartPre` powers on adapter, sets discoverable, sets device name; `ExecStart` creates NAP bridge and assigns IP; `ExecStopPost` removes bridge, disables discoverability
+- [x] T019 [P] [US2] Create systemd BLE advertisement template unit in `build/boardingpass-ble@.service` per contracts/systemd-units.md: advertises BoardingPass BLE service UUID; GATT characteristics for device name, IP address, port, certificate fingerprint per contracts/discovery-methods.md
+- [x] T020 [P] [US2] Add Bluetooth/BLE transport systemd unit permissions to `build/boardingpass.sudoers`: start/stop permissions for `boardingpass-bt@*` and `boardingpass-ble@*`
+- [x] T021 [US2] Register Bluetooth transport in TransportManager (`internal/transport/manager.go`): when `config.Transports.Bluetooth.Enabled` is true, create BluetoothTransport instance and add to managed transports
+- [x] T022 [P] [US2] Create BLE discovery service in `mobile/src/services/discovery/bluetooth.ts` following singleton pattern: use `react-native-ble-plx` to scan for BoardingPass BLE service UUID; on device found, connect to GATT server and read device info characteristics (name, IP, port, cert fingerprint); return Device with `discoveryMethod: 'bluetooth'` and host/port from GATT data (FR-015)
+- [x] T023 [US2] Integrate BLE discovery into discovery manager (`mobile/src/services/discovery/manager.ts`): call BLE discovery `start()` on `startAll()`; handle BLE permission requests; pass discovered devices through to `onDeviceFound` callback
+- [x] T024 [US2] Wire Bluetooth config validation into `internal/config/config.go`: if Bluetooth enabled, validate adapter name; add Bluetooth pairing details to secret redaction list (FR-021)
 
 **Checkpoint**: Bluetooth PAN + BLE discovery fully functional. Service creates PAN and BLE advertisement, app discovers device via BLE, both cleaned up on shutdown.
 
@@ -89,11 +89,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T025 [P] [US3] Create USB transport implementation in `internal/transport/usb.go`: `USBTransport` struct; `Start(ctx)` begins polling `/sys/class/net/` every 2 seconds for interfaces matching configured prefix (default `usb`, also `rndis`); when interface detected with IP assigned, notify TransportManager to bind listener; `Stop(ctx)` cancels polling and closes USB listeners; handle interface disappearance gracefully (FR-008, FR-009)
-- [ ] T026 [US3] Register USB transport in TransportManager (`internal/transport/manager.go`): when `config.Transports.USB.Enabled` is true, create USBTransport instance; implement dynamic listener addition/removal when USB interfaces appear/disappear (callback from USBTransport to server)
-- [ ] T027 [US3] Wire dynamic listener support into `internal/api/server.go`: add `AddListener(address string, port int) error` and `RemoveListener(address string) error` methods for USB transport's runtime interface changes; handle graceful connection draining on listener removal
-- [ ] T028 [P] [US3] Create USB discovery service in `mobile/src/services/discovery/usb.ts` following singleton pattern: use `@react-native-community/netinfo` to detect non-WiFi/non-cellular connections; probe well-known tethering gateway IPs (`172.20.10.1` for iOS, `192.168.42.1` for Android) with HTTPS HEAD on port 8443; return Device with `discoveryMethod: 'usb'` (FR-016)
-- [ ] T029 [US3] Integrate USB discovery into discovery manager (`mobile/src/services/discovery/manager.ts`): call USB discovery on `startAll()`; subscribe to netinfo state changes for non-WiFi connections; pass discovered devices through to `onDeviceFound` callback
+- [x] T025 [P] [US3] Create USB transport implementation in `internal/transport/usb.go`: `USBTransport` struct; `Start(ctx)` begins polling `/sys/class/net/` every 2 seconds for interfaces matching configured prefix (default `usb`, also `rndis`); when interface detected with IP assigned, notify TransportManager to bind listener; `Stop(ctx)` cancels polling and closes USB listeners; handle interface disappearance gracefully (FR-008, FR-009)
+- [x] T026 [US3] Register USB transport in TransportManager (`internal/transport/manager.go`): when `config.Transports.USB.Enabled` is true, create USBTransport instance; implement dynamic listener addition/removal when USB interfaces appear/disappear (callback from USBTransport to server)
+- [x] T027 [US3] Wire dynamic listener support into `internal/api/server.go`: add `AddListener(address string, port int) error` and `RemoveListener(address string) error` methods for USB transport's runtime interface changes; handle graceful connection draining on listener removal
+- [x] T028 [P] [US3] Create USB discovery service in `mobile/src/services/discovery/usb.ts` following singleton pattern: use `@react-native-community/netinfo` to detect non-WiFi/non-cellular connections; probe well-known tethering gateway IPs (`172.20.10.1` for iOS, `192.168.42.1` for Android) with HTTPS HEAD on port 8443; return Device with `discoveryMethod: 'usb'` (FR-016)
+- [x] T029 [US3] Integrate USB discovery into discovery manager (`mobile/src/services/discovery/manager.ts`): call USB discovery on `startAll()`; subscribe to netinfo state changes for non-WiFi connections; pass discovered devices through to `onDeviceFound` callback
 
 **Checkpoint**: USB tethering transport fully functional. Service detects tethering interface, app discovers device on tethered network, graceful cleanup on disconnect.
 
@@ -107,10 +107,10 @@
 
 ### Implementation for User Story 4
 
-- [ ] T030 [US4] Integrate TransportManager into service startup sequence in `cmd/boardingpass/main.go`: call `transportManager.StartAll(ctx)` after config load and before server start; call `transportManager.StopAll(ctx)` in shutdown sequence after server stop; pass active transport addresses to server for listener binding (FR-012, FR-013)
-- [ ] T031 [US4] Integrate TransportManager into shutdown flow in `internal/lifecycle/shutdown.go`: extend `GracefulShutdown` to include transport teardown step; ensure transports are stopped within 10-second shutdown timeout (FR-010)
-- [ ] T032 [US4] Integrate de-duplication into `mobile/src/contexts/DeviceContext.tsx`: modify `ADD_DEVICE` reducer action to call `deduplicateDevices()` from `preference.ts`; store alternate transports on each Device; display preferred transport's discovery method; expose `switchTransport(deviceId, method)` action for manual override (FR-018, FR-019)
-- [ ] T033 [US4] Update device list UI to show transport indicator and allow manual transport switching: add transport badge/icon to device list item in discovery screen (`mobile/app/index.tsx` or device list component); when device has multiple transports, show dropdown or tap-to-switch UI (FR-019)
+- [x] T030 [US4] Integrate TransportManager into service startup sequence in `cmd/boardingpass/main.go`: call `transportManager.StartAll(ctx)` after config load and before server start; call `transportManager.StopAll(ctx)` in shutdown sequence after server stop; pass active transport addresses to server for listener binding (FR-012, FR-013)
+- [x] T031 [US4] Integrate TransportManager into shutdown flow in `internal/lifecycle/shutdown.go`: extend `GracefulShutdown` to include transport teardown step; ensure transports are stopped within 10-second shutdown timeout (FR-010)
+- [x] T032 [US4] Integrate de-duplication into `mobile/src/contexts/DeviceContext.tsx`: modify `ADD_DEVICE` reducer action to call `deduplicateDevices()` from `preference.ts`; store alternate transports on each Device; display preferred transport's discovery method; expose `switchTransport(deviceId, method)` action for manual override (FR-018, FR-019)
+- [x] T033 [US4] Update device list UI to show transport indicator and allow manual transport switching: add transport badge/icon to device list item in discovery screen (`mobile/app/index.tsx` or device list component); when device has multiple transports, show dropdown or tap-to-switch UI (FR-019)
 
 **Checkpoint**: All transports operate simultaneously, app shows de-duplicated device list with transport preference, shutdown cleans up all transient transports.
 
@@ -120,10 +120,10 @@
 
 **Purpose**: Security hardening, logging, and build integration
 
-- [ ] T034 [P] Add WiFi password and Bluetooth pairing details to secret redaction patterns in `internal/logging/` (FR-021); verify no transport secrets appear in log output
-- [ ] T035 [P] Update `build/config.yaml` with example WiFi, Bluetooth, and USB transport sections showing all configuration options with comments
-- [ ] T036 Run `make lint-all` and fix all linting errors across service and app
-- [ ] T037 Run `make test-all` and fix all test failures (existing tests must still pass with new transport code)
+- [x] T034 [P] Add WiFi password and Bluetooth pairing details to secret redaction patterns in `internal/logging/` (FR-021); verify no transport secrets appear in log output
+- [x] T035 [P] Update `build/config.yaml` with example WiFi, Bluetooth, and USB transport sections showing all configuration options with comments
+- [x] T036 Run `make lint-all` and fix all linting errors across service and app
+- [x] T037 Run `make test-all` and fix all test failures (existing tests must still pass with new transport code)
 
 ---
 

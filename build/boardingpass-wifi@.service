@@ -1,0 +1,15 @@
+[Unit]
+Description=BoardingPass WiFi AP on %i
+PartOf=boardingpass.service
+
+[Service]
+Type=simple
+EnvironmentFile=/run/boardingpass/wifi-%i.env
+ExecStartPre=-/usr/bin/nmcli device set %i managed no
+ExecStartPre=/usr/sbin/ip link set %i up
+ExecStart=/usr/sbin/hostapd /run/boardingpass/hostapd-%i.conf
+ExecStartPost=/usr/sbin/ip addr add ${BOARDINGPASS_WIFI_ADDRESS}/${BOARDINGPASS_WIFI_NETMASK} dev %i
+ExecStopPost=/usr/sbin/ip addr flush dev %i
+ExecStopPost=/usr/sbin/ip link set %i down
+ExecStopPost=-/usr/bin/nmcli device set %i managed yes
+Restart=no

@@ -1,0 +1,10 @@
+[Unit]
+Description=BoardingPass BLE Advertisement on %i
+PartOf=boardingpass.service
+
+[Service]
+Type=simple
+# Advertise BoardingPass BLE service UUID with device connection info
+# GATT characteristics: device name, IP address, port, cert fingerprint
+ExecStart=/usr/lib/boardingpass/scripts/ble-advertise.sh %i
+Restart=no

@@ -35,7 +35,10 @@ type ServiceSettings struct {
 
 // TransportSettings contains transport-specific configuration.
 type TransportSettings struct {
-	Ethernet EthernetTransport `yaml:"ethernet"`
+	Ethernet  EthernetTransport  `yaml:"ethernet"`
+	WiFi      WiFiTransport      `yaml:"wifi"`
+	Bluetooth BluetoothTransport `yaml:"bluetooth"`
+	USB       USBTransport       `yaml:"usb"`
 }
 
 // EthernetTransport contains Ethernet transport configuration.
@@ -46,6 +49,31 @@ type EthernetTransport struct {
 	Port       int      `yaml:"port"`
 	TLSCert    string   `yaml:"tls_cert"`
 	TLSKey     string   `yaml:"tls_key"`
+}
+
+// WiFiTransport contains WiFi access point transport configuration.
+type WiFiTransport struct {
+	Enabled   bool   `yaml:"enabled"`
+	Interface string `yaml:"interface"`
+	SSID      string `yaml:"ssid"`
+	Password  string `yaml:"password,omitempty"`
+	Channel   int    `yaml:"channel"`
+	Address   string `yaml:"address"`
+}
+
+// BluetoothTransport contains Bluetooth PAN transport configuration.
+type BluetoothTransport struct {
+	Enabled    bool   `yaml:"enabled"`
+	Adapter    string `yaml:"adapter"`
+	DeviceName string `yaml:"device_name"`
+	Address    string `yaml:"address"`
+}
+
+// USBTransport contains USB tethering transport configuration.
+type USBTransport struct {
+	Enabled         bool   `yaml:"enabled"`
+	InterfacePrefix string `yaml:"interface_prefix"`
+	Address         string `yaml:"address,omitempty"`
 }
 
 // CommandDefinition defines an allow-listed command.
@@ -140,6 +168,14 @@ func (c *Config) validate() error {
 		}
 	}
 
+	if err := c.validateWiFi(); err != nil {
+		return err
+	}
+
+	if err := c.validateBluetooth(); err != nil {
+		return err
+	}
+
 	// Validate root directory (if specified)
 	if c.Paths.RootDirectory != "" {
 		// Ensure it's an absolute path
@@ -154,6 +190,33 @@ func (c *Config) validate() error {
 		}
 	}
 
+	return nil
+}
+
+func (c *Config) validateWiFi() error {
+	if !c.Transports.WiFi.Enabled {
+		return nil
+	}
+
+	// interface is optional — auto-detected at runtime if empty
+
+	if c.Transports.WiFi.Password != "" && len(c.Transports.WiFi.Password) < 8 {
+		return fmt.Errorf("transports.wifi.password must be at least 8 characters")
+	}
+
+	ch := c.Transports.WiFi.Channel
+	if ch != 0 && (ch < 1 || ch > 165) {
+		return fmt.Errorf("transports.wifi.channel must be between 1 and 165")
+	}
+
+	return nil
+}
+
+func (c *Config) validateBluetooth() error {
+	if !c.Transports.Bluetooth.Enabled {
+		return nil
+	}
+	// Adapter defaults to hci0 if empty — no mandatory fields beyond enabled
 	return nil
 }
 

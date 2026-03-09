@@ -12,7 +12,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Card, Text, Badge, Button, IconButton, Portal, Modal, useTheme } from 'react-native-paper';
-import { Device, DeviceStatus } from '@/types/device';
+import { Device, DeviceStatus, DiscoveryMethod } from '@/types/device';
 import { deviceStatusColors } from '@/theme';
 import { CertificateStatusIndicator } from '../CertificateInfo/StatusIndicator';
 import { CertificateInfoDisplay } from '../CertificateInfo';
@@ -38,10 +38,10 @@ export function DeviceCard({
   const displayStatus =
     isAuthenticated && device.status === 'online' ? 'authenticated' : device.status;
   const statusConfig = getStatusConfig(displayStatus);
-  const isManualDiscovery = device.discoveryMethod === 'manual';
+  const transportInfo = getTransportInfo(device.discoveryMethod);
   const discoveryBadgeColors = {
-    backgroundColor: isManualDiscovery ? theme.colors.primary : theme.colors.tertiary,
-    color: isManualDiscovery ? theme.colors.onPrimary : theme.colors.onTertiary,
+    backgroundColor: transportInfo.isManual ? theme.colors.primary : theme.colors.tertiary,
+    color: transportInfo.isManual ? theme.colors.onPrimary : theme.colors.onTertiary,
   };
 
   // Dynamic styles that depend on theme
@@ -124,11 +124,12 @@ export function DeviceCard({
 
             <View style={styles.infoRow}>
               <Text variant="bodySmall" style={[styles.label, dynamicStyles.secondaryText]}>
-                Discovery:
+                Transport:
               </Text>
-              <Badge style={[styles.badge, discoveryBadgeColors]}>
-                {device.discoveryMethod.toUpperCase()}
-              </Badge>
+              <View style={styles.transportBadge}>
+                <IconButton icon={transportInfo.icon} size={14} style={styles.transportIcon} />
+                <Badge style={[styles.badge, discoveryBadgeColors]}>{transportInfo.label}</Badge>
+              </View>
             </View>
 
             {device.addresses.length > 1 && (
@@ -199,6 +200,32 @@ export function DeviceCard({
       )}
     </>
   );
+}
+
+/**
+ * Get transport display info (icon and label) for a discovery method.
+ */
+function getTransportInfo(method: DiscoveryMethod): {
+  icon: string;
+  label: string;
+  isManual: boolean;
+} {
+  switch (method) {
+    case 'wifi':
+      return { icon: 'wifi', label: 'WIFI', isManual: false };
+    case 'bluetooth':
+      return { icon: 'bluetooth', label: 'BLE', isManual: false };
+    case 'usb':
+      return { icon: 'usb', label: 'USB', isManual: false };
+    case 'mdns':
+      return { icon: 'access-point', label: 'MDNS', isManual: false };
+    case 'fallback':
+      return { icon: 'access-point', label: 'FALLBACK', isManual: false };
+    case 'manual':
+      return { icon: 'pencil', label: 'MANUAL', isManual: true };
+    default:
+      return { icon: 'help-circle-outline', label: String(method).toUpperCase(), isManual: false };
+  }
 }
 
 /**
@@ -295,6 +322,16 @@ const styles = StyleSheet.create({
   badge: {
     fontSize: 10,
     paddingHorizontal: 8,
+  },
+  transportBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  transportIcon: {
+    margin: 0,
+    width: 20,
+    height: 20,
   },
   txtRecords: {
     marginTop: 12,

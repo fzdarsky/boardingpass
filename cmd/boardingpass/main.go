@@ -19,6 +19,7 @@ import (
 	"github.com/fzdarsky/boardingpass/internal/config"
 	"github.com/fzdarsky/boardingpass/internal/lifecycle"
 	"github.com/fzdarsky/boardingpass/internal/logging"
+	"github.com/fzdarsky/boardingpass/internal/transport"
 )
 
 var (
@@ -205,6 +206,24 @@ func run(configPath, verifierPath string) error {
 	}
 	mux.Handle("/command", activityMiddleware(authMiddleware.Require(commandHandler)))
 
+	// Register captive portal routes (suppresses iOS/Android captive portal popups)
+	api.RegisterCaptivePortalRoutes(mux)
+
+	// Create and configure transport manager
+	transportMgr := transport.NewManager(cfg, logger)
+
+	if cfg.Transports.WiFi.Enabled {
+		transportMgr.Register(transport.NewWiFiHandler(cfg.Transports.WiFi, logger))
+	}
+	if cfg.Transports.Bluetooth.Enabled {
+		transportMgr.Register(transport.NewBluetoothHandler(cfg.Transports.Bluetooth, logger))
+	}
+	if cfg.Transports.USB.Enabled {
+		usbHandler := transport.NewUSBHandler(cfg.Transports.USB, cfg.Transports.Ethernet.Port, logger)
+		usbHandler.SetListenerCallbacks(server.AddListener, server.RemoveListener)
+		transportMgr.Register(usbHandler)
+	}
+
 	// Set up signal handling for graceful shutdown
 	ctx := context.Background()
 
@@ -213,6 +232,26 @@ func run(configPath, verifierPath string) error {
 
 	// Start inactivity tracker
 	go inactivityTracker.Start(shutdownCtx)
+
+	// Start transient transports (non-fatal — failures are logged, not blocking)
+	if err := transportMgr.StartAll(shutdownCtx); err != nil {
+		logger.Warn("transport manager startup had errors", map[string]any{
+			"error": err.Error(),
+		})
+	}
+
+	// Start captive portal HTTP server on port 80 when WiFi AP is active.
+	// This responds to iOS/Android captive portal probes (plain HTTP) so
+	// phones don't show "No Internet Connection" warnings.
+	var captivePortal *api.CaptivePortalServer
+	if cfg.Transports.WiFi.Enabled {
+		captivePortal = api.NewCaptivePortalServer(logger)
+		if err := captivePortal.Start(cfg.Transports.WiFi.Address); err != nil {
+			logger.Warn("captive portal server failed to start", map[string]any{
+				"error": err.Error(),
+			})
+		}
+	}
 
 	// Start the server
 	logger.Info("HTTPS server ready to accept connections")
@@ -230,6 +269,18 @@ func run(configPath, verifierPath string) error {
 
 	// Notify systemd that the service is stopping
 	notifySystemd("STOPPING=1")
+
+	// Stop captive portal server
+	if captivePortal != nil {
+		captivePortal.Stop()
+	}
+
+	// Stop transient transports
+	if err := transportMgr.StopAll(context.Background()); err != nil {
+		logger.Warn("transport manager shutdown had errors", map[string]any{
+			"error": err.Error(),
+		})
+	}
 
 	// Clean up
 	shutdownManager.Stop()

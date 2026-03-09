@@ -40,6 +40,10 @@ PrivateMounts=true
 # etc.) to provision files and execute allow-listed commands.
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
+# Runtime directory for generated configs (hostapd, dnsmasq, env files)
+RuntimeDirectory=boardingpass
+RuntimeDirectoryMode=0755
+
 # Resource limits
 MemoryMax=150M
 TasksMax=50

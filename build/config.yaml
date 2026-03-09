@@ -7,6 +7,7 @@ service:
   sentinel_file: "/etc/boardingpass/issued"
 
 transports:
+  # Ethernet transport
   ethernet:
     enabled: true
     interfaces: []
@@ -14,6 +15,32 @@ transports:
     port: 8443
     tls_cert: "/var/lib/boardingpass/tls/server.crt"
     tls_key: "/var/lib/boardingpass/tls/server.key"
+
+  # WiFi Access Point transport
+  # Creates an open WiFi hotspot for phone-to-device connectivity.
+  # hostapd.conf and dnsmasq.conf are auto-generated to /run/boardingpass/.
+  # Requires hostapd and dnsmasq packages to be installed.
+  wifi:
+    enabled: true
+    interface: ""                # Auto-detected if empty (scans /sys/class/net/*/wireless)
+    ssid: ""                     # SSID name (default: BoardingPass-<hostname>)
+    # password: "changeme123"    # WPA2 password (min 8 chars); omit for open network
+    channel: 6                   # WiFi channel (1-165)
+    address: "10.0.0.1"          # AP gateway IP address
+
+  # Bluetooth PAN transport
+  # Creates a Bluetooth Personal Area Network with BLE advertisement
+  bluetooth:
+    enabled: true
+    adapter: "hci0"              # Bluetooth adapter (default: hci0)
+    device_name: ""              # BLE advertised name (default: BoardingPass-<hostname>)
+    address: "10.0.1.1"          # PAN bridge IP address
+
+  # USB tethering transport
+  # Auto-detects USB tethering interfaces and listens on them
+  usb:
+    enabled: true
+    interface_prefix: "usb"      # Interface name prefix to match (also matches "rndis")
 
 # Command allow-list
 # max_params: 0 means no parameters accepted (default)

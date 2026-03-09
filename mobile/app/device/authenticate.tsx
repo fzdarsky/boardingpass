@@ -625,20 +625,6 @@ export default function AuthenticateScreen(): React.ReactElement {
           {/* Certificate details */}
           <CertificateInfoDisplay certificate={certificate} compact={false} />
 
-          {/* Security notice */}
-          <View
-            style={[styles.securityNotice, { backgroundColor: paperTheme.colors.surfaceVariant }]}
-          >
-            <Text variant="labelMedium" style={styles.securityTitle}>
-              Security Notice:
-            </Text>
-            <Text variant="bodySmall" style={styles.securityText}>
-              {isCertChanged
-                ? 'Only trust this certificate if you know the device was recently reconfigured. If unexpected, reject and contact your administrator.'
-                : 'Trusting this certificate allows secure connections to this device. The certificate will be pinned to detect future changes.'}
-            </Text>
-          </View>
-
           {/* Action buttons */}
           <View style={styles.trustActions}>
             <Button mode="outlined" onPress={handleRejectCertificate} style={styles.trustButton}>
@@ -850,18 +836,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   infoText: {},
-  securityNotice: {
-    marginTop: spacing.md,
-    padding: spacing.md,
-    borderRadius: 8,
-  },
-  securityTitle: {
-    marginBottom: spacing.xs,
-    fontWeight: '600',
-  },
-  securityText: {
-    lineHeight: 20,
-  },
   trustActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

@@ -1,17 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback } from 'react';
-
-// Will be imported from types/device.ts once created
-interface Device {
-  id: string;
-  name: string;
-  host: string;
-  port: number;
-  addresses: string[];
-  discoveryMethod: 'mdns' | 'fallback' | 'manual';
-  txt?: Record<string, string>;
-  status: 'online' | 'offline' | 'authenticating' | 'authenticated' | 'error';
-  lastSeen: Date;
-}
+import { Device } from '@/types/device';
+import { deduplicateDevices } from '@/services/discovery/preference';
 
 interface DeviceState {
   devices: Device[];
@@ -49,15 +38,8 @@ const initialState: DeviceState = {
 function deviceReducer(state: DeviceState, action: DeviceAction): DeviceState {
   switch (action.type) {
     case 'ADD_DEVICE': {
-      const existingIndex = state.devices.findIndex(d => d.id === action.payload.id);
-      if (existingIndex >= 0) {
-        // Update existing device
-        const newDevices = [...state.devices];
-        newDevices[existingIndex] = action.payload;
-        return { ...state, devices: newDevices };
-      }
-      // Add new device
-      return { ...state, devices: [...state.devices, action.payload] };
+      const updated = [...state.devices, action.payload];
+      return { ...state, devices: deduplicateDevices(updated) };
     }
 
     case 'UPDATE_DEVICE': {
