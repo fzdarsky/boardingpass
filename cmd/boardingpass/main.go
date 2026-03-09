@@ -84,7 +84,7 @@ func run(configPath, verifierPath string) error {
 		"commit":         commit,
 		"log_level":      cfg.Logging.Level,
 		"log_format":     cfg.Logging.Format,
-		"listen_address": fmt.Sprintf("%s:%d", cfg.Transports.Ethernet.Address, cfg.Transports.Ethernet.Port),
+		"port":           cfg.Service.Port,
 		"session_ttl":    cfg.Service.SessionTTL,
 		"sentinel_file":  cfg.Service.SentinelFile,
 		"commands_count": len(cfg.Commands),
@@ -219,7 +219,7 @@ func run(configPath, verifierPath string) error {
 		transportMgr.Register(transport.NewBluetoothHandler(cfg.Transports.Bluetooth, logger))
 	}
 	if cfg.Transports.USB.Enabled {
-		usbHandler := transport.NewUSBHandler(cfg.Transports.USB, cfg.Transports.Ethernet.Port, logger)
+		usbHandler := transport.NewUSBHandler(cfg.Transports.USB, cfg.Service.Port, logger)
 		usbHandler.SetListenerCallbacks(server.AddListener, server.RemoveListener)
 		transportMgr.Register(usbHandler)
 	}

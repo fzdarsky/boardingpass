@@ -63,37 +63,32 @@ func validateTransports(cfg *Config) error {
 		return fmt.Errorf("at least one transport must be enabled")
 	}
 
+	// Validate service-level port and TLS settings
+	if cfg.Service.Port <= 0 || cfg.Service.Port > 65535 {
+		return fmt.Errorf("service.port must be between 1 and 65535")
+	}
+
+	if !filepath.IsAbs(cfg.Service.TLSCert) {
+		return fmt.Errorf("service.tls_cert must be an absolute path")
+	}
+
+	certDir := filepath.Dir(cfg.Service.TLSCert)
+	if _, err := os.Stat(certDir); os.IsNotExist(err) {
+		return fmt.Errorf("service.tls_cert directory does not exist: %s", certDir)
+	}
+
+	if !filepath.IsAbs(cfg.Service.TLSKey) {
+		return fmt.Errorf("service.tls_key must be an absolute path")
+	}
+
+	keyDir := filepath.Dir(cfg.Service.TLSKey)
+	if _, err := os.Stat(keyDir); os.IsNotExist(err) {
+		return fmt.Errorf("service.tls_key directory does not exist: %s", keyDir)
+	}
+
+	// Validate ethernet address if specified
 	if cfg.Transports.Ethernet.Enabled {
-		// Validate port
-		if cfg.Transports.Ethernet.Port <= 0 || cfg.Transports.Ethernet.Port > 65535 {
-			return fmt.Errorf("ethernet.port must be between 1 and 65535")
-		}
-
-		// Validate TLS cert file
-		if !filepath.IsAbs(cfg.Transports.Ethernet.TLSCert) {
-			return fmt.Errorf("ethernet.tls_cert must be an absolute path")
-		}
-
-		// Check if TLS cert directory exists
-		certDir := filepath.Dir(cfg.Transports.Ethernet.TLSCert)
-		if _, err := os.Stat(certDir); os.IsNotExist(err) {
-			return fmt.Errorf("ethernet.tls_cert directory does not exist: %s", certDir)
-		}
-
-		// Validate TLS key file
-		if !filepath.IsAbs(cfg.Transports.Ethernet.TLSKey) {
-			return fmt.Errorf("ethernet.tls_key must be an absolute path")
-		}
-
-		// Check if TLS key directory exists
-		keyDir := filepath.Dir(cfg.Transports.Ethernet.TLSKey)
-		if _, err := os.Stat(keyDir); os.IsNotExist(err) {
-			return fmt.Errorf("ethernet.tls_key directory does not exist: %s", keyDir)
-		}
-
-		// Validate address if specified
 		if cfg.Transports.Ethernet.Address != "" {
-			// Basic validation - could be IPv4, IPv6, or hostname
 			if strings.Contains(cfg.Transports.Ethernet.Address, " ") {
 				return fmt.Errorf("ethernet.address contains invalid characters")
 			}

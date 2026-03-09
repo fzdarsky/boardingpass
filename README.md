@@ -104,6 +104,17 @@ lifecycle:
 BoardingPass can automatically create and tear down network transports so that a phone can reach a headless device even when no existing network is available. All transient transports are **ephemeral** — they are created when the service starts and removed when provisioning completes.
 
 > **Security note**: SRP-6a authentication protects the API regardless of transport. An open WiFi AP is safe because the provisioning API requires a successful SRP handshake before any data is exchanged.
+>
+> **Packaging note**: The BoardingPass RPM/DEB does not depend on any transport-specific packages. The system builder is responsible for including the required packages in the OS image for each transport they enable.
+
+#### Transport Requirements
+
+| Transport | System Packages | Hardware | Systemd Units |
+| --- | --- | --- | --- |
+| Ethernet | *(none)* | Wired NIC | *(none)* |
+| WiFi AP | `hostapd`, `dnsmasq` | WiFi adapter with AP mode | `boardingpass-wifi@`, `boardingpass-dnsmasq@` |
+| Bluetooth PAN | `bluez` | Bluetooth adapter (HCI) | `boardingpass-bt@`, `boardingpass-ble@` |
+| USB Tethering | *(none)* | USB port | *(none, kernel drivers only)* |
 
 #### WiFi Access Point
 
@@ -114,7 +125,7 @@ Creates a temporary WiFi hotspot. The phone connects to it, discovers the device
 transports:
   wifi:
     enabled: true
-    interface: "wlan0"         # WiFi interface to use
+    interface: "wlan0"         # WiFi interface (empty = auto-detect)
     ssid: "BoardingPass-edge1" # Network name (default: BoardingPass-<hostname>)
     # password: "changeme123"  # Optional WPA2 password (min 8 chars)
     channel: 6                 # WiFi channel
@@ -125,7 +136,7 @@ The AP is managed via systemd template units (`boardingpass-wifi@.service`). If 
 
 #### Bluetooth PAN
 
-Creates a Bluetooth Personal Area Network with BLE advertisement for discovery. Useful for devices with Bluetooth but no WiFi.
+Creates a Bluetooth Personal Area Network (NAP profile) with BLE advertisement for discovery. Useful for devices with Bluetooth but no WiFi.
 
 ```yaml
 transports:
@@ -136,11 +147,11 @@ transports:
     address: "10.0.1.1"             # PAN bridge IP
 ```
 
-Two systemd units manage this transport: one for the BT PAN bridge and one for BLE advertisement. BLE advertisement failure is non-fatal — the PAN still works if the phone pairs manually.
+Two systemd units manage this transport: `boardingpass-bt@` for the PAN bridge (uses BlueZ D-Bus API via `busctl`) and `boardingpass-ble@` for BLE advertisement. BLE advertisement failure is non-fatal — the PAN still works if the phone pairs manually.
 
 #### USB Tethering
 
-Detects USB tethering interfaces (phone → device) and automatically starts listening on them. No systemd units needed — the service polls `/sys/class/net/` for USB-backed network interfaces.
+Detects USB tethering interfaces (phone → device) and automatically starts listening on them. No systemd units or extra packages needed — the service polls `/sys/class/net/` for USB-backed network interfaces using kernel drivers (`cdc_ether`, `rndis_host`, `ipheth`).
 
 ```yaml
 transports:
@@ -153,13 +164,17 @@ When a phone enables USB tethering and connects via cable, the service detects t
 
 #### Multiple Transports
 
-All transports can be enabled simultaneously. The service listens on all of them:
+All transports can be enabled simultaneously. The HTTPS port and TLS certificates are configured once under `service:` and shared by all transports:
 
 ```yaml
+service:
+  port: 8443
+  tls_cert: "/var/lib/boardingpass/tls/server.crt"
+  tls_key: "/var/lib/boardingpass/tls/server.key"
+
 transports:
   ethernet:
     enabled: true
-    port: 8443
   wifi:
     enabled: true
     interface: "wlan0"

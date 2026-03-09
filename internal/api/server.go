@@ -44,17 +44,15 @@ func New(cfg *config.Config, logger *logging.Logger) (*Server, error) {
 	}
 
 	// Configure TLS
-	if cfg.Transports.Ethernet.Enabled {
-		tlsCfg, err := tlspkg.NewServerConfig(
-			cfg.Transports.Ethernet.TLSCert,
-			cfg.Transports.Ethernet.TLSKey,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create TLS config: %w", err)
-		}
-		server.httpServer.TLSConfig = tlsCfg
-		server.tlsConfig = tlsCfg
+	tlsCfg, err := tlspkg.NewServerConfig(
+		cfg.Service.TLSCert,
+		cfg.Service.TLSKey,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create TLS config: %w", err)
 	}
+	server.httpServer.TLSConfig = tlsCfg
+	server.tlsConfig = tlsCfg
 
 	return server, nil
 }
@@ -196,22 +194,21 @@ func (s *Server) RegisterRouteFunc(pattern string, handler http.HandlerFunc) {
 func (s *Server) configuredAddresses() []string {
 	var addrs []string
 
+	port := s.config.Service.Port
+
 	if s.config.Transports.Ethernet.Enabled {
 		addrs = append(addrs, fmt.Sprintf("%s:%d",
-			s.config.Transports.Ethernet.Address,
-			s.config.Transports.Ethernet.Port,
+			s.config.Transports.Ethernet.Address, port,
 		))
 	}
 
 	if s.config.Transports.WiFi.Enabled {
-		port := s.config.Transports.Ethernet.Port // share port
 		addrs = append(addrs, fmt.Sprintf("%s:%d",
 			s.config.Transports.WiFi.Address, port,
 		))
 	}
 
 	if s.config.Transports.Bluetooth.Enabled {
-		port := s.config.Transports.Ethernet.Port
 		addrs = append(addrs, fmt.Sprintf("%s:%d",
 			s.config.Transports.Bluetooth.Address, port,
 		))

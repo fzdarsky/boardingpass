@@ -31,6 +31,9 @@ type ServiceSettings struct {
 	InactivityTimeout string `yaml:"inactivity_timeout"`
 	SessionTTL        string `yaml:"session_ttl"`
 	SentinelFile      string `yaml:"sentinel_file"`
+	Port              int    `yaml:"port"`
+	TLSCert           string `yaml:"tls_cert"`
+	TLSKey            string `yaml:"tls_key"`
 }
 
 // TransportSettings contains transport-specific configuration.
@@ -46,9 +49,6 @@ type EthernetTransport struct {
 	Enabled    bool     `yaml:"enabled"`
 	Interfaces []string `yaml:"interfaces"`
 	Address    string   `yaml:"address"`
-	Port       int      `yaml:"port"`
-	TLSCert    string   `yaml:"tls_cert"`
-	TLSKey     string   `yaml:"tls_key"`
 }
 
 // WiFiTransport contains WiFi access point transport configuration.
@@ -122,14 +122,15 @@ func Load(path string) (*Config, error) {
 		cfg.Paths.RootDirectory = rootDir
 	}
 
-	// Apply defaults for TLS paths if not specified
-	if cfg.Transports.Ethernet.Enabled {
-		if cfg.Transports.Ethernet.TLSCert == "" {
-			cfg.Transports.Ethernet.TLSCert = DefaultTLSCertPath
-		}
-		if cfg.Transports.Ethernet.TLSKey == "" {
-			cfg.Transports.Ethernet.TLSKey = DefaultTLSKeyPath
-		}
+	// Apply defaults for service-level settings
+	if cfg.Service.Port == 0 {
+		cfg.Service.Port = 8443
+	}
+	if cfg.Service.TLSCert == "" {
+		cfg.Service.TLSCert = DefaultTLSCertPath
+	}
+	if cfg.Service.TLSKey == "" {
+		cfg.Service.TLSKey = DefaultTLSKeyPath
 	}
 
 	if err := cfg.validate(); err != nil {
@@ -154,18 +155,16 @@ func (c *Config) validate() error {
 		return fmt.Errorf("service.sentinel_file is required")
 	}
 
-	if c.Transports.Ethernet.Enabled {
-		if c.Transports.Ethernet.Port <= 0 || c.Transports.Ethernet.Port > 65535 {
-			return fmt.Errorf("transports.ethernet.port must be between 1 and 65535")
-		}
+	if c.Service.Port <= 0 || c.Service.Port > 65535 {
+		return fmt.Errorf("service.port must be between 1 and 65535")
+	}
 
-		if c.Transports.Ethernet.TLSCert == "" {
-			return fmt.Errorf("transports.ethernet.tls_cert is required when ethernet is enabled")
-		}
+	if c.Service.TLSCert == "" {
+		return fmt.Errorf("service.tls_cert is required")
+	}
 
-		if c.Transports.Ethernet.TLSKey == "" {
-			return fmt.Errorf("transports.ethernet.tls_key is required when ethernet is enabled")
-		}
+	if c.Service.TLSKey == "" {
+		return fmt.Errorf("service.tls_key is required")
 	}
 
 	if err := c.validateWiFi(); err != nil {
