@@ -493,15 +493,17 @@ The default physical device name is set in the Makefile as `IOS_PHYSICAL_DEVICE`
    make run-app-ios-device
    ```
 
-**Important - mDNS Limitation on Free Apple Developer Accounts:**
+**mDNS Discovery:**
 
-The Multicast Networking entitlement required for mDNS device discovery is **NOT available** with free Apple Developer accounts (Personal Teams). This means:
+The Multicast Networking entitlement is enabled via the `withMulticast` plugin in `mobile/app.config.js`. This requires a paid Apple Developer Program account. Automatic mDNS device discovery works on physical iOS devices; the app falls back to manual IP entry on simulators.
 
-- ✅ The app works perfectly on physical devices with **manual IP entry**
-- ❌ Automatic mDNS device discovery is **disabled** (fallback option required)
-- ✅ To enable mDNS discovery: enroll in the paid **Apple Developer Program** ($99/year), then uncomment the multicast plugin in `mobile/app.json` and rebuild
+Developers without a paid Apple Developer account can disable the entitlement:
 
-The multicast plugin line has been commented out by default to support free accounts. The app gracefully degrades to manual device entry when mDNS is unavailable.
+```bash
+make build-app-ios ENABLE_MDNS_ENTITLEMENT=false
+```
+
+This allows building and running on simulators or personal devices without the multicast capability.
 
 **Note**: If you see a warning about "Unexpected devicectl JSON version output", this may indicate a devicectl compatibility issue. The app should still run correctly. If deployment fails, ensure:
 

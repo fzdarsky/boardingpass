@@ -78,6 +78,10 @@ APP_TEST_ARGS ?=
 # Use the exact name shown in the "Name" column
 IOS_PHYSICAL_DEVICE ?= a phone
 
+# Enable mDNS entitlement (requires paid Apple Developer account)
+# Set to "false" to disable: make build-app-ios ENABLE_MDNS_ENTITLEMENT=false
+ENABLE_MDNS_ENTITLEMENT ?= true
+
 # ============================================================================
 # Default Target
 # ============================================================================
@@ -126,6 +130,7 @@ help:
 	@echo "  build-service           - Build service binary"
 	@echo "  build-cli               - Build CLI binary"
 	@echo "  build-app-ios           - Generate iOS native project (expo prebuild)"
+	@echo "                            Use ENABLE_MDNS_ENTITLEMENT=false without paid Apple Developer account"
 	@echo "  build-app-android       - Generate Android native project"
 	@echo "  build-app               - Generate both iOS and Android projects"
 	@echo "  build-all               - Build all components"
@@ -277,7 +282,10 @@ build-cli:
 ## build-app-ios: Generate iOS native project
 build-app-ios: generate-app
 	@echo "Generating iOS native project..."
-	@cd $(MOBILE_DIR) && npx expo prebuild --platform ios $(if $(CI),--clean,)
+	@if [ "$(ENABLE_MDNS_ENTITLEMENT)" = "false" ]; then \
+		echo "Note: mDNS entitlement disabled (no paid Apple Developer account)"; \
+	fi
+	@cd $(MOBILE_DIR) && ENABLE_MDNS_ENTITLEMENT=$(ENABLE_MDNS_ENTITLEMENT) npx expo prebuild --platform ios $(if $(CI),--clean,)
 	@echo "iOS project generated: $(MOBILE_IOS_DIR)/"
 
 ## build-app-android: Generate Android native project

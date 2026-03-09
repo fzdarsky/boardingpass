@@ -8,6 +8,9 @@ service:
   port: 8443                     # HTTPS listen port (shared by all transports)
   tls_cert: "/var/lib/boardingpass/tls/server.crt"  # Path to TLS certificate (auto-generated if missing)
   tls_key: "/var/lib/boardingpass/tls/server.key"   # Path to TLS private key (auto-generated if missing)
+  mdns:
+    enabled: true                  # Announce service via mDNS/Bonjour for automatic discovery (default: true)
+    # instance_name: ""            # mDNS instance name (default: "BoardingPass-<hostname>")
 
 transports:
   # Ethernet transport (always available, no extra packages required)
