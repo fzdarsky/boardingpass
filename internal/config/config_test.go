@@ -35,15 +35,15 @@ service:
   inactivity_timeout: "10m"
   session_ttl: "30m"
   sentinel_file: "` + filepath.Join(sentinelDir, "issued") + `"
+  port: 8443
+  tls_cert: "` + filepath.Join(tlsDir, "server.crt") + `"
+  tls_key: "` + filepath.Join(tlsDir, "server.key") + `"
 
 transports:
   ethernet:
     enabled: true
     interfaces: []
     address: ""
-    port: 8443
-    tls_cert: "` + filepath.Join(tlsDir, "server.crt") + `"
-    tls_key: "` + filepath.Join(tlsDir, "server.key") + `"
 
 commands:
   - id: "reboot"
@@ -74,7 +74,7 @@ paths:
 	assert.Equal(t, "30m", cfg.Service.SessionTTL)
 	assert.Equal(t, filepath.Join(sentinelDir, "issued"), cfg.Service.SentinelFile)
 	assert.True(t, cfg.Transports.Ethernet.Enabled)
-	assert.Equal(t, 8443, cfg.Transports.Ethernet.Port)
+	assert.Equal(t, 8443, cfg.Service.Port)
 	assert.Len(t, cfg.Commands, 2)
 	assert.Equal(t, "info", cfg.Logging.Level)
 	assert.Equal(t, "json", cfg.Logging.Format)
@@ -352,13 +352,13 @@ service:
   inactivity_timeout: "10m"
   session_ttl: "30m"
   sentinel_file: "` + filepath.Join(sentinelDir, "issued") + `"
+  port: 99999
+  tls_cert: "/var/lib/boardingpass/tls/server.crt"
+  tls_key: "/var/lib/boardingpass/tls/server.key"
 
 transports:
   ethernet:
     enabled: true
-    port: 99999
-    tls_cert: "/var/lib/boardingpass/tls/server.crt"
-    tls_key: "/var/lib/boardingpass/tls/server.key"
 `
 
 	configFile := filepath.Join(tmpDir, "config.yaml")

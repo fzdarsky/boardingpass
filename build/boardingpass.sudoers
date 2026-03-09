@@ -44,6 +44,16 @@ boardingpass ALL=(ALL) NOPASSWD: /usr/lib/boardingpass/scripts/enroll-flightctl.
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/rhc connect *
 boardingpass ALL=(ALL) NOPASSWD: /usr/bin/flightctl login *
 
+# Allow starting/stopping transient transport systemd units
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl start boardingpass-wifi@*
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop boardingpass-wifi@*
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl start boardingpass-bt@*
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop boardingpass-bt@*
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl start boardingpass-ble@*
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop boardingpass-ble@*
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl start boardingpass-dnsmasq@*
+boardingpass ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop boardingpass-dnsmasq@*
+
 # Explicitly deny all other commands
 boardingpass ALL=(ALL) !/usr/bin/su
 boardingpass ALL=(ALL) !/usr/bin/sudo

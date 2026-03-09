@@ -31,11 +31,17 @@ type ServiceSettings struct {
 	InactivityTimeout string `yaml:"inactivity_timeout"`
 	SessionTTL        string `yaml:"session_ttl"`
 	SentinelFile      string `yaml:"sentinel_file"`
+	Port              int    `yaml:"port"`
+	TLSCert           string `yaml:"tls_cert"`
+	TLSKey            string `yaml:"tls_key"`
 }
 
 // TransportSettings contains transport-specific configuration.
 type TransportSettings struct {
-	Ethernet EthernetTransport `yaml:"ethernet"`
+	Ethernet  EthernetTransport  `yaml:"ethernet"`
+	WiFi      WiFiTransport      `yaml:"wifi"`
+	Bluetooth BluetoothTransport `yaml:"bluetooth"`
+	USB       USBTransport       `yaml:"usb"`
 }
 
 // EthernetTransport contains Ethernet transport configuration.
@@ -43,9 +49,31 @@ type EthernetTransport struct {
 	Enabled    bool     `yaml:"enabled"`
 	Interfaces []string `yaml:"interfaces"`
 	Address    string   `yaml:"address"`
-	Port       int      `yaml:"port"`
-	TLSCert    string   `yaml:"tls_cert"`
-	TLSKey     string   `yaml:"tls_key"`
+}
+
+// WiFiTransport contains WiFi access point transport configuration.
+type WiFiTransport struct {
+	Enabled   bool   `yaml:"enabled"`
+	Interface string `yaml:"interface"`
+	SSID      string `yaml:"ssid"`
+	Password  string `yaml:"password,omitempty"`
+	Channel   int    `yaml:"channel"`
+	Address   string `yaml:"address"`
+}
+
+// BluetoothTransport contains Bluetooth PAN transport configuration.
+type BluetoothTransport struct {
+	Enabled    bool   `yaml:"enabled"`
+	Adapter    string `yaml:"adapter"`
+	DeviceName string `yaml:"device_name"`
+	Address    string `yaml:"address"`
+}
+
+// USBTransport contains USB tethering transport configuration.
+type USBTransport struct {
+	Enabled         bool   `yaml:"enabled"`
+	InterfacePrefix string `yaml:"interface_prefix"`
+	Address         string `yaml:"address,omitempty"`
 }
 
 // CommandDefinition defines an allow-listed command.
@@ -94,14 +122,15 @@ func Load(path string) (*Config, error) {
 		cfg.Paths.RootDirectory = rootDir
 	}
 
-	// Apply defaults for TLS paths if not specified
-	if cfg.Transports.Ethernet.Enabled {
-		if cfg.Transports.Ethernet.TLSCert == "" {
-			cfg.Transports.Ethernet.TLSCert = DefaultTLSCertPath
-		}
-		if cfg.Transports.Ethernet.TLSKey == "" {
-			cfg.Transports.Ethernet.TLSKey = DefaultTLSKeyPath
-		}
+	// Apply defaults for service-level settings
+	if cfg.Service.Port == 0 {
+		cfg.Service.Port = 8443
+	}
+	if cfg.Service.TLSCert == "" {
+		cfg.Service.TLSCert = DefaultTLSCertPath
+	}
+	if cfg.Service.TLSKey == "" {
+		cfg.Service.TLSKey = DefaultTLSKeyPath
 	}
 
 	if err := cfg.validate(); err != nil {
@@ -126,18 +155,24 @@ func (c *Config) validate() error {
 		return fmt.Errorf("service.sentinel_file is required")
 	}
 
-	if c.Transports.Ethernet.Enabled {
-		if c.Transports.Ethernet.Port <= 0 || c.Transports.Ethernet.Port > 65535 {
-			return fmt.Errorf("transports.ethernet.port must be between 1 and 65535")
-		}
+	if c.Service.Port <= 0 || c.Service.Port > 65535 {
+		return fmt.Errorf("service.port must be between 1 and 65535")
+	}
 
-		if c.Transports.Ethernet.TLSCert == "" {
-			return fmt.Errorf("transports.ethernet.tls_cert is required when ethernet is enabled")
-		}
+	if c.Service.TLSCert == "" {
+		return fmt.Errorf("service.tls_cert is required")
+	}
 
-		if c.Transports.Ethernet.TLSKey == "" {
-			return fmt.Errorf("transports.ethernet.tls_key is required when ethernet is enabled")
-		}
+	if c.Service.TLSKey == "" {
+		return fmt.Errorf("service.tls_key is required")
+	}
+
+	if err := c.validateWiFi(); err != nil {
+		return err
+	}
+
+	if err := c.validateBluetooth(); err != nil {
+		return err
 	}
 
 	// Validate root directory (if specified)
@@ -154,6 +189,33 @@ func (c *Config) validate() error {
 		}
 	}
 
+	return nil
+}
+
+func (c *Config) validateWiFi() error {
+	if !c.Transports.WiFi.Enabled {
+		return nil
+	}
+
+	// interface is optional — auto-detected at runtime if empty
+
+	if c.Transports.WiFi.Password != "" && len(c.Transports.WiFi.Password) < 8 {
+		return fmt.Errorf("transports.wifi.password must be at least 8 characters")
+	}
+
+	ch := c.Transports.WiFi.Channel
+	if ch != 0 && (ch < 1 || ch > 165) {
+		return fmt.Errorf("transports.wifi.channel must be between 1 and 165")
+	}
+
+	return nil
+}
+
+func (c *Config) validateBluetooth() error {
+	if !c.Transports.Bluetooth.Enabled {
+		return nil
+	}
+	// Adapter defaults to hci0 if empty — no mandatory fields beyond enabled
 	return nil
 }
 

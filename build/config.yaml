@@ -2,22 +2,82 @@
 # Install to: /etc/boardingpass/config.yaml
 
 service:
-  inactivity_timeout: "10m"
-  session_ttl: "30m"
-  sentinel_file: "/etc/boardingpass/issued"
+  inactivity_timeout: "10m"      # Max idle time before service self-terminates (Go duration: "5m", "1h")
+  session_ttl: "30m"             # Authenticated session lifetime (min: 5m)
+  sentinel_file: "/etc/boardingpass/issued"  # Created on provisioning completion; prevents service restart
+  port: 8443                     # HTTPS listen port (shared by all transports)
+  tls_cert: "/var/lib/boardingpass/tls/server.crt"  # Path to TLS certificate (auto-generated if missing)
+  tls_key: "/var/lib/boardingpass/tls/server.key"   # Path to TLS private key (auto-generated if missing)
 
 transports:
+  # Ethernet transport (always available, no extra packages required)
+  # Listens on existing wired network interfaces.
   ethernet:
     enabled: true
-    interfaces: []
-    address: ""
-    port: 8443
-    tls_cert: "/var/lib/boardingpass/tls/server.crt"
-    tls_key: "/var/lib/boardingpass/tls/server.key"
+    interfaces: []               # Interface names to listen on (empty = all non-loopback interfaces)
+    address: ""                  # Bind address (empty = 0.0.0.0, all interfaces)
+
+  # WiFi Access Point transport
+  # Creates a temporary WiFi hotspot so a phone can connect directly to the device.
+  # The AP is torn down when provisioning completes.
+  #
+  # Required system packages: hostapd, dnsmasq
+  # Required hardware: WiFi adapter with AP mode support
+  # Systemd units: boardingpass-wifi@.service, boardingpass-dnsmasq@.service
+  wifi:
+    enabled: false
+    interface: ""                # WiFi interface (empty = auto-detect via /sys/class/net/*/wireless)
+    ssid: ""                     # Network name (default: "BoardingPass-<hostname>")
+    # password: "changeme123"    # WPA2 password (min 8 chars); omit or leave empty for open network
+    channel: 6                   # WiFi channel (1-11 for 2.4GHz, 36-165 for 5GHz)
+    address: "10.0.0.1"          # AP gateway IP; phones get DHCP addresses in this /24 subnet
+
+  # Bluetooth PAN transport
+  # Creates a Bluetooth Personal Area Network (NAP profile) with BLE advertisement
+  # for phone discovery. The phone pairs via Bluetooth, gets an IP on the PAN bridge,
+  # then connects to the HTTPS API over TCP/IP.
+  #
+  # Required system packages: bluez (provides bluetoothctl and BlueZ D-Bus API)
+  # Required hardware: Bluetooth adapter (HCI)
+  # Required kernel modules: bnep (Bluetooth network encapsulation), ecdh_generic (for pairing)
+  # Systemd units: boardingpass-bt@.service, boardingpass-ble@.service
+  #
+  # FIPS limitation: Bluetooth pairing requires the kernel ecdh_generic module for
+  # Secure Simple Pairing (SSP). On FIPS-enabled systems this module may be unavailable,
+  # making Bluetooth PAN unusable. BLE advertisement (discovery only) is unaffected.
+  # On FIPS systems, enable bluetooth for BLE discovery and set address to the WiFi AP
+  # or Ethernet address so the phone knows where to connect:
+  #   bluetooth:
+  #     enabled: true
+  #     address: "10.0.0.1"     # WiFi AP address — PAN will fail gracefully
+  #   wifi:
+  #     enabled: true
+  #     address: "10.0.0.1"
+  bluetooth:
+    enabled: false
+    adapter: "hci0"              # Bluetooth adapter name (from /sys/class/bluetooth/)
+    device_name: ""              # BLE advertised name (default: "BoardingPass-<hostname>")
+    address: "10.0.1.1"          # Address advertised via BLE; also used as PAN bridge IP
+
+  # USB tethering transport
+  # Auto-detects USB tethering interfaces when a phone is connected via cable.
+  # No systemd units needed -- the service polls /sys/class/net/ every 2 seconds
+  # for USB-backed network interfaces and dynamically adds/removes HTTPS listeners.
+  # Detection is driver-based (cdc_ether, rndis_host, ipheth), so it works with any
+  # interface naming scheme (usb0, rndis0, enp0s20f0u1c4i2, etc.)
+  #
+  # Required system packages: none (uses kernel USB networking drivers)
+  # Required hardware: USB port
+  # Supported USB drivers: cdc_ether (standard), rndis_host (Android), ipheth (iOS)
+  usb:
+    enabled: false
+    interface_prefix: ""         # Optional: restrict to interfaces with this name prefix (empty = all USB interfaces)
 
 # Command allow-list
-# max_params: 0 means no parameters accepted (default)
-# max_params: N means up to N positional parameters can be passed
+# Each entry defines a command that authenticated clients can execute on the device.
+# Commands run via sudo by default (sudo: true). Set sudo: false for unprivileged commands.
+# max_params: 0 means no additional parameters accepted (default)
+# max_params: N means up to N positional parameters can be appended to args
 commands:
   - id: "set-hostname"
     path: "/usr/lib/boardingpass/scripts/set-hostname.sh"
@@ -81,6 +141,9 @@ commands:
     args: ["restart", "chronyd"]
     max_params: 0
 
+# File provisioning path allow-list
+# Only files under these paths can be written by the provisioning API.
+# Paths must be absolute and end with "/" (directory prefixes).
 paths:
   allow_list:
     - "/etc/systemd/"
@@ -92,5 +155,5 @@ paths:
     - "/etc/boardingpass/staging/"
 
 logging:
-  level: "info"
-  format: "human"
+  level: "info"                  # Log level: debug, info, warn, error
+  format: "human"                # Log format: json (structured), human (readable)

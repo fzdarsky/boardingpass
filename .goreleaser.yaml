@@ -55,6 +55,10 @@ archives:
       - LICENSE
       - README.md
       - build/boardingpass.service
+      - build/boardingpass-wifi@.service
+      - build/boardingpass-bt@.service
+      - build/boardingpass-ble@.service
+      - build/boardingpass-dnsmasq@.service
       - build/boardingpass.sudoers
       - build/password-generator.example
 
@@ -87,6 +91,9 @@ nfpms:
       - deb
     dependencies:
       - systemd
+    recommends:
+      - hostapd
+      - dnsmasq
     contents:
       - src: build/config.yaml
         dst: /etc/boardingpass/config.yaml
@@ -95,6 +102,18 @@ nfpms:
           mode: 0644
       - src: build/boardingpass.service
         dst: /usr/lib/systemd/system/boardingpass.service
+        type: config
+      - src: build/boardingpass-wifi@.service
+        dst: /usr/lib/systemd/system/boardingpass-wifi@.service
+        type: config
+      - src: build/boardingpass-bt@.service
+        dst: /usr/lib/systemd/system/boardingpass-bt@.service
+        type: config
+      - src: build/boardingpass-ble@.service
+        dst: /usr/lib/systemd/system/boardingpass-ble@.service
+        type: config
+      - src: build/boardingpass-dnsmasq@.service
+        dst: /usr/lib/systemd/system/boardingpass-dnsmasq@.service
         type: config
       - src: build/boardingpass.sudoers
         dst: /etc/sudoers.d/boardingpass
@@ -154,6 +173,14 @@ nfpms:
           mode: 0755
       - src: build/scripts/enroll-flightctl.sh
         dst: /usr/lib/boardingpass/scripts/enroll-flightctl.sh
+        file_info:
+          mode: 0755
+      - src: build/scripts/bt-pan.sh
+        dst: /usr/lib/boardingpass/scripts/bt-pan.sh
+        file_info:
+          mode: 0755
+      - src: build/scripts/ble-advertise.sh
+        dst: /usr/lib/boardingpass/scripts/ble-advertise.sh
         file_info:
           mode: 0755
     scripts:

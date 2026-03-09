@@ -50,6 +50,12 @@ func NewRedactor() *Redactor {
 			"certificate": true,
 			"tls_cert":    true,
 			"tls_key":     true,
+
+			// Transport secrets
+			"wifi_password": true,
+			"ssid_password": true,
+			"pairing_code":  true,
+			"pairing_key":   true,
 		},
 	}
 }

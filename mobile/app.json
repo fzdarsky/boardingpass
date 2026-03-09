@@ -22,9 +22,12 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Camera access is required to scan QR codes for device connection",
         "NSLocalNetworkUsageDescription": "Network access is required to discover BoardingPass devices on your local network",
+        "NSBluetoothAlwaysUsageDescription": "Bluetooth is used to discover nearby BoardingPass devices",
         "NSBonjourServices": [
           "_boardingpass._tcp"
         ]
+      },
+      "entitlements": {
       }
     },
     "android": {
@@ -37,7 +40,9 @@
         "ACCESS_FINE_LOCATION",
         "CHANGE_WIFI_MULTICAST_STATE",
         "INTERNET",
-        "ACCESS_NETWORK_STATE"
+        "ACCESS_NETWORK_STATE",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT"
       ]
     },
     "web": {

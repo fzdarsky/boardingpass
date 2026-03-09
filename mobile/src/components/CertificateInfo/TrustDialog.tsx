@@ -96,18 +96,6 @@ export function CertificateTrustDialog({
 
             {/* Certificate Details */}
             <CertificateInfoDisplay certificate={certificate} compact={false} />
-
-            {/* Security Notice */}
-            <View style={[styles.securityNotice, { backgroundColor: theme.colors.surfaceVariant }]}>
-              <Text variant="labelMedium" style={styles.securityTitle}>
-                Security Notice:
-              </Text>
-              <Text variant="bodySmall" style={styles.securityText}>
-                {isCertChanged
-                  ? 'Only trust this certificate if you know the device was recently reconfigured or replaced. If you did not expect this change, reject the certificate and contact your system administrator.'
-                  : 'Trusting this certificate will allow secure connections to this device. The certificate will be pinned to detect future changes.'}
-              </Text>
-            </View>
           </ScrollView>
         </Dialog.ScrollArea>
 
@@ -167,19 +155,6 @@ const styles = StyleSheet.create({
   },
   infoText: {
     flex: 1,
-  },
-  securityNotice: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: undefined, // set dynamically via theme.colors.surfaceVariant
-    borderRadius: 8,
-  },
-  securityTitle: {
-    marginBottom: 8,
-    fontWeight: '600',
-  },
-  securityText: {
-    lineHeight: 20,
   },
   actions: {
     paddingHorizontal: 24,

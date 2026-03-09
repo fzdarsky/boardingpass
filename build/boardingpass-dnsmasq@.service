@@ -1,0 +1,9 @@
+[Unit]
+Description=BoardingPass DHCP/DNS on %i
+BindsTo=boardingpass-wifi@%i.service
+After=boardingpass-wifi@%i.service
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/run/boardingpass/dnsmasq-%i.conf
+Restart=no

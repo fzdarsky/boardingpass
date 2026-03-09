@@ -17,7 +17,8 @@ BoardingPass solves the headless device bootstrap problem by providing a frictio
 - **Ephemeral Operation**: Service automatically terminates after provisioning completion
 - **Atomic Configuration**: All-or-nothing configuration bundle application with automatic rollback
 - **Minimal Footprint**: < 10MB binary, < 50MB RAM, zero runtime dependencies beyond systemd
-- **Transport Agnostic**: RESTful API works over any network transport (Ethernet, WiFi, BLE, USB)
+- **Multi-Transport**: Built-in WiFi AP, Bluetooth PAN, USB tethering, and Ethernet — all managed automatically
+- **Mobile App**: iOS/Android app for device discovery, authentication, and provisioning
 - **FIPS 140-3 Ready**: Uses Go stdlib crypto only for compliance
 
 ### Use Cases
@@ -97,6 +98,113 @@ lifecycle:
   inactivity_timeout: "10m"
   sentinel_file: "/etc/boardingpass/issued"
 ```
+
+### Transient Transports
+
+BoardingPass can automatically create and tear down network transports so that a phone can reach a headless device even when no existing network is available. All transient transports are **ephemeral** — they are created when the service starts and removed when provisioning completes.
+
+> **Security note**: SRP-6a authentication protects the API regardless of transport. An open WiFi AP is safe because the provisioning API requires a successful SRP handshake before any data is exchanged.
+>
+> **Packaging note**: The BoardingPass RPM/DEB does not depend on any transport-specific packages. The system builder is responsible for including the required packages in the OS image for each transport they enable.
+
+#### Transport Requirements
+
+| Transport | System Packages | Hardware | Systemd Units |
+| --- | --- | --- | --- |
+| Ethernet | *(none)* | Wired NIC | *(none)* |
+| WiFi AP | `hostapd`, `dnsmasq` | WiFi adapter with AP mode | `boardingpass-wifi@`, `boardingpass-dnsmasq@` |
+| Bluetooth PAN | `bluez` | Bluetooth adapter (HCI) | `boardingpass-bt@`, `boardingpass-ble@` (requires `ecdh_generic` kernel module for pairing; see FIPS note) |
+| USB Tethering | *(none)* | USB port | *(none, kernel drivers only)* |
+
+#### WiFi Access Point
+
+Creates a temporary WiFi hotspot. The phone connects to it, discovers the device, and provisions it.
+
+```yaml
+# In /etc/boardingpass/config.yaml
+transports:
+  wifi:
+    enabled: true
+    interface: "wlan0"         # WiFi interface (empty = auto-detect)
+    ssid: "BoardingPass-edge1" # Network name (default: BoardingPass-<hostname>)
+    # password: "changeme123"  # Optional WPA2 password (min 8 chars)
+    channel: 6                 # WiFi channel
+    address: "10.0.0.1"        # AP gateway IP
+```
+
+The AP is managed via systemd template units (`boardingpass-wifi@.service`). If the WiFi interface is unavailable, the service logs a warning and continues — it never blocks startup.
+
+#### Bluetooth PAN
+
+Creates a Bluetooth Personal Area Network (NAP profile) with BLE advertisement for discovery. Useful for devices with Bluetooth but no WiFi.
+
+```yaml
+transports:
+  bluetooth:
+    enabled: true
+    adapter: "hci0"                  # Bluetooth adapter
+    device_name: "BoardingPass-rpi4" # BLE advertised name
+    address: "10.0.1.1"             # PAN bridge IP
+```
+
+Two systemd units manage this transport: `boardingpass-bt@` for the PAN bridge (uses BlueZ D-Bus API via `busctl`) and `boardingpass-ble@` for BLE advertisement. BLE advertisement failure is non-fatal — the PAN still works if the phone pairs manually.
+
+> **FIPS limitation**: Bluetooth pairing requires the kernel `ecdh_generic` module for Secure Simple Pairing (SSP). On FIPS-enabled systems this module may be unavailable, making Bluetooth PAN unusable. BLE advertisement (discovery only) is unaffected — the PAN failure is graceful and BLE still starts. To use BLE as a discovery beacon for WiFi AP, set `bluetooth.address` to the WiFi AP address:
+>
+> ```yaml
+> bluetooth:
+>   enabled: true
+>   address: "10.0.0.1"   # Point to WiFi AP instead of PAN bridge
+> wifi:
+>   enabled: true
+>   address: "10.0.0.1"
+> ```
+
+#### USB Tethering
+
+Detects USB tethering interfaces (phone → device) and automatically starts listening on them. No systemd units or extra packages needed — the service polls `/sys/class/net/` for USB-backed network interfaces using kernel drivers (`cdc_ether`, `rndis_host`, `ipheth`).
+
+```yaml
+transports:
+  usb:
+    enabled: true
+    interface_prefix: "usb"  # Matches usb* and rndis* interfaces
+```
+
+When a phone enables USB tethering and connects via cable, the service detects the new interface within 2 seconds and begins serving. When the cable is disconnected, the listener is removed automatically.
+
+#### Multiple Transports
+
+All transports can be enabled simultaneously. The HTTPS port and TLS certificates are configured once under `service:` and shared by all transports:
+
+```yaml
+service:
+  port: 8443
+  tls_cert: "/var/lib/boardingpass/tls/server.crt"
+  tls_key: "/var/lib/boardingpass/tls/server.key"
+
+transports:
+  ethernet:
+    enabled: true
+  wifi:
+    enabled: true
+    interface: "wlan0"
+  bluetooth:
+    enabled: true
+  usb:
+    enabled: true
+```
+
+The mobile app de-duplicates devices discovered via multiple transports and shows the preferred one (USB > Bluetooth > WiFi > mDNS > manual).
+
+#### Captive Portal Suppression
+
+When a phone connects to the BoardingPass WiFi AP, the OS normally opens a captive portal browser. The service suppresses this by responding to well-known captive portal detection URLs:
+
+- iOS: `GET /hotspot-detect.html` → returns `<HTML><HEAD><TITLE>Success</TITLE></HEAD><BODY>Success</BODY></HTML>`
+- Android: `GET /generate_204` → returns `204 No Content`
+
+This keeps the phone connected without interrupting the user with a browser popup.
 
 ### Usage
 
@@ -538,6 +646,58 @@ boarding pass --username admin
 - Check server configuration for allowed command IDs
 - Contact administrator to add command to allow-list
 
+## Mobile App
+
+BoardingPass includes a React Native mobile app (iOS/Android) for discovering and provisioning headless devices from a phone.
+
+### Features
+
+- **Multi-transport discovery**: Finds devices via mDNS, WiFi AP detection, BLE scanning, USB tethering, and manual IP entry
+- **SRP-6a authentication**: Secure login using device-specific connection codes
+- **Certificate pinning**: Trust-On-First-Use (TOFU) with fingerprint verification
+- **Guided provisioning**: Step-by-step wizard for hostname, DNS, NTP, WiFi, and enrollment configuration
+- **Review & apply**: Preview all changes before committing to the device
+
+### Getting Started
+
+```bash
+# Install dependencies
+make install-deps-app
+
+# Generate TypeScript types from OpenAPI spec
+make generate-app
+
+# Build and run on iOS simulator
+make build-app-ios
+make run-app-ios
+
+# Run on a connected physical iOS device
+make run-app-ios-device
+```
+
+### Device Discovery
+
+The app discovers BoardingPass devices using multiple methods simultaneously:
+
+| Method    | How it works                                          | Priority |
+|-----------|-------------------------------------------------------|----------|
+| USB       | Detects USB tethering via NetInfo, probes gateway IPs | 1 (best) |
+| Bluetooth | BLE scan for BoardingPass service UUID                | 2        |
+| WiFi      | Detects BoardingPass SSIDs, probes gateway IP         | 3        |
+| mDNS      | Bonjour/Zeroconf `_boardingpass._tcp` service browse  | 4        |
+| Manual    | User enters IP:port directly                          | 5        |
+
+When the same device is found via multiple transports, the app **de-duplicates** by certificate fingerprint or device name and shows the highest-priority transport. A transport badge (with icon) in the device list indicates how each device was discovered.
+
+### Requirements
+
+- iOS 15+ or Android 12+
+- Node.js 18+ and npm
+- Xcode 15+ (for iOS development)
+- For mDNS discovery on iOS physical devices: paid Apple Developer Program membership
+
+See [CLAUDE.md](CLAUDE.md) for detailed mobile development workflow, troubleshooting, and coding standards.
+
 ## Development
 
 ### Building
@@ -558,19 +718,25 @@ make coverage
 
 ### Project Structure
 
-```
+```text
 boardingpass/
 ├── cmd/boardingpass/       # Main service binary
 ├── internal/               # Private packages
-│   ├── api/               # HTTP handlers and routing
+│   ├── api/               # HTTP handlers, routing, captive portal
 │   ├── auth/              # SRP-6a authentication
+│   ├── transport/         # WiFi, Bluetooth, USB transport handlers
 │   ├── provisioning/      # Configuration management
 │   ├── command/           # Command execution
-│   └── lifecycle/         # Service lifecycle
+│   ├── lifecycle/         # Service lifecycle
+│   ├── config/            # YAML config loading and validation
+│   └── logging/           # JSON logging with secret redaction
 ├── pkg/protocol/          # Public protocol definitions
+├── mobile/                # React Native mobile app
+│   ├── app/               # Expo Router screens
+│   └── src/               # Components, services, hooks, types
 ├── tests/                 # Test suites
-├── build/                 # Build scripts and configs
-└── docs/                  # Documentation
+├── build/                 # systemd units, sudoers, container config
+└── specs/                 # Feature specifications and plans
 ```
 
 ## API Documentation
@@ -621,8 +787,8 @@ See [specs/001-boardingpass-api/plan.md](specs/001-boardingpass-api/plan.md) for
 
 - [x] Core service implementation (SRP auth, configuration provisioning, command execution)
 - [x] CLI tool for device provisioning (`boarding` command)
-- [ ] Mobile app for iOS/Android (React Native)
-- [ ] Additional transport support (WiFi AP mode, BLE, USB gadget)
+- [x] Mobile app for iOS/Android (React Native) — device discovery, authentication, guided provisioning
+- [x] Transient transport support (WiFi AP, Bluetooth PAN, USB tethering)
 - [ ] Enhanced monitoring and observability
 - [ ] Integration with bootc ecosystem
 

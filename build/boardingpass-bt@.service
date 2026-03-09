@@ -1,0 +1,15 @@
+[Unit]
+Description=BoardingPass Bluetooth PAN on %i
+PartOf=boardingpass.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/run/boardingpass/ble-env
+ExecStartPre=/usr/bin/bluetoothctl power on
+ExecStartPre=/usr/bin/busctl set-property org.bluez /org/bluez/%i org.bluez.Adapter1 PairableTimeout u 0
+ExecStartPre=/usr/bin/busctl set-property org.bluez /org/bluez/%i org.bluez.Adapter1 DiscoverableTimeout u 0
+ExecStartPre=/usr/bin/busctl set-property org.bluez /org/bluez/%i org.bluez.Adapter1 Pairable b true
+ExecStartPre=/usr/bin/busctl set-property org.bluez /org/bluez/%i org.bluez.Adapter1 Discoverable b true
+ExecStart=/usr/lib/boardingpass/scripts/bt-pan.sh %i br-bp0 10.0.1.1/24
+ExecStopPost=/usr/bin/busctl set-property org.bluez /org/bluez/%i org.bluez.Adapter1 Discoverable b false
+Restart=no
