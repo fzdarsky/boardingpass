@@ -117,6 +117,9 @@ export default function ConfigureScreen() {
     if (serviceInterfaceName) {
       state.serviceInterfaceName = serviceInterfaceName;
     }
+    if (systemInfo?.os?.version) {
+      state.osVersion = systemInfo.os.version;
+    }
     return state;
   }, [systemInfo, serviceInterfaceName]);
 

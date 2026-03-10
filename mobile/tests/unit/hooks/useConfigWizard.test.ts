@@ -225,6 +225,8 @@ describe('useConfigWizard', () => {
       const state = createInitialWizardState();
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: '',
         password: '',
       };
@@ -612,10 +614,12 @@ describe('useConfigWizard', () => {
       expect(parsed.disable_remote_management).toBe(false);
     });
 
-    it('builds flightctl staging file for step 5', () => {
+    it('builds flightctl staging file with password auth for step 5', () => {
       const state = createInitialWizardState();
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: 'admin',
         password: 'secret',
       };
@@ -628,10 +632,32 @@ describe('useConfigWizard', () => {
       expect(parsed.endpoint).toBe('https://fc.example.com');
       expect(parsed.username).toBe('admin');
       expect(parsed.password).toBe('secret');
+      expect(parsed.token).toBeUndefined();
     });
 
-    it('builds both insights and flightctl staging files when both enabled', () => {
+    it('builds flightctl staging file with token auth for step 5', () => {
       const state = createInitialWizardState();
+      state.enrollment.flightControl = {
+        endpoint: 'https://fc.example.com',
+        authMethod: 'token' as const,
+        token: 'my-bearer-token',
+        username: null,
+        password: null,
+      };
+
+      const files = buildStepConfigFiles(WIZARD_STEPS.ENROLLMENT, state);
+      const fcFile = files.find(f => f.path === 'boardingpass/staging/flightctl.json');
+      expect(fcFile).toBeDefined();
+      const parsed = JSON.parse(fcFile!.content);
+      expect(parsed.endpoint).toBe('https://fc.example.com');
+      expect(parsed.token).toBe('my-bearer-token');
+      expect(parsed.username).toBeUndefined();
+      expect(parsed.password).toBeUndefined();
+    });
+
+    it('builds both insights and flightctl staging files when both enabled (RHEL 10+)', () => {
+      const state = createInitialWizardState();
+      state.osVersion = '10.1';
       state.enrollment.insights = {
         endpoint: 'https://cert-api.access.redhat.com',
         orgId: 'org123',
@@ -639,6 +665,8 @@ describe('useConfigWizard', () => {
       };
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: 'admin',
         password: 'secret',
       };
@@ -658,6 +686,28 @@ describe('useConfigWizard', () => {
       const fcFile = files.find(f => f.path === 'boardingpass/staging/flightctl.json');
       expect(fcFile).toBeDefined();
       expect(fcFile!.mode).toBe(0o600);
+    });
+
+    it('does not set disable_remote_management on RHEL 9 even when both enabled', () => {
+      const state = createInitialWizardState();
+      state.osVersion = '9.7';
+      state.enrollment.insights = {
+        endpoint: 'https://cert-api.access.redhat.com',
+        orgId: 'org123',
+        activationKey: 'key456',
+      };
+      state.enrollment.flightControl = {
+        endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
+        username: 'admin',
+        password: 'secret',
+      };
+
+      const files = buildStepConfigFiles(WIZARD_STEPS.ENROLLMENT, state);
+      const insightsFile = files.find(f => f.path === 'boardingpass/staging/insights.json');
+      const insightsParsed = JSON.parse(insightsFile!.content);
+      expect(insightsParsed.disable_remote_management).toBe(false);
     });
   });
 
@@ -718,6 +768,8 @@ describe('useConfigWizard', () => {
       const state = createInitialWizardState();
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: 'admin',
         password: 'secret',
       };
@@ -937,6 +989,8 @@ describe('useConfigWizard', () => {
       };
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: 'admin',
         password: 'secret',
       };

@@ -42,7 +42,13 @@ rm -f "$STAGING_FILE"
 # Build command — disable remote management when Flight Control handles it
 RHC_ARGS=(connect --organization "$ORG_ID" --activation-key "$ACTIVATION_KEY")
 if [ "$DISABLE_MGMT" = "true" ]; then
-    RHC_ARGS+=(--disable-feature remote-management)
+    if rhc connect --help 2>&1 | grep -q -- '--disable-feature'; then
+        RHC_ARGS+=(--disable-feature remote-management)
+    else
+        echo "Error: disable_remote_management requested but rhc does not support --disable-feature" >&2
+        echo "Hint: --disable-feature requires rhc 0.3+ (RHEL 10+)" >&2
+        exit 1
+    fi
 fi
 
 rhc "${RHC_ARGS[@]}" || {

@@ -15,7 +15,7 @@
 .PHONY: clean-service clean-cli clean-cache-app clean-native-app clean-app clean-all
 .PHONY: clean-service-full clean-cli-full clean-app-full clean-all-full
 .PHONY: rebuild-app-ios rebuild-app-android fix-app
-.PHONY: release deploy undeploy coverage deps deps-update
+.PHONY: release release-app-ios deploy undeploy coverage deps deps-update
 
 # ============================================================================
 # Build Variables
@@ -76,9 +76,9 @@ APP_TEST_ARGS ?=
 # Use the exact name shown in the "Name" column
 IOS_PHYSICAL_DEVICE ?= a phone
 
-# Enable mDNS entitlement (requires paid Apple Developer account)
-# Set to "false" to disable: make build-app-ios ENABLE_MDNS_ENTITLEMENT=false
-ENABLE_MDNS_ENTITLEMENT ?= true
+# Enable mDNS entitlement (requires Apple approval of the Multicast Networking capability)
+# Set to "true" to enable: make build-app-ios ENABLE_MDNS_ENTITLEMENT=true
+ENABLE_MDNS_ENTITLEMENT ?= false
 
 # ============================================================================
 # Default Target
@@ -553,8 +553,15 @@ fix-app:
 	@echo "Fix complete. Run 'make run-app-ios' or 'make run-app-android' to start the app."
 
 # ============================================================================
-# Release & Deployment (preserve existing functionality)
+# Release & Deployment
 # ============================================================================
+
+## release-app-ios: Build iOS app and submit to TestFlight via EAS (set APP_VERSION=x.y.z to override)
+release-app-ios:
+	@echo "Building iOS app for TestFlight..."
+	@cd $(MOBILE_DIR) && APP_VERSION=$(APP_VERSION) eas build --platform ios --profile production --non-interactive
+	@echo "Submitting to TestFlight..."
+	@cd $(MOBILE_DIR) && eas submit --platform ios --latest --non-interactive
 
 ## release: Build release packages (RPM, DEB, archives)
 release:

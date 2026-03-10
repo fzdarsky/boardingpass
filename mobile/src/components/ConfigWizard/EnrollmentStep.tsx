@@ -2,16 +2,24 @@
  * EnrollmentStep Component (Step 5)
  *
  * Optional Insights enrollment (endpoint, Org ID, Activation Key).
- * Optional Flight Control enrollment (endpoint, username, password).
+ * Optional Flight Control enrollment (endpoint, token or username/password).
  */
 
 import React, { useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, TextInput, Switch, Divider, HelperText, useTheme } from 'react-native-paper';
+import {
+  Text,
+  TextInput,
+  Switch,
+  Divider,
+  HelperText,
+  RadioButton,
+  useTheme,
+} from 'react-native-paper';
 import { useWizard } from '../../contexts/WizardContext';
 import { validateHttpsUrl } from '../../utils/network-validation';
 import type { InsightsConfig, FlightControlConfig } from '../../types/wizard';
-import { DEFAULT_INSIGHTS_ENDPOINT } from '../../types/wizard';
+import { DEFAULT_INSIGHTS_ENDPOINT, canDisableRemoteManagement } from '../../types/wizard';
 import { spacing } from '../../theme';
 
 export default function EnrollmentStep() {
@@ -48,7 +56,9 @@ export default function EnrollmentStep() {
     (enabled: boolean) => {
       updateEnrollment({
         ...state.enrollment,
-        flightControl: enabled ? { endpoint: '', username: '', password: '' } : null,
+        flightControl: enabled
+          ? { endpoint: '', authMethod: 'token', token: '', username: null, password: null }
+          : null,
       });
     },
     [state.enrollment, updateEnrollment]
@@ -60,6 +70,23 @@ export default function EnrollmentStep() {
       updateEnrollment({
         ...state.enrollment,
         flightControl: { ...flightControl, ...updates },
+      });
+    },
+    [flightControl, state.enrollment, updateEnrollment]
+  );
+
+  const setAuthMethod = useCallback(
+    (method: string) => {
+      if (!flightControl) return;
+      updateEnrollment({
+        ...state.enrollment,
+        flightControl: {
+          ...flightControl,
+          authMethod: method as 'token' | 'password',
+          token: method === 'token' ? (flightControl.token ?? '') : null,
+          username: method === 'password' ? (flightControl.username ?? '') : null,
+          password: method === 'password' ? (flightControl.password ?? '') : null,
+        },
       });
     },
     [flightControl, state.enrollment, updateEnrollment]
@@ -145,8 +172,9 @@ export default function EnrollmentStep() {
 
       {insights && flightControl && (
         <HelperText type="info" visible={true} style={styles.managementNote}>
-          Remote management will be handled by Flight Control. Insights will be used for analytics
-          only.
+          {canDisableRemoteManagement(state.osVersion)
+            ? 'Remote management will be handled by Flight Control. Insights will be used for analytics only.'
+            : 'Note: Remote management via Insights cannot be disabled on this device (requires RHEL 10+). Both Insights and Flight Control will manage this device.'}
         </HelperText>
       )}
 
@@ -184,25 +212,65 @@ export default function EnrollmentStep() {
             </HelperText>
           )}
 
-          <TextInput
-            label="Username"
-            value={flightControl.username}
-            onChangeText={v => updateFlightControl({ username: v })}
-            mode="outlined"
-            autoCapitalize="none"
-            accessibilityLabel="Flight Control username"
-            style={styles.input}
-          />
+          <Text variant="labelMedium" style={styles.authMethodLabel}>
+            Authentication Method
+          </Text>
+          <RadioButton.Group onValueChange={setAuthMethod} value={flightControl.authMethod}>
+            <RadioButton.Item
+              label="Bearer Token"
+              value="token"
+              accessibilityLabel="Token authentication"
+            />
+            <RadioButton.Item
+              label="Username / Password"
+              value="password"
+              accessibilityLabel="Password authentication"
+            />
+          </RadioButton.Group>
 
-          <TextInput
-            label="Password"
-            value={flightControl.password}
-            onChangeText={v => updateFlightControl({ password: v })}
-            mode="outlined"
-            secureTextEntry
-            accessibilityLabel="Flight Control password"
-            style={styles.input}
-          />
+          {flightControl.authMethod === 'token' && (
+            <>
+              <TextInput
+                label="Bearer Token"
+                value={flightControl.token ?? ''}
+                onChangeText={v => updateFlightControl({ token: v })}
+                mode="outlined"
+                secureTextEntry
+                autoCapitalize="none"
+                accessibilityLabel="Flight Control bearer token"
+                style={styles.input}
+              />
+              {!flightControl.token && (
+                <HelperText type="info" visible={true}>
+                  Required for Flight Control enrollment
+                </HelperText>
+              )}
+            </>
+          )}
+
+          {flightControl.authMethod === 'password' && (
+            <>
+              <TextInput
+                label="Username"
+                value={flightControl.username ?? ''}
+                onChangeText={v => updateFlightControl({ username: v })}
+                mode="outlined"
+                autoCapitalize="none"
+                accessibilityLabel="Flight Control username"
+                style={styles.input}
+              />
+
+              <TextInput
+                label="Password"
+                value={flightControl.password ?? ''}
+                onChangeText={v => updateFlightControl({ password: v })}
+                mode="outlined"
+                secureTextEntry
+                accessibilityLabel="Flight Control password"
+                style={styles.input}
+              />
+            </>
+          )}
         </View>
       )}
     </View>
@@ -231,6 +299,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   input: {
+    marginBottom: spacing.xs,
+  },
+  authMethodLabel: {
+    marginTop: spacing.sm,
     marginBottom: spacing.xs,
   },
   managementNote: {

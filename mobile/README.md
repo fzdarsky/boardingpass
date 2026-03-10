@@ -431,6 +431,55 @@ npm run ios                # Rebuild
 - UI Rendering: 60 FPS
 - Bundle Size: < 50MB
 
+## Releasing to Testers (TestFlight)
+
+The iOS app is distributed to testers via TestFlight using [EAS Build](https://docs.expo.dev/build/introduction/). Build configuration is in [eas.json](eas.json).
+
+### First-Time Setup
+
+1. Install EAS CLI: `npm install -g eas-cli`
+2. Log in: `eas login`
+3. Initialize project: `eas init` (sets the `projectId` in `app.config.js`)
+4. Configure Apple credentials: `eas credentials` (EAS manages certificates and provisioning profiles)
+5. Create the app in [App Store Connect](https://appstoreconnect.apple.com/) with bundle ID `org.boardingpass-project.mobile`
+6. Update `ascAppId` in `eas.json` with the App Store Connect app ID
+
+### Build & Submit
+
+**Manual release:**
+
+```bash
+eas build --platform ios --profile production    # Build on EAS cloud (~15 min)
+eas submit --platform ios --latest               # Upload to TestFlight
+```
+
+Or from the project root: `make release-app-ios`
+
+**Automated release:** Push a tag matching `app-v*.*.*`:
+
+```bash
+git tag app-v1.0.0 && git push origin app-v1.0.0
+```
+
+The [release-app](../.github/workflows/release-app.yaml) workflow builds and submits automatically.
+
+### Adding Testers
+
+In [App Store Connect](https://appstoreconnect.apple.com/) > Your App > TestFlight:
+
+- **Internal testers** (up to 100 team members): add by Apple ID email, access is immediate
+- **External testers** (up to 10,000): add by email or share a public link, first build requires beta review (~24 hours)
+
+Testers install the free [TestFlight](https://apps.apple.com/app/testflight/id899247664) app, open the invitation link, and tap Install. Builds expire after 90 days.
+
+### Build Profiles
+
+| Profile        | Distribution           | Use Case                    |
+| -------------- | ---------------------- | --------------------------- |
+| `development`  | Internal (simulator)   | Day-to-day development      |
+| `preview`      | Internal (ad-hoc)      | Quick QA without TestFlight |
+| `production`   | App Store / TestFlight | Tester and release builds   |
+
 ## Contributing
 
 Before submitting changes:

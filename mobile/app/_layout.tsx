@@ -2,7 +2,7 @@
 // MUST be imported before any SRP/crypto code is loaded.
 import 'react-native-get-random-values';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { useColorScheme, StyleSheet, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -29,6 +29,13 @@ export default function RootLayout() {
     return () => clearTimeout(timer);
   }, []);
 
+  const renderVersionText = useCallback(
+    () => (
+      <Text style={[styles.versionText, { color: theme.colors.onPrimary }]}>v{appVersion}</Text>
+    ),
+    [theme.colors.onPrimary]
+  );
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <PaperProvider theme={theme}>
@@ -48,11 +55,7 @@ export default function RootLayout() {
               name="index"
               options={{
                 title: 'Devices',
-                headerRight: () => (
-                  <Text style={[styles.versionText, { color: theme.colors.onPrimary }]}>
-                    v{appVersion}
-                  </Text>
-                ),
+                headerRight: renderVersionText,
               }}
             />
             <Stack.Screen

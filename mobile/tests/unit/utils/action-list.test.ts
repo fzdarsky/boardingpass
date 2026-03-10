@@ -239,7 +239,13 @@ describe('buildActionList', () => {
     const state = makeState({
       enrollment: {
         insights: null,
-        flightControl: { endpoint: 'https://fc.example.com', username: 'user', password: 'pass' },
+        flightControl: {
+          endpoint: 'https://fc.example.com',
+          authMethod: 'password' as const,
+          token: null,
+          username: 'user',
+          password: 'pass',
+        },
       },
     });
 
@@ -256,7 +262,13 @@ describe('buildActionList', () => {
           orgId: '123',
           activationKey: 'key1',
         },
-        flightControl: { endpoint: 'https://fc.example.com', username: 'user', password: 'pass' },
+        flightControl: {
+          endpoint: 'https://fc.example.com',
+          authMethod: 'password' as const,
+          token: null,
+          username: 'user',
+          password: 'pass',
+        },
       },
     });
 

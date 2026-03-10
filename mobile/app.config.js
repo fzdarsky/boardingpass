@@ -5,10 +5,16 @@
  * It takes precedence over app.json when both exist.
  *
  * Environment Variables:
+ *   APP_VERSION             - Override the app version (e.g., "0.1.0"). Set automatically
+ *                             by CI from the git tag (app-v0.1.0 -> 0.1.0).
+ *                             Default: "0.1.0"
  *   ENABLE_MDNS_ENTITLEMENT - Set to "false" to disable the multicast networking
  *                             entitlement (requires paid Apple Developer account).
  *                             Default: "true"
  */
+
+// App version from environment (set by CI from git tag) or default
+const appVersion = process.env.APP_VERSION || '0.1.0';
 
 // Check if mDNS entitlement should be enabled (default: true)
 const enableMdnsEntitlement = process.env.ENABLE_MDNS_ENTITLEMENT !== 'false';
@@ -52,7 +58,7 @@ module.exports = {
   expo: {
     name: 'BoardingPass',
     slug: 'boardingpass-mobile',
-    version: '1.0.0',
+    version: appVersion,
     orientation: 'portrait',
     icon: './assets/icon.png',
     splash: {
@@ -75,6 +81,7 @@ module.exports = {
         NSBluetoothAlwaysUsageDescription:
           'Bluetooth is used to discover nearby BoardingPass devices',
         NSBonjourServices: ['_boardingpass._tcp'],
+        ITSAppUsesNonExemptEncryption: false,
       },
       entitlements: {},
     },
@@ -105,7 +112,7 @@ module.exports = {
         origin: false,
       },
       eas: {
-        projectId: 'boardingpass-mobile',
+        projectId: '6a70081d-f13f-43e1-9cef-1600d138c47d',
       },
     },
   },
