@@ -28,12 +28,25 @@ type Config struct {
 
 // ServiceSettings contains service-level configuration.
 type ServiceSettings struct {
-	InactivityTimeout string `yaml:"inactivity_timeout"`
-	SessionTTL        string `yaml:"session_ttl"`
-	SentinelFile      string `yaml:"sentinel_file"`
-	Port              int    `yaml:"port"`
-	TLSCert           string `yaml:"tls_cert"`
-	TLSKey            string `yaml:"tls_key"`
+	InactivityTimeout string       `yaml:"inactivity_timeout"`
+	SessionTTL        string       `yaml:"session_ttl"`
+	SentinelFile      string       `yaml:"sentinel_file"`
+	Port              int          `yaml:"port"`
+	TLSCert           string       `yaml:"tls_cert"`
+	TLSKey            string       `yaml:"tls_key"`
+	MDNS              MDNSSettings `yaml:"mdns"`
+}
+
+// MDNSSettings contains mDNS service announcement configuration.
+type MDNSSettings struct {
+	Enabled      *bool  `yaml:"enabled,omitempty"`       // default: true
+	InstanceName string `yaml:"instance_name,omitempty"` // default: "BoardingPass-<hostname>"
+}
+
+// IsEnabled returns whether mDNS announcements are enabled.
+// Defaults to true when not explicitly set.
+func (m *MDNSSettings) IsEnabled() bool {
+	return m.Enabled == nil || *m.Enabled
 }
 
 // TransportSettings contains transport-specific configuration.

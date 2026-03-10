@@ -137,7 +137,8 @@ boardingpass/
 │   ├── logging/               # JSON logging with secret redaction
 │   ├── network/               # Interface enumeration, link state, IP addresses
 │   ├── provisioning/          # Config bundle parsing, atomic file ops
-│   └── tls/                   # Self-signed cert generation, TLS 1.3+ config
+│   ├── tls/                   # Self-signed cert generation, TLS 1.3+ config
+│   └── transport/             # WiFi AP, Bluetooth PAN, USB transport handlers
 ├── pkg/protocol/              # Shared types for API and mobile app
 ├── tests/                     # Unit, integration, contract, and e2e tests
 ├── build/                     # systemd unit, sudoers config, Containerfile
@@ -715,9 +716,12 @@ func ProcessRequest(ctx context.Context, req *Request) error {
 ## References
 
 - **Project README**: [README.md](../README.md)
+- **Mobile App Development**: [mobile/README.md](../mobile/README.md)
 - **Deployment Guide**: [deployment.md](deployment.md)
 - **API Documentation**: [api.md](api.md)
 - **Security Guide**: [security.md](security.md)
+- **CLI Reference**: [cli-reference.md](cli-reference.md)
+- **Service Configuration**: [configuring-the-service.md](configuring-the-service.md)
 - **OpenAPI Specification**: [specs/001-boardingpass-api/contracts/openapi.yaml](../specs/001-boardingpass-api/contracts/openapi.yaml)
 - **Implementation Plan**: [specs/001-boardingpass-api/plan.md](../specs/001-boardingpass-api/plan.md)
 - **Feature Specification**: [specs/001-boardingpass-api/spec.md](../specs/001-boardingpass-api/spec.md)

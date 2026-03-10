@@ -8,6 +8,9 @@ service:
   port: 8443                     # HTTPS listen port (shared by all transports)
   tls_cert: "/var/lib/boardingpass/tls/server.crt"  # Path to TLS certificate (auto-generated if missing)
   tls_key: "/var/lib/boardingpass/tls/server.key"   # Path to TLS private key (auto-generated if missing)
+  mdns:
+    enabled: true                # Announce service via mDNS/Bonjour for automatic discovery (default: true)
+    # instance_name: ""          # mDNS instance name (default: "BoardingPass-<hostname>")
 
 transports:
   # Ethernet transport (always available, no extra packages required)
@@ -25,7 +28,7 @@ transports:
   # Required hardware: WiFi adapter with AP mode support
   # Systemd units: boardingpass-wifi@.service, boardingpass-dnsmasq@.service
   wifi:
-    enabled: false
+    enabled: true
     interface: ""                # WiFi interface (empty = auto-detect via /sys/class/net/*/wireless)
     ssid: ""                     # Network name (default: "BoardingPass-<hostname>")
     # password: "changeme123"    # WPA2 password (min 8 chars); omit or leave empty for open network
@@ -54,7 +57,7 @@ transports:
   #     enabled: true
   #     address: "10.0.0.1"
   bluetooth:
-    enabled: false
+    enabled: true
     adapter: "hci0"              # Bluetooth adapter name (from /sys/class/bluetooth/)
     device_name: ""              # BLE advertised name (default: "BoardingPass-<hostname>")
     address: "10.0.1.1"          # Address advertised via BLE; also used as PAN bridge IP
@@ -70,7 +73,7 @@ transports:
   # Required hardware: USB port
   # Supported USB drivers: cdc_ether (standard), rndis_host (Android), ipheth (iOS)
   usb:
-    enabled: false
+    enabled: true
     interface_prefix: ""         # Optional: restrict to interfaces with this name prefix (empty = all USB interfaces)
 
 # Command allow-list

@@ -46,9 +46,7 @@ GOMOD := $(GOCMD) mod
 GOVET := $(GOCMD) vet
 GOTESTSUM := go tool gotestsum
 
-# Build flags
-LDFLAGS := -s -w
-BUILD_FLAGS := -trimpath -ldflags="$(LDFLAGS)"
+# Build flags (version injection handled by GoReleaser via goreleaser build --snapshot)
 
 # Mobile app (npm ci in CI, npm install locally)
 NPM_INSTALL := $(if $(CI),npm ci,npm install)
@@ -77,6 +75,10 @@ APP_TEST_ARGS ?=
 # To find your device name, run: xcrun devicectl list devices
 # Use the exact name shown in the "Name" column
 IOS_PHYSICAL_DEVICE ?= a phone
+
+# Enable mDNS entitlement (requires paid Apple Developer account)
+# Set to "false" to disable: make build-app-ios ENABLE_MDNS_ENTITLEMENT=false
+ENABLE_MDNS_ENTITLEMENT ?= true
 
 # ============================================================================
 # Default Target
@@ -126,6 +128,7 @@ help:
 	@echo "  build-service           - Build service binary"
 	@echo "  build-cli               - Build CLI binary"
 	@echo "  build-app-ios           - Generate iOS native project (expo prebuild)"
+	@echo "                            Use ENABLE_MDNS_ENTITLEMENT=false without paid Apple Developer account"
 	@echo "  build-app-android       - Generate Android native project"
 	@echo "  build-app               - Generate both iOS and Android projects"
 	@echo "  build-all               - Build all components"
@@ -262,7 +265,7 @@ lint-all: lint-service lint-app
 build-service:
 	@echo "Building $(SERVICE_BINARY_NAME)..."
 	@mkdir -p $(BIN_DIR)
-	@CGO_ENABLED=0 $(GOBUILD) $(BUILD_FLAGS) -o $(BIN_DIR)/$(SERVICE_BINARY_NAME) ./cmd/boardingpass
+	@goreleaser build --snapshot --single-target --id boardingpass --clean -o $(BIN_DIR)/$(SERVICE_BINARY_NAME)
 	@echo "Binary built: $(BIN_DIR)/$(SERVICE_BINARY_NAME)"
 	@ls -lh $(BIN_DIR)/$(SERVICE_BINARY_NAME)
 
@@ -270,14 +273,17 @@ build-service:
 build-cli:
 	@echo "Building $(CLI_BINARY_NAME)..."
 	@mkdir -p $(BIN_DIR)
-	@CGO_ENABLED=0 $(GOBUILD) $(BUILD_FLAGS) -o $(BIN_DIR)/$(CLI_BINARY_NAME) ./cmd/boarding
+	@goreleaser build --snapshot --single-target --id boarding --clean -o $(BIN_DIR)/$(CLI_BINARY_NAME)
 	@echo "Binary built: $(BIN_DIR)/$(CLI_BINARY_NAME)"
 	@ls -lh $(BIN_DIR)/$(CLI_BINARY_NAME)
 
 ## build-app-ios: Generate iOS native project
 build-app-ios: generate-app
 	@echo "Generating iOS native project..."
-	@cd $(MOBILE_DIR) && npx expo prebuild --platform ios $(if $(CI),--clean,)
+	@if [ "$(ENABLE_MDNS_ENTITLEMENT)" = "false" ]; then \
+		echo "Note: mDNS entitlement disabled (no paid Apple Developer account)"; \
+	fi
+	@cd $(MOBILE_DIR) && ENABLE_MDNS_ENTITLEMENT=$(ENABLE_MDNS_ENTITLEMENT) npx expo prebuild --platform ios $(if $(CI),--clean,)
 	@echo "iOS project generated: $(MOBILE_IOS_DIR)/"
 
 ## build-app-android: Generate Android native project

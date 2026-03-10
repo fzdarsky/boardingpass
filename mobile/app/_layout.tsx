@@ -4,12 +4,15 @@ import 'react-native-get-random-values';
 
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
-import { useColorScheme, StyleSheet } from 'react-native';
+import { useColorScheme, StyleSheet, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
 import * as SplashScreen from 'expo-splash-screen';
+import Constants from 'expo-constants';
 import { AppProvider } from '@/contexts/AppProvider';
 import { lightTheme, darkTheme } from '@/theme';
+
+const appVersion = Constants.expoConfig?.version ?? 'unknown';
 
 const SPLASH_MIN_MS = 3000;
 
@@ -45,6 +48,11 @@ export default function RootLayout() {
               name="index"
               options={{
                 title: 'Devices',
+                headerRight: () => (
+                  <Text style={[styles.versionText, { color: theme.colors.onPrimary }]}>
+                    v{appVersion}
+                  </Text>
+                ),
               }}
             />
             <Stack.Screen
@@ -75,5 +83,10 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  versionText: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginRight: 8,
   },
 });

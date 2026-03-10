@@ -24,6 +24,7 @@
     "typecheck": "tsc --noEmit",
     "generate:types": "openapi-typescript ../specs/001-boardingpass-api/contracts/openapi.yaml --output src/types/api.ts",
     "validate:spec": "openapi-generator-cli validate -i ../specs/001-boardingpass-api/contracts/openapi.yaml",
+    "postinstall": "patch-package",
     "clean": "rm -rf node_modules ios android .expo",
     "prebuild": "expo prebuild"
   },
@@ -78,6 +79,7 @@
     "jest": "^29.7.0",
     "jest-expo": "~51.0.0",
     "openapi-typescript": "^6.7.3",
+    "patch-package": "^8.0.1",
     "prettier": "^3.8.1",
     "react-native-reanimated": "~3.10.1",
     "typescript": "~5.3.3"

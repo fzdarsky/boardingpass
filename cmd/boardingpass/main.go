@@ -19,14 +19,9 @@ import (
 	"github.com/fzdarsky/boardingpass/internal/config"
 	"github.com/fzdarsky/boardingpass/internal/lifecycle"
 	"github.com/fzdarsky/boardingpass/internal/logging"
+	"github.com/fzdarsky/boardingpass/internal/mdns"
 	"github.com/fzdarsky/boardingpass/internal/transport"
-)
-
-var (
-	// version is set by build flags
-	version = "dev"
-	// commit is set by build flags
-	commit = "none"
+	"github.com/fzdarsky/boardingpass/pkg/version"
 )
 
 func main() {
@@ -37,6 +32,10 @@ func main() {
 	}
 
 	switch subcommand {
+	case "version":
+		printVersion()
+		return
+
 	case "init":
 		// Run initialization
 		if err := runInit(); err != nil {
@@ -79,9 +78,10 @@ func run(configPath, verifierPath string) error {
 	logger := logging.New(logLevel, logFormat)
 
 	// Log startup information
+	versionInfo := version.Get()
 	logger.Info("BoardingPass service starting", map[string]any{
-		"version":        version,
-		"commit":         commit,
+		"version":        versionInfo.String(),
+		"commit":         versionInfo.GitCommit,
 		"log_level":      cfg.Logging.Level,
 		"log_format":     cfg.Logging.Format,
 		"port":           cfg.Service.Port,
@@ -209,6 +209,19 @@ func run(configPath, verifierPath string) error {
 	// Register captive portal routes (suppresses iOS/Android captive portal popups)
 	api.RegisterCaptivePortalRoutes(mux)
 
+	// Create mDNS announcer (before transports, so USB callbacks can notify it)
+	var announcer *mdns.Announcer
+	if cfg.Service.MDNS.IsEnabled() {
+		announcer = mdns.NewAnnouncer(mdns.ServiceRecord{
+			Instance: mdnsInstanceName(cfg),
+			Service:  "_boardingpass._tcp",
+			Domain:   "local",
+			Port:     cfg.Service.Port,
+			TXT:      map[string]string{"version": version.Get().String()},
+			Addrs:    collectTransportAddresses(cfg),
+		}, logger)
+	}
+
 	// Create and configure transport manager
 	transportMgr := transport.NewManager(cfg, logger)
 
@@ -220,7 +233,25 @@ func run(configPath, verifierPath string) error {
 	}
 	if cfg.Transports.USB.Enabled {
 		usbHandler := transport.NewUSBHandler(cfg.Transports.USB, cfg.Service.Port, logger)
-		usbHandler.SetListenerCallbacks(server.AddListener, server.RemoveListener)
+		addListener := server.AddListener
+		removeListener := server.RemoveListener
+		if announcer != nil {
+			addListener = func(address string, port int) error {
+				if err := server.AddListener(address, port); err != nil {
+					return err
+				}
+				announcer.AddAddress(net.ParseIP(address))
+				return nil
+			}
+			removeListener = func(address string) error {
+				if err := server.RemoveListener(address); err != nil {
+					return err
+				}
+				announcer.RemoveAddress(net.ParseIP(address))
+				return nil
+			}
+		}
+		usbHandler.SetListenerCallbacks(addListener, removeListener)
 		transportMgr.Register(usbHandler)
 	}
 
@@ -253,6 +284,16 @@ func run(configPath, verifierPath string) error {
 		}
 	}
 
+	// Start mDNS announcer (non-fatal)
+	if announcer != nil {
+		if err := announcer.Start(shutdownCtx); err != nil {
+			logger.Warn("mDNS announcer failed to start", map[string]any{
+				"error": err.Error(),
+			})
+			announcer = nil
+		}
+	}
+
 	// Start the server
 	logger.Info("HTTPS server ready to accept connections")
 
@@ -269,6 +310,11 @@ func run(configPath, verifierPath string) error {
 
 	// Notify systemd that the service is stopping
 	notifySystemd("STOPPING=1")
+
+	// Stop mDNS announcer (sends goodbye packets)
+	if announcer != nil {
+		announcer.Stop()
+	}
 
 	// Stop captive portal server
 	if captivePortal != nil {
@@ -337,4 +383,80 @@ func parseLogFormat(format string) logging.LogFormat {
 	default:
 		return logging.FormatJSON
 	}
+}
+
+// mdnsInstanceName returns the mDNS instance name from config or a default based on hostname.
+func mdnsInstanceName(cfg *config.Config) string {
+	if cfg.Service.MDNS.InstanceName != "" {
+		return cfg.Service.MDNS.InstanceName
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown"
+	}
+	return "BoardingPass-" + hostname
+}
+
+// collectTransportAddresses gathers static IP addresses from all enabled transports.
+func collectTransportAddresses(cfg *config.Config) []net.IP {
+	var addrs []net.IP
+	if cfg.Transports.Ethernet.Address != "" {
+		if ip := net.ParseIP(cfg.Transports.Ethernet.Address); ip != nil {
+			addrs = append(addrs, ip)
+		}
+	}
+	if cfg.Transports.WiFi.Enabled && cfg.Transports.WiFi.Address != "" {
+		if ip := net.ParseIP(cfg.Transports.WiFi.Address); ip != nil {
+			addrs = append(addrs, ip)
+		}
+	}
+	if cfg.Transports.Bluetooth.Enabled && cfg.Transports.Bluetooth.Address != "" {
+		if ip := net.ParseIP(cfg.Transports.Bluetooth.Address); ip != nil {
+			addrs = append(addrs, ip)
+		}
+	}
+	// If no static addresses configured, use all non-loopback interface addresses
+	if len(addrs) == 0 {
+		addrs = discoverInterfaceAddresses()
+	}
+	return addrs
+}
+
+func printVersion() {
+	v := version.Get()
+	fmt.Printf("gitVersion: %s\n", v.GitVersion)
+	fmt.Printf("gitCommit: %s\n", v.GitCommit)
+	fmt.Printf("gitTreeState: %s\n", v.GitTreeState)
+	fmt.Printf("buildDate: %s\n", v.BuildDate)
+	fmt.Printf("goVersion: %s\n", v.GoVersion)
+	fmt.Printf("compiler: %s\n", v.Compiler)
+	fmt.Printf("platform: %s\n", v.Platform)
+}
+
+// discoverInterfaceAddresses returns IPv4 addresses from all non-loopback interfaces.
+func discoverInterfaceAddresses() []net.IP {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil
+	}
+	var addrs []net.IP
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+		ifAddrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+		for _, a := range ifAddrs {
+			ipNet, ok := a.(*net.IPNet)
+			if !ok {
+				continue
+			}
+			if v4 := ipNet.IP.To4(); v4 != nil {
+				addrs = append(addrs, v4)
+			}
+		}
+	}
+	return addrs
 }

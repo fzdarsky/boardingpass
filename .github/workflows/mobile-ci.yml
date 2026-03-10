@@ -4,17 +4,14 @@ on:
   push:
     branches:
       - main
-      - '003-mobile-onboarding-app'
     paths:
       - 'mobile/**'
-      - 'specs/001-boardingpass-api/contracts/**'
       - '.github/workflows/mobile-ci.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'mobile/**'
-      - 'specs/001-boardingpass-api/contracts/**'
       - '.github/workflows/mobile-ci.yml'
 
 jobs:
