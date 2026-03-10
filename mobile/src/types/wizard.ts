@@ -144,6 +144,7 @@ export interface WizardState {
   maxReachedStep: number;
   applyMode: 'immediate' | 'deferred' | null;
   serviceInterfaceName: string | null;
+  osVersion: string | null;
   hostname: HostnameConfig;
   networkInterface: InterfaceConfig;
   addressing: AddressingConfig;
@@ -178,6 +179,19 @@ export const TOTAL_STEPS = 6;
 
 export const DEFAULT_INSIGHTS_ENDPOINT = 'https://cert-api.access.redhat.com';
 
+/** Minimum RHEL major version that supports rhc --disable-feature. */
+const MIN_RHEL_DISABLE_FEATURE = 10;
+
+/**
+ * Check if the device OS supports disabling remote management via rhc.
+ * The --disable-feature flag requires rhc 0.3+ which ships with RHEL 10+.
+ */
+export function canDisableRemoteManagement(osVersion: string | null): boolean {
+  if (!osVersion) return false;
+  const major = parseInt(osVersion.split('.')[0], 10);
+  return !isNaN(major) && major >= MIN_RHEL_DISABLE_FEATURE;
+}
+
 // ── Initial State Factory ──
 
 export function createInitialWizardState(): WizardState {
@@ -186,6 +200,7 @@ export function createInitialWizardState(): WizardState {
     maxReachedStep: WIZARD_STEPS.HOSTNAME,
     applyMode: null,
     serviceInterfaceName: null,
+    osVersion: null,
     hostname: { hostname: '', original: '' },
     networkInterface: {
       interfaceName: '',

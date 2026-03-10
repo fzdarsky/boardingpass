@@ -630,8 +630,9 @@ describe('useConfigWizard', () => {
       expect(parsed.password).toBe('secret');
     });
 
-    it('builds both insights and flightctl staging files when both enabled', () => {
+    it('builds both insights and flightctl staging files when both enabled (RHEL 10+)', () => {
       const state = createInitialWizardState();
+      state.osVersion = '10.1';
       state.enrollment.insights = {
         endpoint: 'https://cert-api.access.redhat.com',
         orgId: 'org123',
@@ -658,6 +659,26 @@ describe('useConfigWizard', () => {
       const fcFile = files.find(f => f.path === 'boardingpass/staging/flightctl.json');
       expect(fcFile).toBeDefined();
       expect(fcFile!.mode).toBe(0o600);
+    });
+
+    it('does not set disable_remote_management on RHEL 9 even when both enabled', () => {
+      const state = createInitialWizardState();
+      state.osVersion = '9.7';
+      state.enrollment.insights = {
+        endpoint: 'https://cert-api.access.redhat.com',
+        orgId: 'org123',
+        activationKey: 'key456',
+      };
+      state.enrollment.flightControl = {
+        endpoint: 'https://fc.example.com',
+        username: 'admin',
+        password: 'secret',
+      };
+
+      const files = buildStepConfigFiles(WIZARD_STEPS.ENROLLMENT, state);
+      const insightsFile = files.find(f => f.path === 'boardingpass/staging/insights.json');
+      const insightsParsed = JSON.parse(insightsFile!.content);
+      expect(insightsParsed.disable_remote_management).toBe(false);
     });
   });
 

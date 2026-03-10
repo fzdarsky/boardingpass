@@ -20,7 +20,7 @@ import {
   validateHttpsUrl,
   validateNtpServer,
 } from '../utils/network-validation';
-import { WIZARD_STEPS, TOTAL_STEPS } from '../types/wizard';
+import { WIZARD_STEPS, TOTAL_STEPS, canDisableRemoteManagement } from '../types/wizard';
 import type { WizardState, ConnectivityResult, PlannedAction } from '../types/wizard';
 import { generateNmConnection, getConnectionPath } from '../utils/nm-connection';
 import { buildActionList } from '../utils/action-list';
@@ -141,7 +141,9 @@ export function buildStepConfigFiles(step: number, state: WizardState): RawConfi
             endpoint: state.enrollment.insights.endpoint,
             org_id: state.enrollment.insights.orgId,
             activation_key: state.enrollment.insights.activationKey,
-            disable_remote_management: state.enrollment.flightControl !== null,
+            disable_remote_management:
+              state.enrollment.flightControl !== null &&
+              canDisableRemoteManagement(state.osVersion),
           }),
           mode: 0o600,
         });

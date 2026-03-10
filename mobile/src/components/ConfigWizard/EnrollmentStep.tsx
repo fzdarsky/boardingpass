@@ -11,7 +11,7 @@ import { Text, TextInput, Switch, Divider, HelperText, useTheme } from 'react-na
 import { useWizard } from '../../contexts/WizardContext';
 import { validateHttpsUrl } from '../../utils/network-validation';
 import type { InsightsConfig, FlightControlConfig } from '../../types/wizard';
-import { DEFAULT_INSIGHTS_ENDPOINT } from '../../types/wizard';
+import { DEFAULT_INSIGHTS_ENDPOINT, canDisableRemoteManagement } from '../../types/wizard';
 import { spacing } from '../../theme';
 
 export default function EnrollmentStep() {
@@ -145,8 +145,9 @@ export default function EnrollmentStep() {
 
       {insights && flightControl && (
         <HelperText type="info" visible={true} style={styles.managementNote}>
-          Remote management will be handled by Flight Control. Insights will be used for analytics
-          only.
+          {canDisableRemoteManagement(state.osVersion)
+            ? 'Remote management will be handled by Flight Control. Insights will be used for analytics only.'
+            : 'Note: Remote management via Insights cannot be disabled on this device (requires RHEL 10+). Both Insights and Flight Control will manage this device.'}
         </HelperText>
       )}
 
