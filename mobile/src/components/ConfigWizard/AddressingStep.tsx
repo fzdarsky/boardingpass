@@ -81,7 +81,7 @@ export default function AddressingStep() {
             onChangeText={v => updateIPv4({ address: v })}
             onBlur={() => markTouched('ipv4Address')}
             mode="outlined"
-            keyboardType="numeric"
+            keyboardType="numbers-and-punctuation"
             error={touched.ipv4Address && !!validateIPv4(ipv4.address || '')}
             placeholder="192.168.1.100"
             accessibilityLabel="IPv4 address"
@@ -99,7 +99,7 @@ export default function AddressingStep() {
             onChangeText={v => updateIPv4({ subnetMask: v })}
             onBlur={() => markTouched('subnetMask')}
             mode="outlined"
-            keyboardType="numeric"
+            keyboardType="numbers-and-punctuation"
             error={touched.subnetMask && !!validateSubnetMask(ipv4.subnetMask || '')}
             placeholder="255.255.255.0"
             accessibilityLabel="Subnet mask"
@@ -117,7 +117,7 @@ export default function AddressingStep() {
             onChangeText={v => updateIPv4({ gateway: v })}
             onBlur={() => markTouched('gateway')}
             mode="outlined"
-            keyboardType="numeric"
+            keyboardType="numbers-and-punctuation"
             error={touched.gateway && !!validateIPv4(ipv4.gateway || '')}
             placeholder="192.168.1.1"
             accessibilityLabel="Default gateway"
@@ -148,7 +148,7 @@ export default function AddressingStep() {
             value={ipv4.dnsPrimary || ''}
             onChangeText={v => updateIPv4({ dnsPrimary: v })}
             mode="outlined"
-            keyboardType="numeric"
+            keyboardType="numbers-and-punctuation"
             placeholder="8.8.8.8"
             accessibilityLabel="Primary DNS server"
             style={styles.input}
@@ -158,7 +158,7 @@ export default function AddressingStep() {
             value={ipv4.dnsSecondary || ''}
             onChangeText={v => updateIPv4({ dnsSecondary: v || null })}
             mode="outlined"
-            keyboardType="numeric"
+            keyboardType="numbers-and-punctuation"
             placeholder="8.8.4.4"
             accessibilityLabel="Secondary DNS server"
             style={styles.input}
