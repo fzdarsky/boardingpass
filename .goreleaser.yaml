@@ -78,7 +78,7 @@ archives:
       - boarding
     formats:
       - tar.gz
-    name_template: "boarding-cli_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "boarding-cli_{{ title .Os }}_{{ if eq .Arch \"amd64\" }}x86_64{{ else if and (eq .Os \"linux\") (eq .Arch \"arm64\") }}aarch64{{ else }}{{ .Arch }}{{ end }}"
     format_overrides:
       - goos: windows
         formats:

@@ -2,13 +2,13 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="297mm"
-   height="210mm"
-   viewBox="0 0 297 210"
+   width="98.541542mm"
+   height="38.541668mm"
+   viewBox="0 0 98.541542 38.541668"
    version="1.1"
    id="svg1"
    xml:space="preserve"
-   inkscape:version="1.4.2 (ebf0e940, 2025-05-08)"
+   inkscape:version="1.4.3 (0d15f750, 2025-12-25)"
    sodipodi:docname="boardingpass-logo.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -20,23 +20,25 @@
      borderopacity="0.25"
      inkscape:showpageshadow="2"
      inkscape:pageopacity="0.0"
-     inkscape:pagecheckerboard="0"
+     inkscape:pagecheckerboard="true"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="1.55"
-     inkscape:cx="598.06452"
-     inkscape:cy="402.25806"
-     inkscape:window-width="1512"
-     inkscape:window-height="916"
+     inkscape:zoom="2.36"
+     inkscape:cx="224.36441"
+     inkscape:cy="101.05932"
+     inkscape:window-width="2560"
+     inkscape:window-height="1382"
      inkscape:window-x="0"
-     inkscape:window-y="38"
-     inkscape:window-maximized="0"
+     inkscape:window-y="30"
+     inkscape:window-maximized="1"
      inkscape:current-layer="layer1"
-     inkscape:export-bgcolor="#ffffff00" /><defs
+     inkscape:export-bgcolor="#ffffff00"
+     inkscape:clip-to-page="false" /><defs
      id="defs1" /><g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1"><g
+     id="layer1"
+     transform="translate(-84.445833,-91.060417)"><g
        id="g1"
        transform="matrix(0.26458333,0,0,0.26458333,82.550001,89.164584)"
        style="stroke:#2c4154;stroke-opacity:1"
@@ -55,7 +57,7 @@
          stroke-width="2"
          stroke-dasharray="8, 5"
          id="line1"
-         style="stroke:#2c4154;stroke-width:3.22124;stroke-linecap:round;stroke-miterlimit:2.5;stroke-dasharray:9.66372, 8.0531;stroke-dashoffset:0;stroke-opacity:1;fill:#2c4154;fill-opacity:1" /><text
+         style="fill:#2c4154;fill-opacity:1;stroke:#2c4154;stroke-width:3.22124;stroke-linecap:round;stroke-miterlimit:2.5;stroke-dasharray:9.66372, 8.0531;stroke-dashoffset:0;stroke-opacity:1" /><text
          x="30"
          y="50"
          font-family="Arial, sans-serif"
@@ -63,7 +65,7 @@
          font-size="24px"
          fill="#1b263b"
          id="text1"
-         style="stroke:#2c4154;stroke-width:1.002;stroke-dasharray:none;stroke-opacity:1;fill:#2c4154;fill-opacity:1"><tspan
+         style="fill:#2c4154;fill-opacity:1;stroke:#2c4154;stroke-width:1.002;stroke-dasharray:none;stroke-opacity:1"><tspan
            style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Montserrat;-inkscape-font-specification:'Montserrat Bold';fill:#2c4154;fill-opacity:1;stroke:none;stroke-width:1.002;stroke-dasharray:none"
            id="tspan1">Boarding Pass</tspan></text><line
          x1="88.487083"

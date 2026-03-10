@@ -6,18 +6,18 @@ The `boarding` CLI tool provides a command-line interface for provisioning Board
 
 ### From Binary Release
 
-Download the latest release for your platform:
+Download and install the latest release (auto-detects OS and architecture):
 
-```bash
-# Linux (amd64)
-curl -LO https://github.com/fzdarsky/boardingpass/releases/latest/download/boarding-cli_linux_amd64.tar.gz
-tar -xzf boarding-cli_linux_amd64.tar.gz
-sudo mv boarding /usr/local/bin/
+```sh
+# Linux / macOS
+curl -L "https://github.com/fzdarsky/boardingpass/releases/latest/download/boarding-cli_$(uname -s)_$(uname -m).tar.gz" | tar xz boarding
+sudo install -m 755 boarding /usr/local/bin/
+```
 
-# macOS (arm64/Apple Silicon)
-curl -LO https://github.com/fzdarsky/boardingpass/releases/latest/download/boarding-cli_darwin_arm64.tar.gz
-tar -xzf boarding-cli_darwin_arm64.tar.gz
-sudo mv boarding /usr/local/bin/
+```powershell
+# Windows (PowerShell)
+Invoke-WebRequest -Uri "https://github.com/fzdarsky/boardingpass/releases/latest/download/boarding-cli_Windows_x86_64.zip" -OutFile boarding-cli.zip
+Expand-Archive boarding-cli.zip -DestinationPath .; Remove-Item boarding-cli.zip
 ```
 
 ### From Source
