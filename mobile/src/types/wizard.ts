@@ -104,8 +104,10 @@ export interface InsightsConfig {
 
 export interface FlightControlConfig {
   endpoint: string;
-  username: string;
-  password: string;
+  authMethod: 'token' | 'password';
+  token: string | null;
+  username: string | null;
+  password: string | null;
 }
 
 // ── Planned Action (Review & Apply) ──

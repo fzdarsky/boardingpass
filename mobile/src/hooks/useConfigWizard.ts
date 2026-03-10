@@ -150,13 +150,17 @@ export function buildStepConfigFiles(step: number, state: WizardState): RawConfi
       }
 
       if (state.enrollment.flightControl) {
+        const fc = state.enrollment.flightControl;
+        const stagingData: Record<string, string> = { endpoint: fc.endpoint };
+        if (fc.authMethod === 'token' && fc.token) {
+          stagingData.token = fc.token;
+        } else if (fc.authMethod === 'password') {
+          if (fc.username) stagingData.username = fc.username;
+          if (fc.password) stagingData.password = fc.password;
+        }
         files.push({
           path: 'boardingpass/staging/flightctl.json',
-          content: JSON.stringify({
-            endpoint: state.enrollment.flightControl.endpoint,
-            username: state.enrollment.flightControl.username,
-            password: state.enrollment.flightControl.password,
-          }),
+          content: JSON.stringify(stagingData),
           mode: 0o600,
         });
       }
@@ -433,13 +437,20 @@ export function useConfigWizard() {
 
           // Flight Control validation
           if (state.enrollment.flightControl) {
-            const urlErr = validateHttpsUrl(state.enrollment.flightControl.endpoint);
+            const fc = state.enrollment.flightControl;
+            const urlErr = validateHttpsUrl(fc.endpoint);
             if (urlErr) errors.push(`Flight Control endpoint: ${urlErr}`);
-            if (!state.enrollment.flightControl.username) {
-              errors.push('Username is required for Flight Control enrollment');
-            }
-            if (!state.enrollment.flightControl.password) {
-              errors.push('Password is required for Flight Control enrollment');
+            if (fc.authMethod === 'token') {
+              if (!fc.token) {
+                errors.push('Token is required for Flight Control enrollment');
+              }
+            } else {
+              if (!fc.username) {
+                errors.push('Username is required for Flight Control enrollment');
+              }
+              if (!fc.password) {
+                errors.push('Password is required for Flight Control enrollment');
+              }
             }
           }
           break;

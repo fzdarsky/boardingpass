@@ -225,6 +225,8 @@ describe('useConfigWizard', () => {
       const state = createInitialWizardState();
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: '',
         password: '',
       };
@@ -612,10 +614,12 @@ describe('useConfigWizard', () => {
       expect(parsed.disable_remote_management).toBe(false);
     });
 
-    it('builds flightctl staging file for step 5', () => {
+    it('builds flightctl staging file with password auth for step 5', () => {
       const state = createInitialWizardState();
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: 'admin',
         password: 'secret',
       };
@@ -628,6 +632,27 @@ describe('useConfigWizard', () => {
       expect(parsed.endpoint).toBe('https://fc.example.com');
       expect(parsed.username).toBe('admin');
       expect(parsed.password).toBe('secret');
+      expect(parsed.token).toBeUndefined();
+    });
+
+    it('builds flightctl staging file with token auth for step 5', () => {
+      const state = createInitialWizardState();
+      state.enrollment.flightControl = {
+        endpoint: 'https://fc.example.com',
+        authMethod: 'token' as const,
+        token: 'my-bearer-token',
+        username: null,
+        password: null,
+      };
+
+      const files = buildStepConfigFiles(WIZARD_STEPS.ENROLLMENT, state);
+      const fcFile = files.find(f => f.path === 'boardingpass/staging/flightctl.json');
+      expect(fcFile).toBeDefined();
+      const parsed = JSON.parse(fcFile!.content);
+      expect(parsed.endpoint).toBe('https://fc.example.com');
+      expect(parsed.token).toBe('my-bearer-token');
+      expect(parsed.username).toBeUndefined();
+      expect(parsed.password).toBeUndefined();
     });
 
     it('builds both insights and flightctl staging files when both enabled (RHEL 10+)', () => {
@@ -640,6 +665,8 @@ describe('useConfigWizard', () => {
       };
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: 'admin',
         password: 'secret',
       };
@@ -671,6 +698,8 @@ describe('useConfigWizard', () => {
       };
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: 'admin',
         password: 'secret',
       };
@@ -739,6 +768,8 @@ describe('useConfigWizard', () => {
       const state = createInitialWizardState();
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: 'admin',
         password: 'secret',
       };
@@ -958,6 +989,8 @@ describe('useConfigWizard', () => {
       };
       state.enrollment.flightControl = {
         endpoint: 'https://fc.example.com',
+        authMethod: 'password' as const,
+        token: null,
         username: 'admin',
         password: 'secret',
       };
