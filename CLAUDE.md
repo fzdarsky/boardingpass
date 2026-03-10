@@ -57,6 +57,7 @@ make fix-app              # Fix common issues (Xcode 26, deps, cache)
 make coverage             # Generate coverage report to _output/coverage/
 make deps                 # Download and verify Go dependencies
 make release              # Build release packages (RPM, DEB, archives)
+make release-app-ios      # Build iOS app and submit to TestFlight via EAS
 make deploy               # Deploy service to bootc container
 ```
 
@@ -416,6 +417,41 @@ The mobile app consumes the BoardingPass RESTful API defined in `specs/001-board
 2. Run `npm run generate:types` to update types
 3. Create service module in `src/services/api/` if needed
 4. Write integration tests
+
+### TestFlight Distribution
+
+The iOS app is distributed to testers via TestFlight using EAS Build. Configuration lives in `mobile/eas.json`.
+
+**First-time setup:**
+
+1. `npm install -g eas-cli && eas login`
+2. `cd mobile && eas init` — creates the EAS project, sets `projectId` in `app.config.js`
+3. `eas credentials` — EAS walks through certificate/provisioning profile setup
+4. Create the app in [App Store Connect](https://appstoreconnect.apple.com/) with bundle ID `org.boardingpass-project.mobile`
+5. Update `ascAppId` in `mobile/eas.json` with the App Store Connect app ID
+
+**Build profiles** (`mobile/eas.json`):
+
+- `development` — simulator builds with dev client
+- `preview` — ad-hoc builds for quick internal testing (no TestFlight)
+- `production` — App Store / TestFlight builds
+
+**Release commands:**
+
+```bash
+# Manual release
+make release-app-ios
+
+# Or step by step
+cd mobile
+eas build --platform ios --profile production
+eas submit --platform ios --latest
+
+# Automated: push a tag
+git tag app-v1.0.0 && git push origin app-v1.0.0
+```
+
+**CI secrets required:** `EXPO_TOKEN` (already configured for existing workflows)
 
 ### Mobile App Specifications
 

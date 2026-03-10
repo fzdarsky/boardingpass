@@ -70,15 +70,15 @@ See [Configuring the Service](docs/configuring-the-service.md) for transport set
 
 The BoardingPass iOS app discovers nearby devices, authenticates, and walks you through provisioning with a guided wizard.
 
-1. Install the app from TestFlight (link TBD)
+1. Install the app via [TestFlight](https://testflight.apple.com/) (request an invite from the project maintainer)
 2. The app automatically discovers devices via BLE, WiFi, USB, or mDNS
 3. Scan the QR code or barcode on the device to authenticate
 4. Configure hostname, network, time server, and enrollment
 5. Review and apply changes
 
-For app development, see [mobile/README.md](mobile/README.md).
+For app development and releasing to testers, see [mobile/README.md](mobile/README.md).
 
-## Installing and Using the CLI
+## Installing and Using the `boarding` CLI
 
 The `boarding` CLI tool provisions devices from the command line.
 
