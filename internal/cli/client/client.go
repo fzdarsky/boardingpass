@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"syscall"
 	"time"
 
 	"github.com/fzdarsky/boardingpass/internal/cli/config"
@@ -180,25 +181,27 @@ func (c *Client) post(path string, body any, response any) error {
 
 // doRequest executes an HTTP request with authentication, retry logic, and error handling.
 func (c *Client) doRequest(req *http.Request, response any) error {
+	// Capture request body once before the retry loop so it can be
+	// replayed on each attempt without mutating the original reader.
+	var bodyBytes []byte
+	if req.Body != nil {
+		bodyBytes, _ = io.ReadAll(req.Body)
+		_ = req.Body.Close()
+	}
+
 	var lastErr error
 	backoff := initialBackoff
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
-		// Clone request body for retries (if present)
-		var bodyBytes []byte
-		if req.Body != nil {
-			bodyBytes, _ = io.ReadAll(req.Body)
-			_ = req.Body.Close()
-		}
-
 		// Add session token if available
 		if c.sessionToken != "" {
 			req.Header.Set("Authorization", "Bearer "+c.sessionToken)
 		}
 
-		// Restore body for this attempt
+		// Restore body and ContentLength for this attempt
 		if bodyBytes != nil {
 			req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+			req.ContentLength = int64(len(bodyBytes))
 		}
 
 		// Execute request
@@ -265,7 +268,7 @@ func isRetryable(err error) bool {
 	}
 
 	// Connection refused (server may be starting up)
-	if errors.Is(err, errors.New("connection refused")) {
+	if errors.Is(err, syscall.ECONNREFUSED) {
 		return true
 	}
 
