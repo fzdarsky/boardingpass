@@ -297,8 +297,10 @@ export const statusColors = {
 export const deviceStatusColors = {
   online: '#4CAF50', // Green
   offline: '#9E9E9E', // Grey
+  unavailable: '#FB8C00', // Amber
   authenticating: '#2196F3', // Blue
   authenticated: '#4CAF50', // Green
+  enrolled: '#7E57C2', // Purple
   warning: '#FB8C00', // Amber
   error: '#F44336', // Red
 } as const;

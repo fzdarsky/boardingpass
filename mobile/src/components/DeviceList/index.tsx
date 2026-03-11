@@ -26,7 +26,6 @@ export interface DeviceListProps {
   onDeleteDevice?: (device: Device) => void;
   onStartScan?: () => void;
   onAddDevice?: () => void;
-  authenticatedDeviceIds?: Set<string>;
 }
 
 export function DeviceList({
@@ -37,7 +36,6 @@ export function DeviceList({
   onDeleteDevice,
   onStartScan,
   onAddDevice,
-  authenticatedDeviceIds,
 }: DeviceListProps) {
   const theme = useTheme();
 
@@ -65,10 +63,9 @@ export function DeviceList({
         onPress={() => onDevicePress?.(item)}
         onDelete={onDeleteDevice ? () => onDeleteDevice(item) : undefined}
         showDuplicateIndicator={hasDuplicateNames && deviceNamesCount[item.name] > 1}
-        isAuthenticated={authenticatedDeviceIds?.has(item.id) ?? false}
       />
     ),
-    [onDevicePress, onDeleteDevice, hasDuplicateNames, deviceNamesCount, authenticatedDeviceIds]
+    [onDevicePress, onDeleteDevice, hasDuplicateNames, deviceNamesCount]
   );
 
   // Render empty state

@@ -23,7 +23,6 @@ export interface DeviceCardProps {
   onPress?: () => void;
   showDuplicateIndicator?: boolean;
   showCertificateStatus?: boolean;
-  isAuthenticated?: boolean;
 }
 
 export function DeviceCard({
@@ -31,13 +30,10 @@ export function DeviceCard({
   onPress,
   showDuplicateIndicator = false,
   showCertificateStatus = true,
-  isAuthenticated = false,
 }: DeviceCardProps) {
   const theme = useTheme();
   const [showCertModal, setShowCertModal] = useState(false);
-  const displayStatus =
-    isAuthenticated && device.status === 'online' ? 'authenticated' : device.status;
-  const statusConfig = getStatusConfig(displayStatus);
+  const statusConfig = getStatusConfig(device.status);
   const transportInfo = getTransportInfo(device.discoveryMethod);
   const discoveryBadgeColors = {
     backgroundColor: transportInfo.isManual ? theme.colors.primary : theme.colors.tertiary,
@@ -154,6 +150,15 @@ export function DeviceCard({
           </View>
 
           {/* TXT Records (if available) */}
+          {/* Enrolled info */}
+          {device.status === 'enrolled' && device.enrolledAt && (
+            <View style={[styles.enrolledInfo, dynamicStyles.subtleBackground]}>
+              <Text variant="bodySmall" style={dynamicStyles.secondaryText}>
+                Enrolled {formatLastSeen(device.enrolledAt)}
+              </Text>
+            </View>
+          )}
+
           {device.txt && Object.keys(device.txt).length > 0 && (
             <View style={[styles.txtRecords, dynamicStyles.subtleBackground]}>
               {Object.entries(device.txt).map(([key, value]) => (
@@ -170,14 +175,10 @@ export function DeviceCard({
         </Card.Content>
 
         {/* Action Button */}
-        {onPress && (device.status === 'online' || device.status === 'authenticated') && (
+        {onPress && getActionButton(device.status) && (
           <Card.Actions>
-            <Button
-              icon={isAuthenticated ? 'information-outline' : 'login'}
-              mode="contained"
-              onPress={onPress}
-            >
-              {isAuthenticated ? 'Details' : 'Connect'}
+            <Button icon={getActionButton(device.status)!.icon} mode="contained" onPress={onPress}>
+              {getActionButton(device.status)!.label}
             </Button>
           </Card.Actions>
         )}
@@ -237,17 +238,38 @@ function getStatusConfig(status: DeviceStatus): {
 } {
   switch (status) {
     case 'online':
-      return { label: 'Online', color: deviceStatusColors.online };
+      return { label: 'Available', color: deviceStatusColors.online };
     case 'offline':
       return { label: 'Offline', color: deviceStatusColors.offline };
+    case 'unavailable':
+      return { label: 'Unavailable', color: deviceStatusColors.unavailable };
     case 'authenticating':
       return { label: 'Authenticating...', color: deviceStatusColors.authenticating };
     case 'authenticated':
-      return { label: 'Authenticated', color: deviceStatusColors.authenticated };
+      return { label: 'Connected', color: deviceStatusColors.authenticated };
+    case 'enrolled':
+      return { label: 'Enrolled', color: deviceStatusColors.enrolled };
     case 'error':
       return { label: 'Error', color: deviceStatusColors.error };
     default:
       return { label: 'Unknown', color: deviceStatusColors.offline };
+  }
+}
+
+/**
+ * Get action button config for a given status.
+ * Returns null for states where no action button should be shown.
+ */
+function getActionButton(status: DeviceStatus): { label: string; icon: string } | null {
+  switch (status) {
+    case 'online':
+      return { label: 'Connect', icon: 'login' };
+    case 'authenticated':
+      return { label: 'Details', icon: 'information-outline' };
+    case 'error':
+      return { label: 'Retry', icon: 'refresh' };
+    default:
+      return null;
   }
 }
 
@@ -332,6 +354,11 @@ const styles = StyleSheet.create({
     margin: 0,
     width: 20,
     height: 20,
+  },
+  enrolledInfo: {
+    marginTop: 12,
+    padding: 8,
+    borderRadius: 4,
   },
   txtRecords: {
     marginTop: 12,
