@@ -35,8 +35,12 @@ const UNREACHABLE_CODES = new Set([
  * - 'unavailable': port closed, or a different service is running on the port
  * - 'offline': device unreachable (timeout, host unreachable, etc.)
  */
-export async function probeDevice(host: string, port: number): Promise<ProbeResult> {
-  const client = createAPIClient(host, port, { timeout: PROBE_TIMEOUT });
+export async function probeDevice(
+  host: string,
+  port: number,
+  timeout?: number
+): Promise<ProbeResult> {
+  const client = createAPIClient(host, port, { timeout: timeout ?? PROBE_TIMEOUT });
 
   try {
     const data = await client.get<{ service?: string }>('/');

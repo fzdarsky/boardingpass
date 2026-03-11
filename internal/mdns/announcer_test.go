@@ -19,7 +19,7 @@ func testRecord() ServiceRecord {
 		Instance: "BoardingPass-test",
 		Service:  "_boardingpass._tcp",
 		Domain:   "local",
-		Port:     8443,
+		Port:     9455,
 		TXT:      map[string]string{"version": "1.0"},
 		Addrs:    []net.IP{net.IPv4(10, 0, 0, 1)},
 	}

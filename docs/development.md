@@ -225,7 +225,7 @@ The `make deploy` target provides a complete end-user testing experience by buil
 make deploy
 
 # Container will be running with systemd
-# Access at https://localhost:8443
+# Access at https://localhost:9455
 # View logs: podman exec -it boardingpass-bootc journalctl -u boardingpass
 
 # Stop and remove container
@@ -236,7 +236,7 @@ This deployment includes:
 - Full RPM installation (binary, systemd unit, sudoers config, password generators)
 - Pre-configured verifier using `primary_mac` generator
 - Systemd service management
-- Port 8443 exposed to localhost
+- Port 9455 exposed to localhost
 
 **Architecture Detection**: The deploy target automatically detects your system architecture (`x86_64` → `amd64`, `aarch64` → `arm64`) and builds the appropriate RPM.
 
@@ -419,7 +419,7 @@ transports:
     enabled: true
     interfaces: []
     address: "127.0.0.1"
-    port: 8443
+    port: 9455
     tls_cert: "/etc/boardingpass/tls/server.crt"
     tls_key: "/etc/boardingpass/tls/server.key"
 
@@ -447,10 +447,10 @@ EOF
 # Run service in foreground (for development/debugging)
 sudo ./_output/bin/boardingpass --config=/etc/boardingpass/config.yaml
 
-# Service will bind to https://127.0.0.1:8443
+# Service will bind to https://127.0.0.1:9455
 
 # In another terminal, test the service:
-curl -k https://127.0.0.1:8443/info
+curl -k https://127.0.0.1:9455/info
 # Should return: {"error":"unauthorized","message":"Invalid or expired session token"}
 ```
 
@@ -665,7 +665,7 @@ import _ "net/http/pprof"
 sudo ./_output/bin/boardingpass --config=/etc/boardingpass/config.yaml
 
 # In another terminal, access pprof:
-go tool pprof http://localhost:8443/debug/pprof/heap
+go tool pprof http://localhost:9455/debug/pprof/heap
 ```
 
 ---

@@ -97,7 +97,7 @@
 
 - [x] T040 [P] [US1] Install react-native-zeroconf and configure in mobile/app.json (Expo config plugin)
 - [x] T041 [US1] Create mDNS discovery service in mobile/src/services/discovery/mdns.ts (scan for _boardingpass._tcp)
-- [x] T042 [P] [US1] Create fallback IP service in mobile/src/services/discovery/fallback.ts (check 192.168.1.100:8443)
+- [x] T042 [P] [US1] Create fallback IP service in mobile/src/services/discovery/fallback.ts (check 192.168.1.100:9455)
 - [x] T043 [US1] Create useDeviceDiscovery hook in mobile/src/hooks/useDeviceDiscovery.ts (combines mDNS + fallback)
 - [x] T044 [P] [US1] Create DeviceCard component in mobile/src/components/DeviceList/DeviceCard.tsx
 - [x] T045 [US1] Create DeviceList component in mobile/src/components/DeviceList/index.tsx

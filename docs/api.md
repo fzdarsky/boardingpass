@@ -7,7 +7,7 @@
 
 BoardingPass exposes a RESTful API over HTTPS (TLS 1.3 required) for secure device provisioning. All endpoints except authentication return JSON responses.
 
-**Base URL**: `https://{device_ip}:8443`
+**Base URL**: `https://{device_ip}:9455`
 
 ---
 
@@ -328,14 +328,14 @@ Rate limit state resets after successful authentication.
 
 ```bash
 # 1. Initialize SRP handshake
-curl -k -X POST https://192.168.1.100:8443/auth/srp/init \
+curl -k -X POST https://192.168.1.100:9455/auth/srp/init \
   -H "Content-Type: application/json" \
   -d '{"username":"boardingpass","A":"..."}'
 
 # Response: {"salt":"...","B":"..."}
 
 # 2. Verify proof and obtain session token
-curl -k -X POST https://192.168.1.100:8443/auth/srp/verify \
+curl -k -X POST https://192.168.1.100:9455/auth/srp/verify \
   -H "Content-Type: application/json" \
   -d '{"M1":"..."}'
 
@@ -349,7 +349,7 @@ export SESSION_TOKEN="xyz.abc"
 
 ```bash
 curl -k -H "Authorization: Bearer $SESSION_TOKEN" \
-  https://192.168.1.100:8443/info
+  https://192.168.1.100:9455/info
 ```
 
 ### Provision Configuration
@@ -376,7 +376,7 @@ curl -k -X POST \
   -H "Authorization: Bearer $SESSION_TOKEN" \
   -H "Content-Type: application/json" \
   -d @bundle.json \
-  https://192.168.1.100:8443/configure
+  https://192.168.1.100:9455/configure
 ```
 
 ### Execute Command
@@ -386,7 +386,7 @@ curl -k -X POST \
   -H "Authorization: Bearer $SESSION_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"id":"restart-networkmanager"}' \
-  https://192.168.1.100:8443/command
+  https://192.168.1.100:9455/command
 ```
 
 ### Complete Provisioning
@@ -394,7 +394,7 @@ curl -k -X POST \
 ```bash
 curl -k -X POST \
   -H "Authorization: Bearer $SESSION_TOKEN" \
-  https://192.168.1.100:8443/complete
+  https://192.168.1.100:9455/complete
 ```
 
 ---

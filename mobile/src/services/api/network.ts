@@ -26,7 +26,7 @@ export type AddressFamily = IPAddress['family'];
  *
  * @example
  * ```typescript
- * const client = createAPIClient('192.168.1.100', 8443);
+ * const client = createAPIClient('192.168.1.100', 9455);
  * client.setAuthToken(sessionToken);
  *
  * const networkConfig = await getNetworkConfig(client);

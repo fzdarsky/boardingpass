@@ -50,7 +50,7 @@ Examples:
 
   # Using environment variables for host/port
   export BOARDING_HOST=192.168.1.100
-  export BOARDING_PORT=8443
+  export BOARDING_PORT=9455
   boarding complete
 `)
 	}

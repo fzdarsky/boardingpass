@@ -585,7 +585,7 @@ deploy: release
 	@echo "Container will run with systemd. Use 'podman ps' to see running containers."
 	@echo "Use 'podman exec -it $(CONTAINER_NAME) journalctl -u boardingpass' to view logs."
 	@podman run -d --name $(CONTAINER_NAME) --rm \
-		-p 8443:8443 \
+		-p 9455:9455 \
 		--tmpfs /tmp \
 		--tmpfs /run \
 		-v /sys/fs/cgroup:/sys/fs/cgroup:rw \

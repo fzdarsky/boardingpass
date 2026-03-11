@@ -633,7 +633,7 @@ transports:
     # Listen address (empty = all interfaces)
     address: ""
     # Listen port
-    port: 8443
+    port: 9455
     # TLS certificate and key
     tls_cert: "/etc/boardingpass/tls/server.crt"
     tls_key: "/etc/boardingpass/tls/server.key"

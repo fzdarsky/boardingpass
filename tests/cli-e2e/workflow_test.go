@@ -24,7 +24,7 @@ const (
 	// testTimeout is the maximum time to wait for container startup
 	testTimeout = 60 * time.Second
 	// servicePort is the port exposed by the BoardingPass service
-	servicePort = 8443
+	servicePort = 9455
 	// containerRuntime is the container runtime to use (podman or docker)
 	containerRuntime = "podman"
 )

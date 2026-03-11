@@ -1,7 +1,7 @@
 /**
  * useDeviceDiscovery Hook
  *
- * Combines mDNS discovery and fallback IP detection.
+ * Combines mDNS discovery and subnet scanning.
  * Manages device list state, discovery lifecycle, and auto-refresh.
  * Periodically probes devices to track reachability and detect state changes.
  *
@@ -13,7 +13,7 @@ import { AppState, Platform } from 'react-native';
 import * as ExpoDevice from 'expo-device';
 import { Device, DeviceStatus } from '@/types/device';
 import { getMDNSDiscoveryService } from '@/services/discovery/mdns';
-import { getFallbackIPService } from '@/services/discovery/fallback';
+import { getSubnetScannerService } from '@/services/discovery/scan';
 import { probeDevice, probeAllDevices, ProbeResult } from '@/services/reachability/probe';
 import { sessionManager } from '@/services/auth/session';
 import * as enrollmentStore from '@/services/enrollment/store';
@@ -43,7 +43,7 @@ export interface UseDeviceDiscoveryResult {
 
 /**
  * Device discovery hook
- * Combines mDNS and fallback IP detection
+ * Combines mDNS and subnet scanning
  */
 export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -53,7 +53,6 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   const [mdnsUnavailableReason, setMdnsUnavailableReason] = useState<MDNSUnavailableReason>(null);
 
   const mdnsService = useRef(getMDNSDiscoveryService());
-  const fallbackService = useRef(getFallbackIPService());
   const cleanupFunctions = useRef<(() => void)[]>([]);
   const discoveryTimeout = useRef<NodeJS.Timeout | null>(null);
   const probeInterval = useRef<NodeJS.Timeout | null>(null);
@@ -128,33 +127,13 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   }, []);
 
   /**
-   * Check fallback IP
+   * Start subnet scan as fallback when mDNS is unavailable.
    */
-  const checkFallback = useCallback(async () => {
-    try {
-      const fallbackDevice = await fallbackService.current.check();
-
-      if (fallbackDevice) {
-        // Only add if no mDNS device found at same IP
-        setDevices(prev => {
-          const mdnsDeviceExists = prev.some(
-            d => d.host === fallbackDevice.host && d.discoveryMethod === 'mdns'
-          );
-
-          if (mdnsDeviceExists) {
-            // mDNS takes precedence
-            return prev;
-          }
-
-          addOrUpdateDevice(fallbackDevice);
-          return prev;
-        });
-      }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.log('Fallback check failed:', err);
-      // Don't set error state for fallback failures
-    }
+  const startSubnetScan = useCallback(() => {
+    const scanner = getSubnetScannerService();
+    const cleanup = scanner.onDeviceFound(addOrUpdateDevice);
+    cleanupFunctions.current.push(cleanup);
+    scanner.start();
   }, [addOrUpdateDevice]);
 
   /**
@@ -189,8 +168,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
           setMdnsUnavailableReason(reason);
           setError(null);
           setIsScanning(false);
-          // Check fallback IP since mDNS failed
-          checkFallback();
+          // Scan subnet since mDNS failed
+          startSubnetScan();
           return;
         }
 
@@ -212,8 +191,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       // Start mDNS scan
       mdnsService.current.start();
 
-      // Check fallback IP
-      checkFallback();
+      // Also start subnet scan (finds devices on USB tethering, Ethernet, etc.)
+      startSubnetScan();
 
       // Set timeout for discovery (10 seconds)
       discoveryTimeout.current = setTimeout(() => {
@@ -228,8 +207,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
         setMdnsUnavailableReason(reason);
         setError(null);
         setIsScanning(false);
-        // Still check fallback IP
-        checkFallback();
+        // Still scan subnet
+        startSubnetScan();
         return;
       }
 
@@ -243,7 +222,7 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       setErrorCount(prev => prev + 1);
       setIsScanning(false);
     }
-  }, [isScanning, addOrUpdateDevice, removeDevice, checkFallback]);
+  }, [isScanning, addOrUpdateDevice, removeDevice, startSubnetScan]);
 
   /**
    * Stop device discovery
@@ -255,6 +234,9 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
 
     // Stop mDNS scan
     mdnsService.current.stop();
+
+    // Stop subnet scanner
+    getSubnetScannerService().stop();
 
     // Clear timeout
     if (discoveryTimeout.current) {

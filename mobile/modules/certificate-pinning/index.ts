@@ -7,6 +7,7 @@
  */
 
 import { requireOptionalNativeModule } from 'expo-modules-core';
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
 
 const CertificatePinningNative = requireOptionalNativeModule('CertificatePinning');
 
@@ -52,7 +53,7 @@ export interface ServerCertificate {
  */
 export async function fetchServerCertificate(
   host: string,
-  port: number = 8443
+  port: number = DEFAULT_BOARDINGPASS_PORT
 ): Promise<ServerCertificate> {
   return await requireModule().fetchServerCertificate(host, port);
 }
@@ -64,7 +65,7 @@ export async function fetchServerCertificate(
  * - Accept connections whose certificate matches this fingerprint
  * - Reject connections whose certificate does NOT match
  *
- * @param hostKey - Host identifier (e.g., "192.168.4.205" or "192.168.4.205:8443")
+ * @param hostKey - Host identifier (e.g., "192.168.4.205" or "192.168.4.205:9455")
  * @param fingerprint - SHA-256 fingerprint (64-char hex)
  */
 export function pinCertificate(hostKey: string, fingerprint: string): void {
@@ -131,7 +132,10 @@ export interface TLSDiagnosticResult {
  * our TOFU challenge handler. Bypasses RCTHTTPRequestHandler to verify
  * TLS handling works at the native level.
  */
-export async function diagnoseTLS(host: string, port: number = 8443): Promise<TLSDiagnosticResult> {
+export async function diagnoseTLS(
+  host: string,
+  port: number = DEFAULT_BOARDINGPASS_PORT
+): Promise<TLSDiagnosticResult> {
   return await requireModule().diagnoseTLS(host, port);
 }
 
@@ -196,7 +200,7 @@ export interface NativeFetchResult {
  * handling. Bypasses React Native's networking stack entirely to avoid
  * NSURLSession delegate injection issues with self-signed certificates.
  *
- * @param url - Full URL (e.g., "https://192.168.4.205:8443/auth/srp/init")
+ * @param url - Full URL (e.g., "https://192.168.4.205:9455/auth/srp/init")
  * @param method - HTTP method (GET, POST, PUT, DELETE)
  * @param headers - Request headers
  * @param body - Request body (empty string for no body)

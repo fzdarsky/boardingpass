@@ -12,6 +12,7 @@ import Zeroconf from 'react-native-zeroconf';
 import { Platform } from 'react-native';
 import * as ExpoDevice from 'expo-device';
 import { Device } from '@/types/device';
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
 
 export interface MDNSService {
   name: string;
@@ -161,7 +162,7 @@ export class MDNSDiscoveryService {
       id,
       name: service.name,
       host: service.host,
-      port: service.port || 8443, // Default to 8443 if not specified
+      port: service.port || DEFAULT_BOARDINGPASS_PORT,
       addresses: service.addresses || [service.host],
       discoveryMethod: 'mdns',
       txt: service.txt,

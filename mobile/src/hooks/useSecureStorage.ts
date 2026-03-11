@@ -113,7 +113,7 @@ export function useSecureStorage() {
 /**
  * Sanitize a device ID for use as a SecureStore key.
  * SecureStore keys may only contain alphanumeric characters, ".", "-", and "_".
- * Device IDs use colons as separators (e.g. "manual:192.168.1.100:8443"),
+ * Device IDs use colons as separators (e.g. "manual:192.168.1.100:9455"),
  * so we replace colons with underscores.
  */
 function sanitizeKeyId(deviceId: string): string {

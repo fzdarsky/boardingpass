@@ -55,10 +55,10 @@ BoardingPass provides a minimal service that runs on the headless device. You co
 
     On first start, the service generates a TLS certificate and an SRP verifier derived from a device-unique password. By default, that password is the MAC address of the device's primary network interface — this is often printed as a barcode on the chassis and can be scanned directly by the app.
 
-4. If using the Ethernet transport, open port `8443/tcp` in your firewall:
+4. If using the Ethernet transport, open port `9455/tcp` in your firewall:
 
     ```bash
-    sudo firewall-cmd --add-port=8443/tcp
+    sudo firewall-cmd --add-port=9455/tcp
     sudo firewall-cmd --runtime-to-permanent
     ```
 

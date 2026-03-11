@@ -12,7 +12,7 @@
 #     enabled: true
 #     interfaces: ["eth0"]
 #     address: "0.0.0.0"
-#     port: 8443
+#     port: 9455
 #     tls_cert: "/etc/boardingpass/tls/cert.pem"
 #     tls_key: "/etc/boardingpass/tls/key.pem"
 #
@@ -60,7 +60,7 @@ properties:
             type: integer
             minimum: 1
             maximum: 65535
-            default: 8443
+            default: 9455
           tls_cert:
             type: string
           tls_key:

@@ -321,7 +321,7 @@ describe('Error Message Utilities', () => {
     it('should not expose internal URLs or IPs in messages', () => {
       const error: AppError = {
         type: 'network',
-        message: 'Failed to fetch https://192.168.1.100:8443/internal/api',
+        message: 'Failed to fetch https://192.168.1.100:9455/internal/api',
       };
 
       const message = getErrorMessage(error);

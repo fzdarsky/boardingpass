@@ -10,9 +10,9 @@
 import NetInfo from '@react-native-community/netinfo';
 import axios from 'axios';
 import { Device } from '@/types/device';
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
 
 const BOARDINGPASS_SSID_PREFIX = 'BoardingPass-';
-const DEFAULT_PORT = 8443;
 const PROBE_TIMEOUT = 5000;
 
 export type WiFiDeviceCallback = (device: Device | null) => void;
@@ -130,7 +130,7 @@ export class WiFiDiscoveryService {
 
   private async probeGateway(ip: string): Promise<boolean> {
     try {
-      await axios.head(`https://${ip}:${DEFAULT_PORT}/`, {
+      await axios.head(`https://${ip}:${DEFAULT_BOARDINGPASS_PORT}/`, {
         timeout: PROBE_TIMEOUT,
         validateStatus: () => true,
       });
@@ -145,7 +145,7 @@ export class WiFiDiscoveryService {
       id: `wifi:${host}`,
       name,
       host,
-      port: DEFAULT_PORT,
+      port: DEFAULT_BOARDINGPASS_PORT,
       addresses: [host],
       discoveryMethod: 'wifi',
       status: 'online',

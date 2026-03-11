@@ -51,6 +51,7 @@ import {
   HapticFeedback,
 } from '@/utils/haptics';
 import { isTLSOverrideActive, invalidateHTTPSession } from '../../modules/certificate-pinning';
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
 
 /**
  * Authentication mode
@@ -77,7 +78,7 @@ export default function AuthenticateScreen(): React.ReactElement {
   }>();
 
   const { deviceId, deviceName, host, port } = params;
-  const portNumber = port ? parseInt(port, 10) : 8443;
+  const portNumber = port ? parseInt(port, 10) : DEFAULT_BOARDINGPASS_PORT;
 
   const navigation = useNavigation();
   const paperTheme = useTheme();

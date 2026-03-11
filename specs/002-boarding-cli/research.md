@@ -80,7 +80,7 @@ type Config struct {
 
 func Load() (*Config, error) {
     cfg := &Config{
-        Port: 8443, // default
+        Port: 9455, // default
     }
 
     // Layer 1: Config file (lowest priority)
@@ -121,7 +121,7 @@ Use `os.UserConfigDir()` for portability.
 **Config File Format** (flat YAML per FR-021):
 ```yaml
 host: boardingpass.local
-port: 8443
+port: 9455
 ca_cert: /path/to/ca-bundle.pem
 ```
 
@@ -189,10 +189,10 @@ func (t *FingerprintTransport) RoundTrip(req *http.Request) (*http.Response, err
 File: `<UserConfigDir>/boardingpass/known_certs.yaml`
 ```yaml
 certificates:
-  - host: "192.168.1.100:8443"
+  - host: "192.168.1.100:9455"
     fingerprint: "SHA256:abc123def456..."
     accepted_at: "2025-12-10T12:00:00Z"
-  - host: "boardingpass.local:8443"
+  - host: "boardingpass.local:9455"
     fingerprint: "SHA256:789ghi012jkl..."
     accepted_at: "2025-12-10T13:30:00Z"
 ```

@@ -94,7 +94,7 @@ service:
 transports:
   ethernet:
     enabled: true
-    port: 8443
+    port: 9455
 
 provisioning:
   allowed_paths:
@@ -123,7 +123,7 @@ logging:
 
 **transports.ethernet**:
 - `enabled`: Whether to enable Ethernet transport (true/false)
-- `port`: HTTPS port to listen on (default: 8443)
+- `port`: HTTPS port to listen on (default: 9455)
 - `address`: IP address to bind to (leave empty for all interfaces)
 - `tls_cert`: Path to TLS certificate (auto-generated if missing)
 - `tls_key`: Path to TLS private key (auto-generated if missing)
@@ -251,17 +251,17 @@ RUN systemctl enable boardingpass.service
 
 ## Firewall Configuration
 
-BoardingPass listens on port 8443 by default. Open this port in your firewall:
+BoardingPass listens on port 9455 by default. Open this port in your firewall:
 
 **firewalld** (RHEL, Rocky, AlmaLinux):
 ```bash
-sudo firewall-cmd --permanent --add-port=8443/tcp
+sudo firewall-cmd --permanent --add-port=9455/tcp
 sudo firewall-cmd --reload
 ```
 
 **ufw** (Debian, Ubuntu):
 ```bash
-sudo ufw allow 8443/tcp
+sudo ufw allow 9455/tcp
 ```
 
 ---
@@ -277,7 +277,7 @@ sudo systemctl status boardingpass.service
 Test the API:
 
 ```bash
-curl -k https://<device-ip>:8443/info
+curl -k https://<device-ip>:9455/info
 # Should return: {"error":"unauthorized",...}
 ```
 
@@ -316,8 +316,8 @@ sudo cat /etc/boardingpass/verifier
 ### Cannot connect to the service
 
 1. Check if the service is running: `sudo systemctl status boardingpass.service`
-2. Check if the port is open: `sudo ss -tlnp | grep 8443`
-3. Check the firewall: Ensure port 8443 is allowed
+2. Check if the port is open: `sudo ss -tlnp | grep 9455`
+3. Check the firewall: Ensure port 9455 is allowed
 4. Check the logs: `sudo journalctl -u boardingpass.service`
 
 ### Configuration provisioning fails

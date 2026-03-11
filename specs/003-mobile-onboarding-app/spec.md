@@ -104,7 +104,7 @@ As a system administrator, I need clear error messages and recovery options when
 #### Device Discovery
 
 - **FR-001**: App MUST scan for devices broadcasting via mDNS service name `_boardingpass._tcp`
-- **FR-002**: App MUST attempt connection to well-known fallback IP address (192.168.1.100:8443) when network scanning is available
+- **FR-002**: App MUST attempt connection to well-known fallback IP address (192.168.1.100:9455) when network scanning is available
 - **FR-003**: App MUST display discovered devices in a list showing device name and IP address
 - **FR-004**: App MUST provide a visual indicator (button) to initiate onboarding for each discovered device
 - **FR-005**: App MUST automatically refresh the device list when devices appear or disappear from the network
@@ -201,7 +201,7 @@ As a system administrator, I need clear error messages and recovery options when
 - BoardingPass devices will consistently broadcast mDNS with service name `_boardingpass._tcp`
 - BoardingPass API endpoints (`/auth/srp`, `/info`, `/network`) follow the existing OpenAPI specification in `specs/001-boardingpass-api/contracts/openapi.yaml`
 - Connection codes will be provided to users through an out-of-band mechanism (printed label, separate secure channel)
-- Default well-known IP address is 192.168.1.100:8443 but may be configurable
+- Default well-known IP address is 192.168.1.100:9455 but may be configurable
 
 ### User Experience Assumptions
 

@@ -97,7 +97,7 @@ describe('Port Validation', () => {
   describe('isValidPort', () => {
     it('should validate correct ports', () => {
       expect(isValidPort(1)).toBe(true);
-      expect(isValidPort(8443)).toBe(true);
+      expect(isValidPort(9455)).toBe(true);
       expect(isValidPort(65535)).toBe(true);
     });
 
@@ -112,11 +112,11 @@ describe('Port Validation', () => {
 
 describe('Host:Port Parsing', () => {
   describe('parseAndValidateHostPort', () => {
-    it('should parse IPv4 address without port (default 8443)', () => {
+    it('should parse IPv4 address without port (default 9455)', () => {
       const result = parseAndValidateHostPort('192.168.1.100');
       expect(result.valid).toBe(true);
       expect(result.host).toBe('192.168.1.100');
-      expect(result.port).toBe(8443);
+      expect(result.port).toBe(9455);
     });
 
     it('should parse IPv4 address with port', () => {

@@ -142,12 +142,12 @@ fmt.Println(string(decoded))
 
 ```bash
 # Step 1: SRP Init (TODO: requires SRP client library to generate 'A')
-curl -k -X POST https://192.168.1.100:8443/auth/srp/init \
+curl -k -X POST https://192.168.1.100:9455/auth/srp/init \
   -H "Content-Type: application/json" \
   -d '{"username":"boardingpass","A":"<generated_value>"}'
 
 # Step 2: SRP Verify (TODO: requires SRP client library to compute M1)
-curl -k -X POST https://192.168.1.100:8443/auth/srp/verify \
+curl -k -X POST https://192.168.1.100:9455/auth/srp/verify \
   -H "Content-Type: application/json" \
   -d '{"M1":"<computed_value>"}'
 ```
@@ -159,21 +159,21 @@ curl -k -X POST https://192.168.1.100:8443/auth/srp/verify \
 TOKEN="dGhpc2lzYXRva2VuaWQ.c2lnbmF0dXJlaGVyZQ"
 
 # Get system info
-curl -k -X GET https://192.168.1.100:8443/info \
+curl -k -X GET https://192.168.1.100:9455/info \
   -H "Authorization: Bearer $TOKEN"
 
 # Get network config
-curl -k -X GET https://192.168.1.100:8443/network \
+curl -k -X GET https://192.168.1.100:9455/network \
   -H "Authorization: Bearer $TOKEN"
 
 # Provision configuration bundle
-curl -k -X POST https://192.168.1.100:8443/configure \
+curl -k -X POST https://192.168.1.100:9455/configure \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d @configure-request.json
 
 # Execute command
-curl -k -X POST https://192.168.1.100:8443/command \
+curl -k -X POST https://192.168.1.100:9455/command \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"id":"restart-networkmanager"}'

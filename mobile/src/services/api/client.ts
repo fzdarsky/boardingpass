@@ -8,9 +8,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 import { Platform } from 'react-native';
 import { nativeAdapter } from './nativeAdapter';
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
 
 const DEFAULT_TIMEOUT = 30000; // 30 seconds (matches spec)
-const DEFAULT_PORT = 8443;
 
 export interface APIClientConfig {
   baseURL?: string;
@@ -40,7 +40,11 @@ export class APIClient {
   private client: AxiosInstance;
   private authToken: string | null = null;
 
-  constructor(host: string, port: number = DEFAULT_PORT, config: APIClientConfig = {}) {
+  constructor(
+    host: string,
+    port: number = DEFAULT_BOARDINGPASS_PORT,
+    config: APIClientConfig = {}
+  ) {
     const baseURL = config.baseURL || `https://${host}:${port}`;
 
     if (__DEV__) {
@@ -179,7 +183,7 @@ export class APIClient {
   /**
    * Update base URL (for switching between devices)
    */
-  setBaseURL(host: string, port: number = DEFAULT_PORT): void {
+  setBaseURL(host: string, port: number = DEFAULT_BOARDINGPASS_PORT): void {
     this.client.defaults.baseURL = `https://${host}:${port}`;
   }
 }

@@ -232,7 +232,7 @@ export default function DeviceDiscoveryScreen() {
           <Dialog.Content>
             <TextInput
               label="Device address"
-              placeholder="192.168.1.100:8443"
+              placeholder="192.168.1.100:9455"
               value={addressInput}
               onChangeText={handleAddressChange}
               onSubmitEditing={isAddButtonEnabled ? handleAddDevice : undefined}
@@ -244,7 +244,7 @@ export default function DeviceDiscoveryScreen() {
               accessibilityLabel="Device IP address"
             />
             <HelperText type={addressError ? 'error' : 'info'} visible={true}>
-              {addressError || 'Enter IP address with optional port (default: 8443)'}
+              {addressError || 'Enter IP address with optional port (default: 9455)'}
             </HelperText>
           </Dialog.Content>
           <Dialog.Actions>

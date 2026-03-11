@@ -222,8 +222,8 @@ function getTransportInfo(method: DiscoveryMethod): {
       return { label: 'USB', isManual: false };
     case 'mdns':
       return { label: 'MDNS', isManual: false };
-    case 'fallback':
-      return { label: 'FALLBACK', isManual: false };
+    case 'scan':
+      return { label: 'SCAN', isManual: false };
     case 'manual':
       return { label: 'MANUAL', isManual: true };
     default:

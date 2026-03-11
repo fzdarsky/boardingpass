@@ -1,16 +1,15 @@
 /**
  * Discovery Manager
  *
- * Coordinates all device discovery methods (mDNS, fallback, WiFi, BLE, USB)
+ * Coordinates all device discovery methods (mDNS, subnet scan, WiFi, BLE)
  * and aggregates discovered devices with de-duplication.
  */
 
 import { Device } from '@/types/device';
 import { getMDNSDiscoveryService } from './mdns';
-import { getFallbackIPService } from './fallback';
+import { getSubnetScannerService } from './scan';
 import { getWiFiDiscoveryService } from './wifi';
 import { getBLEDiscoveryService } from './bluetooth';
-import { getUSBDiscoveryService } from './usb';
 import { deduplicateDevices } from './preference';
 
 export type DeviceFoundCallback = (device: Device) => void;
@@ -79,29 +78,17 @@ export class DiscoveryManager {
       console.log('BLE discovery not available, skipping');
     }
 
-    // Start USB tethering discovery
+    // Start subnet scanner (finds devices on USB tethering, Ethernet, etc.)
     try {
-      const usb = getUSBDiscoveryService();
-      const cleanup = usb.onDeviceFound(device => {
+      const scanner = getSubnetScannerService();
+      const cleanup = scanner.onDeviceFound(device => {
         this.handleDeviceFound(device);
       });
       this.cleanupFns.push(cleanup);
-      usb.start();
+      scanner.start();
     } catch {
       // eslint-disable-next-line no-console
-      console.log('USB discovery not available, skipping');
-    }
-
-    // Start fallback IP check
-    try {
-      const fallback = getFallbackIPService();
-      const device = await fallback.check();
-      if (device) {
-        this.handleDeviceFound(device);
-      }
-    } catch {
-      // eslint-disable-next-line no-console
-      console.log('Fallback discovery failed, skipping');
+      console.log('Subnet scanner not available, skipping');
     }
   }
 
@@ -136,7 +123,7 @@ export class DiscoveryManager {
     }
 
     try {
-      getUSBDiscoveryService().stop();
+      getSubnetScannerService().stop();
     } catch {
       // ignore
     }

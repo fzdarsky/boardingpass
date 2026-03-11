@@ -4,6 +4,8 @@
  * Input validation functions for IP addresses, connection codes, fingerprints, etc.
  */
 
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
+
 /**
  * IPv4 address validation
  */
@@ -132,7 +134,7 @@ export function isValidURL(url: string): boolean {
 
 /**
  * IPv4 address with optional port validation pattern
- * Matches: 192.168.1.100 or 192.168.1.100:8443
+ * Matches: 192.168.1.100 or 192.168.1.100:9455
  */
 const IPV4_WITH_PORT_PATTERN = /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}(:\d{1,5})?$/;
 
@@ -140,12 +142,12 @@ const IPV4_WITH_PORT_PATTERN = /^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}(:\d{1
  * Parse and validate a host:port string for manual device entry.
  *
  * Accepted formats:
- *   "192.168.1.100"       → { host: "192.168.1.100", port: 8443 }
+ *   "192.168.1.100"       → { host: "192.168.1.100", port: 9455 }
  *   "192.168.1.100:9443"  → { host: "192.168.1.100", port: 9443 }
  */
 export function parseAndValidateHostPort(
   input: string,
-  defaultPort: number = 8443
+  defaultPort: number = DEFAULT_BOARDINGPASS_PORT
 ): { valid: boolean; host?: string; port?: number; error?: string } {
   const trimmed = sanitizeInput(input);
 

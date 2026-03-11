@@ -6,7 +6,7 @@ BoardingPass reads its configuration from `/etc/boardingpass/config.yaml`. The R
 
 ```yaml
 service:
-  port: 8443                     # HTTPS listen port (shared by all transports)
+  port: 9455                     # HTTPS listen port (shared by all transports)
   tls_cert: "/var/lib/boardingpass/tls/server.crt"  # Auto-generated if missing
   tls_key: "/var/lib/boardingpass/tls/server.key"
   inactivity_timeout: "10m"      # Self-terminate after this idle period

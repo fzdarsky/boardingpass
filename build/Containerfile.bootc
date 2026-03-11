@@ -24,8 +24,8 @@ RUN dnf install -y /tmp/boardingpass.rpm && \
 # Enable the boardingpass service
 RUN systemctl enable boardingpass.service
 
-# Expose HTTPS port (default: 8443)
-EXPOSE 8443
+# Expose HTTPS port (default: 9455)
+EXPOSE 9455
 
 # bootc images use systemd as init by default
 CMD ["/sbin/init"]

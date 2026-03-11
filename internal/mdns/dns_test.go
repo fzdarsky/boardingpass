@@ -187,12 +187,12 @@ func TestNewARecord(t *testing.T) {
 }
 
 func TestNewSRVRecord(t *testing.T) {
-	data, err := NewSRVRecord(0, 0, 8443, "myhost.local.")
+	data, err := NewSRVRecord(0, 0, 9455, "myhost.local.")
 	require.NoError(t, err)
 
 	assert.Equal(t, uint16(0), binary.BigEndian.Uint16(data[0:2]))    // priority
 	assert.Equal(t, uint16(0), binary.BigEndian.Uint16(data[2:4]))    // weight
-	assert.Equal(t, uint16(8443), binary.BigEndian.Uint16(data[4:6])) // port
+	assert.Equal(t, uint16(9455), binary.BigEndian.Uint16(data[4:6])) // port
 
 	// Target should be encoded name
 	name, _, err := decodeName(data[6:], 0)

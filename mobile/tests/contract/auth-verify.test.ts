@@ -245,7 +245,7 @@ describe('POST /auth/srp/verify Contract', () => {
 
   describe('Security Requirements', () => {
     it('should use HTTPS (TLS 1.3+) for all requests', () => {
-      const baseURL = 'https://192.168.1.100:8443';
+      const baseURL = 'https://192.168.1.100:9455';
 
       expect(baseURL).toMatch(/^https:\/\//);
       // Implementation MUST reject HTTP connections

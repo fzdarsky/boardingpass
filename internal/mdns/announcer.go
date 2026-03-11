@@ -21,7 +21,7 @@ type ServiceRecord struct {
 	Instance string            // e.g. "BoardingPass-myhostname"
 	Service  string            // "_boardingpass._tcp"
 	Domain   string            // "local"
-	Port     int               // 8443
+	Port     int               // 9455
 	TXT      map[string]string // optional metadata
 	Addrs    []net.IP          // IPv4 addresses to announce
 }

@@ -38,7 +38,7 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0.html
 
 servers:
-  - url: https://{device_ip}:8443
+  - url: https://{device_ip}:9455
     description: BoardingPass device endpoint
     variables:
       device_ip:

@@ -13,7 +13,7 @@
 # Environment (set by boardingpass service or read from config):
 #   BP_DEVICE_NAME      — BLE advertised name (default: BoardingPass-<hostname>)
 #   BP_ADDRESS          — IP address the API is reachable on (default: 10.0.1.1)
-#   BP_PORT             — HTTPS port (default: 8443)
+#   BP_PORT             — HTTPS port (default: 9455)
 #   BP_CERT_FINGERPRINT — TLS certificate SHA-256 fingerprint (optional)
 
 set -euo pipefail
@@ -22,7 +22,7 @@ ADAPTER="${1:?Usage: ble-advertise.sh <adapter>}"
 
 DEVICE_NAME="${BP_DEVICE_NAME:-BoardingPass-$(hostname -s)}"
 ADDRESS="${BP_ADDRESS:-10.0.1.1}"
-PORT="${BP_PORT:-8443}"
+PORT="${BP_PORT:-9455}"
 CERT_FINGERPRINT="${BP_CERT_FINGERPRINT:-}"
 
 # UUIDs must match the mobile app (mobile/src/services/discovery/bluetooth.ts)

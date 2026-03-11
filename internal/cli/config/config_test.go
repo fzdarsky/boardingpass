@@ -21,7 +21,7 @@ func TestConfig_Load_Defaults(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "", cfg.Host, "default host should be empty")
-	assert.Equal(t, 8443, cfg.Port, "default port should be 8443")
+	assert.Equal(t, 9455, cfg.Port, "default port should be 9455")
 	assert.Equal(t, "", cfg.CACert, "default ca_cert should be empty")
 }
 
@@ -50,7 +50,7 @@ ca_cert: ` + tempCACert,
 			name:       "valid config with only host",
 			fileConfig: `host: myhost.local`,
 			wantHost:   "myhost.local",
-			wantPort:   8443, // default
+			wantPort:   9455, // default
 			wantCACert: "",   // default
 		},
 		{
@@ -64,7 +64,7 @@ ca_cert: ` + tempCACert,
 			name:       "empty config file",
 			fileConfig: ``,
 			wantHost:   "",   // default
-			wantPort:   8443, // default
+			wantPort:   9455, // default
 			wantCACert: "",   // default
 		},
 		{
@@ -123,7 +123,7 @@ func TestConfig_Load_FromEnv(t *testing.T) {
 			name:     "only host env var",
 			envHost:  "env-host.local",
 			wantHost: "env-host.local",
-			wantPort: 8443, // default
+			wantPort: 9455, // default
 		},
 		{
 			name:     "only port env var",
@@ -133,7 +133,7 @@ func TestConfig_Load_FromEnv(t *testing.T) {
 		{
 			name:     "invalid port env var (ignored)",
 			envPort:  "invalid",
-			wantPort: 8443, // default (invalid port ignored)
+			wantPort: 9455, // default (invalid port ignored)
 			wantHost: "",
 		},
 	}
@@ -242,7 +242,7 @@ ca_cert: `+fileCACert)
 func TestConfig_ApplyFlags_EmptyValues(t *testing.T) {
 	cfg := &config.Config{
 		Host:   "existing.local",
-		Port:   8443,
+		Port:   9455,
 		CACert: "/existing/ca.pem",
 	}
 
@@ -250,7 +250,7 @@ func TestConfig_ApplyFlags_EmptyValues(t *testing.T) {
 	cfg.ApplyFlags("", 0, "")
 
 	assert.Equal(t, "existing.local", cfg.Host, "empty flag should not change host")
-	assert.Equal(t, 8443, cfg.Port, "zero flag should not change port")
+	assert.Equal(t, 9455, cfg.Port, "zero flag should not change port")
 	assert.Equal(t, "/existing/ca.pem", cfg.CACert, "empty flag should not change ca_cert")
 }
 
@@ -265,7 +265,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "valid config",
 			cfg: config.Config{
 				Host: "test.local",
-				Port: 8443,
+				Port: 9455,
 			},
 			wantErr: false,
 		},
@@ -273,7 +273,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "valid config with ca_cert (temp file)",
 			cfg: config.Config{
 				Host:   "test.local",
-				Port:   8443,
+				Port:   9455,
 				CACert: createTempFile(t),
 			},
 			wantErr: false,
@@ -300,7 +300,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "ca_cert file not found",
 			cfg: config.Config{
 				Host:   "test.local",
-				Port:   8443,
+				Port:   9455,
 				CACert: "/nonexistent/ca.pem",
 			},
 			wantErr: true,
@@ -346,7 +346,7 @@ func TestConfig_RequireHost(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &config.Config{
 				Host: tt.host,
-				Port: 8443,
+				Port: 9455,
 			}
 
 			err := cfg.RequireHost()
@@ -371,8 +371,8 @@ func TestConfig_Address(t *testing.T) {
 		{
 			name:     "standard port",
 			host:     "boardingpass.local",
-			port:     8443,
-			wantAddr: "boardingpass.local:8443",
+			port:     9455,
+			wantAddr: "boardingpass.local:9455",
 		},
 		{
 			name:     "custom port",
@@ -383,8 +383,8 @@ func TestConfig_Address(t *testing.T) {
 		{
 			name:     "empty host",
 			host:     "",
-			port:     8443,
-			wantAddr: ":8443",
+			port:     9455,
+			wantAddr: ":9455",
 		},
 	}
 

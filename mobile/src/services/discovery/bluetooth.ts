@@ -9,6 +9,7 @@
 
 import { BleManager, Device as BleDevice, State as BleState } from 'react-native-ble-plx';
 import { Device } from '@/types/device';
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
 
 // Placeholder UUID — must match the BLE service advertised by the Linux device
 const BOARDINGPASS_SERVICE_UUID = 'BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB';
@@ -117,7 +118,7 @@ export class BLEDiscoveryService {
 
       const name = nameChar.value ? atob(nameChar.value) : bleDevice.name || 'Unknown';
       const host = ipChar.value ? atob(ipChar.value) : '';
-      const port = portChar.value ? parseInt(atob(portChar.value), 10) : 8443;
+      const port = portChar.value ? parseInt(atob(portChar.value), 10) : DEFAULT_BOARDINGPASS_PORT;
       const fingerprint = fingerprintChar.value ? atob(fingerprintChar.value) : undefined;
 
       await discovered.cancelConnection();

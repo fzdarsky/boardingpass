@@ -231,7 +231,7 @@ func TestSessionTokenPersistence(t *testing.T) {
 	setupTestEnv(t)
 
 	host := "test.boardingpass.local"
-	port := 8443
+	port := 9455
 	expectedToken := "test-session-token-123456789"
 
 	// Create session store
@@ -276,8 +276,8 @@ func TestMultipleServerSessions(t *testing.T) {
 		port  int
 		token string
 	}{
-		{"server1.local", 8443, "token-for-server1"},
-		{"server2.local", 8443, "token-for-server2"},
+		{"server1.local", 9455, "token-for-server1"},
+		{"server2.local", 9455, "token-for-server2"},
 		{"server1.local", 9443, "token-for-server1-port9443"},
 	}
 
@@ -294,16 +294,16 @@ func TestMultipleServerSessions(t *testing.T) {
 	}
 
 	// Delete one token
-	err = store.Delete("server1.local", 8443)
+	err = store.Delete("server1.local", 9455)
 	require.NoError(t, err)
 
 	// Verify only that token is deleted
-	loaded, err := store.Load("server1.local", 8443)
+	loaded, err := store.Load("server1.local", 9455)
 	require.NoError(t, err)
 	assert.Equal(t, "", loaded)
 
 	// Other tokens should still exist
-	loaded, err = store.Load("server2.local", 8443)
+	loaded, err = store.Load("server2.local", 9455)
 	require.NoError(t, err)
 	assert.Equal(t, "token-for-server2", loaded)
 }

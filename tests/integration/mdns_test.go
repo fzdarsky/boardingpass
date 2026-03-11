@@ -16,7 +16,7 @@ func TestMDNSAnnouncer_StartStop(t *testing.T) {
 		Instance: "BoardingPass-test",
 		Service:  "_boardingpass._tcp",
 		Domain:   "local",
-		Port:     8443,
+		Port:     9455,
 		TXT:      map[string]string{"version": "test"},
 		Addrs:    []net.IP{net.IPv4(127, 0, 0, 1)},
 	}

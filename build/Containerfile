@@ -47,8 +47,8 @@ RUN chmod 755 /usr/local/bin/boardingpass && \
 # Enable the service
 RUN systemctl enable boardingpass.service
 
-# Expose HTTPS port (default: 8443)
-EXPOSE 8443
+# Expose HTTPS port (default: 9455)
+EXPOSE 9455
 
 # Use systemd as init
 CMD ["/usr/sbin/init"]

@@ -12,7 +12,7 @@ const TRANSPORT_PRIORITY: Record<DiscoveryMethod, number> = {
   bluetooth: 2,
   wifi: 3,
   mdns: 4,
-  fallback: 4,
+  scan: 4,
   manual: 5,
 };
 
