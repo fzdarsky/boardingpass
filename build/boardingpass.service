@@ -40,7 +40,7 @@ PrivateMounts=true
 # etc.) to provision files and execute allow-listed commands.
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 
-# Runtime directory for generated configs (hostapd, dnsmasq, env files)
+# Runtime directory for generated configs (dnsmasq, env files)
 RuntimeDirectory=boardingpass
 RuntimeDirectoryMode=0755
 

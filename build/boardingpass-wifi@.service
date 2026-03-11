@@ -7,7 +7,12 @@ Type=simple
 EnvironmentFile=/run/boardingpass/wifi-%i.env
 ExecStartPre=-/usr/bin/nmcli device set %i managed no
 ExecStartPre=/usr/sbin/ip link set %i up
-ExecStart=/usr/sbin/hostapd /run/boardingpass/hostapd-%i.conf
+# Copy hostapd config to /run/hostapd/ for correct SELinux labeling.
+# hostapd runs in hostapd_t domain (via hostapd_exec_t transition) which can
+# only read hostapd_var_run_t files. /var/run/hostapd(/.*)? has that label;
+# /run/boardingpass/ files get generic var_run_t and are denied.
+ExecStartPre=/bin/bash -c 'mkdir -p /run/hostapd && cp /run/boardingpass/hostapd-%i.conf /run/hostapd/ && restorecon /run/hostapd/hostapd-%i.conf'
+ExecStart=/usr/sbin/hostapd /run/hostapd/hostapd-%i.conf
 ExecStartPost=/usr/sbin/ip addr add ${BOARDINGPASS_WIFI_ADDRESS}/${BOARDINGPASS_WIFI_NETMASK} dev %i
 ExecStopPost=/usr/sbin/ip addr flush dev %i
 ExecStopPost=/usr/sbin/ip link set %i down
