@@ -191,7 +191,8 @@ export default function DeviceDiscoveryScreen() {
         onRefresh={refreshDevices}
         onDevicePress={handleDevicePress}
         onDeleteDevice={handleDeleteDevice}
-        onStartScan={mdnsUnavailableReason === null ? handleStartScan : undefined}
+        onStartScan={handleStartScan}
+        scanDisabled={mdnsUnavailableReason !== null}
         onAddDevice={handleOpenAddDialog}
       />
 

@@ -102,7 +102,8 @@ export class APIClient {
           const cause = error.message || 'Unknown cause';
 
           if (__DEV__) {
-            console.warn(`[APIClient] Request failed: code=${code}, cause=${cause}`);
+            // eslint-disable-next-line no-console
+            console.log(`[APIClient] Request failed: code=${code}, cause=${cause}`);
           }
 
           // Preserve the original error code and cause message so downstream

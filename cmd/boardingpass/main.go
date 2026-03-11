@@ -177,6 +177,10 @@ func run(configPath, verifierPath string) error {
 	}
 
 	// Register routes (all wrapped with activity tracking)
+	// Service identity endpoint (no authentication required, version only for authenticated)
+	serviceHandler := handlers.NewServiceHandler(sessionManager)
+	mux.Handle("/", activityMiddleware(serviceHandler))
+
 	// Auth endpoints (no authentication required)
 	mux.Handle("/auth/srp/init", activityMiddleware(http.HandlerFunc(authHandler.HandleSRPInit)))
 	mux.Handle("/auth/srp/verify", activityMiddleware(http.HandlerFunc(authHandler.HandleSRPVerify)))

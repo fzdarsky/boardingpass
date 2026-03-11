@@ -4,7 +4,7 @@ import 'react-native-get-random-values';
 
 import { useCallback, useEffect } from 'react';
 import { Stack } from 'expo-router';
-import { useColorScheme, StyleSheet, Text } from 'react-native';
+import { useColorScheme, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
 import * as SplashScreen from 'expo-splash-screen';
@@ -29,9 +29,12 @@ export default function RootLayout() {
     return () => clearTimeout(timer);
   }, []);
 
-  const renderVersionText = useCallback(
+  const renderTitle = useCallback(
     () => (
-      <Text style={[styles.versionText, { color: theme.colors.onPrimary }]}>v{appVersion}</Text>
+      <View style={styles.titleContainer}>
+        <Text style={[styles.titleText, { color: theme.colors.onPrimary }]}>Devices</Text>
+        <Text style={[styles.versionText, { color: theme.colors.onPrimary }]}>v{appVersion}</Text>
+      </View>
     ),
     [theme.colors.onPrimary]
   );
@@ -54,8 +57,7 @@ export default function RootLayout() {
             <Stack.Screen
               name="index"
               options={{
-                title: 'Devices',
-                headerRight: renderVersionText,
+                headerTitle: renderTitle,
               }}
             />
             <Stack.Screen
@@ -87,9 +89,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+  },
+  titleText: {
+    fontSize: 17,
+    fontWeight: 'bold',
+  },
   versionText: {
     fontSize: 12,
     opacity: 0.7,
-    marginRight: 8,
   },
 });

@@ -8,6 +8,7 @@ coverage/
 
 # Generated files
 src/types/api.ts
+expo-env.d.ts
 
 # Native directories
 ios/

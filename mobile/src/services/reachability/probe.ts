@@ -2,8 +2,9 @@
  * Device Reachability Probe
  *
  * Probes a device's BoardingPass service to determine reachability.
- * Uses POST /auth/srp/init with an empty body — any HTTP response (even 400)
- * confirms the service is running. Connection-level errors distinguish between
+ * Uses GET / which returns {"service": "boardingpass"} for a real BoardingPass
+ * service. Validates the response to distinguish BoardingPass from other
+ * HTTPS services on the same port. Connection-level errors distinguish between
  * port closed (unavailable) and device unreachable (offline).
  */
 
@@ -30,24 +31,22 @@ const UNREACHABLE_CODES = new Set([
  * Probe a single device to determine if its BoardingPass service is reachable.
  *
  * Returns:
- * - 'online': service responded (any HTTP status)
- * - 'unavailable': port is closed (ECONNREFUSED)
+ * - 'online': BoardingPass service responded with correct identity
+ * - 'unavailable': port closed, or a different service is running on the port
  * - 'offline': device unreachable (timeout, host unreachable, etc.)
  */
 export async function probeDevice(host: string, port: number): Promise<ProbeResult> {
   const client = createAPIClient(host, port, { timeout: PROBE_TIMEOUT });
 
   try {
-    await client.post('/auth/srp/init', {});
-    // Any successful response means the service is running
-    return 'online';
+    const data = await client.get<{ service?: string }>('/');
+    if (data?.service === 'boardingpass') {
+      return 'online';
+    }
+    // Got a response but it's not BoardingPass
+    return 'unavailable';
   } catch (error) {
     if (error instanceof APIError) {
-      // HTTP error responses (e.g. 400) still mean the service is running
-      if (error.status) {
-        return 'online';
-      }
-
       if (PORT_CLOSED_CODES.has(error.code)) {
         return 'unavailable';
       }
@@ -56,9 +55,9 @@ export async function probeDevice(host: string, port: number): Promise<ProbeResu
         return 'offline';
       }
 
-      // ERR_NETWORK often indicates TLS handshake issues — service is likely running
-      if (error.code === 'ERR_NETWORK') {
-        return 'online';
+      // HTTP error or TLS error from a responding server that isn't BoardingPass
+      if (error.status || error.code === 'ERR_NETWORK') {
+        return 'unavailable';
       }
     }
 

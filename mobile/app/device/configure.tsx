@@ -128,7 +128,8 @@ export default function ConfigureScreen() {
     if (id) {
       markEnrolled(id);
     }
-    router.back();
+    // Navigate back to device list, not the device details screen
+    router.dismissAll();
   }, [id, router]);
 
   // Missing params

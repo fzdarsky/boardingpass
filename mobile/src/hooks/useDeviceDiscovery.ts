@@ -151,7 +151,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
         });
       }
     } catch (err) {
-      console.warn('Fallback check failed:', err);
+      // eslint-disable-next-line no-console
+      console.log('Fallback check failed:', err);
       // Don't set error state for fallback failures
     }
   }, [addOrUpdateDevice]);
@@ -161,7 +162,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
    */
   const startDiscovery = useCallback(() => {
     if (isScanning) {
-      console.warn('Discovery already in progress');
+      // eslint-disable-next-line no-console
+      console.log('Discovery already in progress');
       return;
     }
 

@@ -58,7 +58,7 @@ export function DeviceCard({
 
   return (
     <>
-      <Card style={styles.card} onPress={handlePress}>
+      <Card style={styles.card}>
         <Card.Content>
           {/* Header: Name and Status */}
           <View style={styles.header}>
@@ -122,10 +122,7 @@ export function DeviceCard({
               <Text variant="bodySmall" style={[styles.label, dynamicStyles.secondaryText]}>
                 Transport:
               </Text>
-              <View style={styles.transportBadge}>
-                <IconButton icon={transportInfo.icon} size={14} style={styles.transportIcon} />
-                <Badge style={[styles.badge, discoveryBadgeColors]}>{transportInfo.label}</Badge>
-              </View>
+              <Badge style={[styles.badge, discoveryBadgeColors]}>{transportInfo.label}</Badge>
             </View>
 
             {device.addresses.length > 1 && (
@@ -147,17 +144,18 @@ export function DeviceCard({
                 {formatLastSeen(device.lastSeen)}
               </Text>
             </View>
-          </View>
 
-          {/* TXT Records (if available) */}
-          {/* Enrolled info */}
-          {device.status === 'enrolled' && device.enrolledAt && (
-            <View style={[styles.enrolledInfo, dynamicStyles.subtleBackground]}>
-              <Text variant="bodySmall" style={dynamicStyles.secondaryText}>
-                Enrolled {formatLastSeen(device.enrolledAt)}
-              </Text>
-            </View>
-          )}
+            {device.status === 'enrolled' && device.enrolledAt && (
+              <View style={styles.infoRow}>
+                <Text variant="bodySmall" style={[styles.label, dynamicStyles.secondaryText]}>
+                  Enrolled:
+                </Text>
+                <Text variant="bodySmall" style={[styles.value, dynamicStyles.primaryText]}>
+                  {formatLastSeen(device.enrolledAt)}
+                </Text>
+              </View>
+            )}
+          </View>
 
           {device.txt && Object.keys(device.txt).length > 0 && (
             <View style={[styles.txtRecords, dynamicStyles.subtleBackground]}>
@@ -174,11 +172,16 @@ export function DeviceCard({
           )}
         </Card.Content>
 
-        {/* Action Button */}
-        {onPress && getActionButton(device.status) && (
+        {/* Action Button — always visible, disabled for non-actionable states */}
+        {onPress && (
           <Card.Actions>
-            <Button icon={getActionButton(device.status)!.icon} mode="contained" onPress={onPress}>
-              {getActionButton(device.status)!.label}
+            <Button
+              icon={getActionButton(device.status).icon}
+              mode="contained"
+              onPress={handlePress}
+              disabled={!getActionButton(device.status).enabled}
+            >
+              {getActionButton(device.status).label}
             </Button>
           </Card.Actions>
         )}
@@ -207,25 +210,24 @@ export function DeviceCard({
  * Get transport display info (icon and label) for a discovery method.
  */
 function getTransportInfo(method: DiscoveryMethod): {
-  icon: string;
   label: string;
   isManual: boolean;
 } {
   switch (method) {
     case 'wifi':
-      return { icon: 'wifi', label: 'WIFI', isManual: false };
+      return { label: 'WIFI', isManual: false };
     case 'bluetooth':
-      return { icon: 'bluetooth', label: 'BLE', isManual: false };
+      return { label: 'BLE', isManual: false };
     case 'usb':
-      return { icon: 'usb', label: 'USB', isManual: false };
+      return { label: 'USB', isManual: false };
     case 'mdns':
-      return { icon: 'access-point', label: 'MDNS', isManual: false };
+      return { label: 'MDNS', isManual: false };
     case 'fallback':
-      return { icon: 'access-point', label: 'FALLBACK', isManual: false };
+      return { label: 'FALLBACK', isManual: false };
     case 'manual':
-      return { icon: 'pencil', label: 'MANUAL', isManual: true };
+      return { label: 'MANUAL', isManual: true };
     default:
-      return { icon: 'help-circle-outline', label: String(method).toUpperCase(), isManual: false };
+      return { label: String(method).toUpperCase(), isManual: false };
   }
 }
 
@@ -238,7 +240,7 @@ function getStatusConfig(status: DeviceStatus): {
 } {
   switch (status) {
     case 'online':
-      return { label: 'Available', color: deviceStatusColors.online };
+      return { label: 'Online', color: deviceStatusColors.online };
     case 'offline':
       return { label: 'Offline', color: deviceStatusColors.offline };
     case 'unavailable':
@@ -258,18 +260,18 @@ function getStatusConfig(status: DeviceStatus): {
 
 /**
  * Get action button config for a given status.
- * Returns null for states where no action button should be shown.
+ * Always returns a config; non-actionable states get a disabled "Connect" button.
  */
-function getActionButton(status: DeviceStatus): { label: string; icon: string } | null {
+function getActionButton(status: DeviceStatus): { label: string; icon: string; enabled: boolean } {
   switch (status) {
     case 'online':
-      return { label: 'Connect', icon: 'login' };
+      return { label: 'Connect', icon: 'login', enabled: true };
     case 'authenticated':
-      return { label: 'Details', icon: 'information-outline' };
+      return { label: 'Details', icon: 'information-outline', enabled: true };
     case 'error':
-      return { label: 'Retry', icon: 'refresh' };
+      return { label: 'Retry', icon: 'refresh', enabled: true };
     default:
-      return null;
+      return { label: 'Connect', icon: 'login', enabled: false };
   }
 }
 
@@ -344,21 +346,6 @@ const styles = StyleSheet.create({
   badge: {
     fontSize: 10,
     paddingHorizontal: 8,
-  },
-  transportBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  transportIcon: {
-    margin: 0,
-    width: 20,
-    height: 20,
-  },
-  enrolledInfo: {
-    marginTop: 12,
-    padding: 8,
-    borderRadius: 4,
   },
   txtRecords: {
     marginTop: 12,

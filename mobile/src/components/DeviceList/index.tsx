@@ -25,6 +25,7 @@ export interface DeviceListProps {
   onDevicePress?: (device: Device) => void;
   onDeleteDevice?: (device: Device) => void;
   onStartScan?: () => void;
+  scanDisabled?: boolean;
   onAddDevice?: () => void;
 }
 
@@ -35,6 +36,7 @@ export function DeviceList({
   onDevicePress,
   onDeleteDevice,
   onStartScan,
+  scanDisabled = false,
   onAddDevice,
 }: DeviceListProps) {
   const theme = useTheme();
@@ -90,7 +92,13 @@ export function DeviceList({
           </Text>
         </View>
         {onStartScan && (
-          <Button mode="contained" onPress={onStartScan} icon="radar" style={styles.scanButton}>
+          <Button
+            mode="contained"
+            onPress={onStartScan}
+            icon="radar"
+            style={styles.scanButton}
+            disabled={scanDisabled}
+          >
             Scan Network
           </Button>
         )}
