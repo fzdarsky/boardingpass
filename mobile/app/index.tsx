@@ -13,7 +13,7 @@
  * - Logging without sensitive data (T053 - FR-029)
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   Button,
@@ -30,7 +30,6 @@ import { DeviceList } from '@/components/DeviceList';
 import { Device } from '@/types/device';
 import { parseAndValidateHostPort } from '@/utils/validation';
 import { HapticFeedback } from '@/utils/haptics';
-import { sessionManager } from '@/services/auth/session';
 
 export default function DeviceDiscoveryScreen() {
   const router = useRouter();
@@ -44,6 +43,7 @@ export default function DeviceDiscoveryScreen() {
     refreshDevices,
     addManualDevice,
     deleteDevice,
+    refreshAuthStates,
   } = useDeviceDiscovery();
 
   const [snackbarVisible, setSnackbarVisible] = useState(false);
@@ -56,34 +56,17 @@ export default function DeviceDiscoveryScreen() {
   const [addressInput, setAddressInput] = useState('');
   const [addressError, setAddressError] = useState<string | undefined>(undefined);
 
-  // Track which devices have valid auth sessions (for UI display)
-  const [authenticatedDevices, setAuthenticatedDevices] = useState<Set<string>>(new Set());
-  const devicesRef = useRef(devices);
-  devicesRef.current = devices;
-
   // Auto-start discovery on mount
   useEffect(() => {
     startDiscovery();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Refresh auth state for all devices when screen gains focus.
-  // Uses a ref for devices to avoid re-triggering on every render
-  // (useDeviceDiscovery returns a new array reference each time).
+  // Refresh auth state for all devices when screen gains focus
   useFocusEffect(
     useCallback(() => {
-      const checkAuthStates = async () => {
-        const authenticated = new Set<string>();
-        for (const device of devicesRef.current) {
-          const validation = await sessionManager.isSessionValid(device.id);
-          if (validation.isValid) {
-            authenticated.add(device.id);
-          }
-        }
-        setAuthenticatedDevices(authenticated);
-      };
-      checkAuthStates();
-    }, [])
+      refreshAuthStates();
+    }, [refreshAuthStates])
   );
 
   // Show error snackbar
@@ -117,35 +100,32 @@ export default function DeviceDiscoveryScreen() {
   };
 
   /**
-   * Handle device press - navigate to details if authenticated, otherwise to auth screen
+   * Handle device press - navigate based on device status
    */
-  const handleDevicePress = async (device: Device) => {
-    if (device.status === 'online' || device.status === 'authenticated') {
-      const validation = await sessionManager.isSessionValid(device.id);
-
-      if (validation.isValid) {
-        router.push({
-          pathname: '/device/[id]',
-          params: {
-            id: device.id,
-            host: device.host,
-            port: device.port.toString(),
-          },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any);
-      } else {
-        router.push({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          pathname: '/device/authenticate' as any,
-          params: {
-            deviceId: device.id,
-            deviceName: device.name,
-            host: device.host,
-            port: device.port.toString(),
-          },
-        });
-      }
+  const handleDevicePress = (device: Device) => {
+    if (device.status === 'authenticated') {
+      router.push({
+        pathname: '/device/[id]',
+        params: {
+          id: device.id,
+          host: device.host,
+          port: device.port.toString(),
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
+    } else if (device.status === 'online') {
+      router.push({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        pathname: '/device/authenticate' as any,
+        params: {
+          deviceId: device.id,
+          deviceName: device.name,
+          host: device.host,
+          port: device.port.toString(),
+        },
+      });
     }
+    // No action for offline, unavailable, enrolled, error — buttons are hidden
   };
 
   /**
@@ -212,8 +192,8 @@ export default function DeviceDiscoveryScreen() {
         onDevicePress={handleDevicePress}
         onDeleteDevice={handleDeleteDevice}
         onStartScan={handleStartScan}
+        scanDisabled={mdnsUnavailableReason !== null}
         onAddDevice={handleOpenAddDialog}
-        authenticatedDeviceIds={authenticatedDevices}
       />
 
       {/* Action Bar (when devices are shown) */}
@@ -252,7 +232,7 @@ export default function DeviceDiscoveryScreen() {
           <Dialog.Content>
             <TextInput
               label="Device address"
-              placeholder="192.168.1.100:8443"
+              placeholder="192.168.1.100:9455"
               value={addressInput}
               onChangeText={handleAddressChange}
               onSubmitEditing={isAddButtonEnabled ? handleAddDevice : undefined}
@@ -264,7 +244,7 @@ export default function DeviceDiscoveryScreen() {
               accessibilityLabel="Device IP address"
             />
             <HelperText type={addressError ? 'error' : 'info'} visible={true}>
-              {addressError || 'Enter IP address with optional port (default: 8443)'}
+              {addressError || 'Enter IP address with optional port (default: 9455)'}
             </HelperText>
           </Dialog.Content>
           <Dialog.Actions>

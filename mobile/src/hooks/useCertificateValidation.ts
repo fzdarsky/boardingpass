@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
 import { useSecureStorage } from './useSecureStorage';
 import { CertificateInfo } from '../types/certificate';
 import {
@@ -45,7 +46,7 @@ export function useCertificateValidation() {
    *
    * @param deviceId - Device identifier
    * @param host - Device hostname or IP
-   * @param port - Device port (default 8443)
+   * @param port - Device port
    * @param useMock - Use mock certificate for testing
    * @returns Validation result
    */
@@ -53,7 +54,7 @@ export function useCertificateValidation() {
     async (
       deviceId: string,
       host: string,
-      port: number = 8443
+      port: number = DEFAULT_BOARDINGPASS_PORT
     ): Promise<CertificateValidationResult> => {
       setState(prev => ({ ...prev, isValidating: true, error: null }));
 

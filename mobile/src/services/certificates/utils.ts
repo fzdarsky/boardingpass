@@ -8,6 +8,7 @@
 import { isValidSHA256 } from '../../utils/crypto';
 import { CertificateInfo, TrustStatus } from '../../types/certificate';
 import { fetchServerCertificate } from '../../../modules/certificate-pinning';
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
 
 /**
  * Raw certificate data from TLS handshake
@@ -28,13 +29,13 @@ export interface RawCertificateData {
  * capture the server's certificate (even self-signed), and return its metadata.
  *
  * @param host - Server hostname or IP
- * @param port - Server port (default 8443)
+ * @param port - Server port
  * @returns Raw certificate data
  * @throws Error if certificate cannot be fetched
  */
 export async function fetchCertificate(
   host: string,
-  port: number = 8443
+  port: number = DEFAULT_BOARDINGPASS_PORT
 ): Promise<RawCertificateData> {
   const cert = await fetchServerCertificate(host, port);
 
@@ -211,7 +212,7 @@ export function extractCommonName(dn: string): string {
  */
 export async function fetchCertificateMock(
   host: string,
-  _port: number = 8443
+  _port: number = DEFAULT_BOARDINGPASS_PORT
 ): Promise<RawCertificateData> {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 500));

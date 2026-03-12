@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	defaultPort    = 8443
+	defaultPort    = 9455
 	configFileName = "config.yaml"
 	envHost        = "BOARDING_HOST"
 	envPort        = "BOARDING_PORT"

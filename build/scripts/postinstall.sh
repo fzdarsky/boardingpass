@@ -44,7 +44,7 @@ transports:
     enabled: true
     interfaces: []
     address: ""
-    port: 8443
+    port: 9455
     tls_cert: "/var/lib/boardingpass/tls/server.crt"
     tls_key: "/var/lib/boardingpass/tls/server.key"
 

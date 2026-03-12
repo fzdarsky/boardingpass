@@ -240,7 +240,7 @@ mobile/
 │   │   │   ├── manager.ts   # Orchestrates all discovery methods
 │   │   │   ├── wifi.ts      # WiFi AP SSID detection
 │   │   │   ├── bluetooth.ts # BLE scanning
-│   │   │   ├── usb.ts       # USB tethering detection
+│   │   │   ├── scan.ts      # Subnet scanning (fallback when mDNS unavailable)
 │   │   │   └── preference.ts # Transport priority & de-duplication
 │   │   ├── auth/            # SRP-6a authentication
 │   │   ├── api/             # REST API client

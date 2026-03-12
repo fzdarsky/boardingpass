@@ -43,7 +43,7 @@ func TestStore_SaveAndLoad(t *testing.T) {
 		{
 			name:  "save and load simple token",
 			host:  "test.local",
-			port:  8443,
+			port:  9455,
 			token: "test-session-token-123",
 		},
 		{
@@ -55,7 +55,7 @@ func TestStore_SaveAndLoad(t *testing.T) {
 		{
 			name:  "save and load long token",
 			host:  "192.168.1.100",
-			port:  8443,
+			port:  9455,
 			token: "very-long-token-with-lots-of-random-characters-abcdefghijklmnopqrstuvwxyz0123456789",
 		},
 	}
@@ -78,7 +78,7 @@ func TestStore_Load_NotExists(t *testing.T) {
 	store := setupTestStore(t)
 
 	// Load non-existent token
-	token, err := store.Load("nonexistent.local", 8443)
+	token, err := store.Load("nonexistent.local", 9455)
 	require.NoError(t, err)
 	assert.Equal(t, "", token, "should return empty string for non-existent token")
 }
@@ -88,7 +88,7 @@ func TestStore_Load_WithTrailingWhitespace(t *testing.T) {
 
 	// Manually create token file with trailing whitespace
 	host := "test.local"
-	port := 8443
+	port := 9455
 	filename := getTokenFilename(t, store, host, port)
 
 	tokenWithWhitespace := "test-token\n\n  \t"
@@ -105,7 +105,7 @@ func TestStore_SavePermissions(t *testing.T) {
 	store := setupTestStore(t)
 
 	host := "test.local"
-	port := 8443
+	port := 9455
 	token := "test-token"
 
 	// Save token
@@ -126,7 +126,7 @@ func TestStore_Delete(t *testing.T) {
 	store := setupTestStore(t)
 
 	host := "test.local"
-	port := 8443
+	port := 9455
 	token := "test-token"
 
 	// Save token
@@ -152,7 +152,7 @@ func TestStore_Delete_NotExists(t *testing.T) {
 	store := setupTestStore(t)
 
 	// Delete non-existent token should not error
-	err := store.Delete("nonexistent.local", 8443)
+	err := store.Delete("nonexistent.local", 9455)
 	assert.NoError(t, err)
 }
 
@@ -165,8 +165,8 @@ func TestStore_MultipleHosts(t *testing.T) {
 		port  int
 		token string
 	}{
-		{"host1.local", 8443, "token-for-host1"},
-		{"host2.local", 8443, "token-for-host2"},
+		{"host1.local", 9455, "token-for-host1"},
+		{"host2.local", 9455, "token-for-host2"},
 		{"host1.local", 9443, "token-for-host1-port9443"},
 	}
 
@@ -183,16 +183,16 @@ func TestStore_MultipleHosts(t *testing.T) {
 	}
 
 	// Delete one token
-	err := store.Delete("host1.local", 8443)
+	err := store.Delete("host1.local", 9455)
 	require.NoError(t, err)
 
 	// Verify only that token is deleted
-	loaded, err := store.Load("host1.local", 8443)
+	loaded, err := store.Load("host1.local", 9455)
 	require.NoError(t, err)
 	assert.Equal(t, "", loaded)
 
 	// Other tokens should still exist
-	loaded, err = store.Load("host2.local", 8443)
+	loaded, err = store.Load("host2.local", 9455)
 	require.NoError(t, err)
 	assert.Equal(t, "token-for-host2", loaded)
 
@@ -213,14 +213,14 @@ func TestStore_TokenFilename_Consistency(t *testing.T) {
 		{
 			name:     "consistent filename for same host:port",
 			host:     "test.local",
-			port:     8443,
-			expected: computeExpectedFilename(t, store, "test.local", 8443),
+			port:     9455,
+			expected: computeExpectedFilename(t, store, "test.local", 9455),
 		},
 		{
 			name:     "different filename for different host",
 			host:     "other.local",
-			port:     8443,
-			expected: computeExpectedFilename(t, store, "other.local", 8443),
+			port:     9455,
+			expected: computeExpectedFilename(t, store, "other.local", 9455),
 		},
 		{
 			name:     "different filename for different port",
@@ -247,8 +247,8 @@ func TestStore_TokenFilename_Collision(t *testing.T) {
 	store := setupTestStore(t)
 
 	// Two different host:port combinations should produce different filenames
-	filename1 := getTokenFilename(t, store, "host1.local", 8443)
-	filename2 := getTokenFilename(t, store, "host2.local", 8443)
+	filename1 := getTokenFilename(t, store, "host1.local", 9455)
+	filename2 := getTokenFilename(t, store, "host2.local", 9455)
 	filename3 := getTokenFilename(t, store, "host1.local", 9443)
 
 	assert.NotEqual(t, filename1, filename2, "different hosts should have different filenames")

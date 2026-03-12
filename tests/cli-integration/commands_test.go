@@ -463,7 +463,7 @@ func TestCompleteCommand_TokenDeletion(t *testing.T) {
 	require.NoError(t, err)
 
 	host := "test.local"
-	port := 8443
+	port := 9455
 	token := "test-token-to-delete"
 
 	// Save token

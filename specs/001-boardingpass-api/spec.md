@@ -122,7 +122,7 @@ The system needs to manage its own lifecycle to ensure it remains ephemeral (doe
 - **FR-003**: System MUST NOT accept any API requests (except auth handshake) without a valid Session Token.
 - **FR-003a**: System MUST reject Session Tokens that have expired (30 minutes from issuance) with a 401 Unauthorized response.
 - **FR-004**: System MUST read the SRP Salt and Verifier from a secured, read-only local source (e.g., `/etc/boardingpass/verifier`).
-- **FR-005**: System MUST bind to a configurable port (default: 8443) on all interfaces.
+- **FR-005**: System MUST bind to a configurable port (default: 9455) on all interfaces.
 - **FR-006**: System MUST log requests to journald in JSON format, strictly excluding configuration payloads, secrets, and SRP session keys.
 
 #### Device Inventory (Info & Network)

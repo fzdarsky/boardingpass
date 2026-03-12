@@ -22,7 +22,7 @@ type DiscoveryMethod = 'mdns' | 'fallback' | 'manual' | 'wifi' | 'bluetooth' | '
 
 **Device fields populated**:
 - `host`: Gateway IP address of current WiFi network
-- `port`: 8443 (default)
+- `port`: 9455 (default)
 - `discoveryMethod`: `'wifi'`
 - `name`: Extracted from SSID (`BoardingPass-<name>` -> `<name>`) or from `/info` endpoint
 
@@ -69,12 +69,12 @@ type DiscoveryMethod = 'mdns' | 'fallback' | 'manual' | 'wifi' | 'bluetooth' | '
 1. Detect network type via `@react-native-community/netinfo`
 2. When connected via USB Ethernet (type `'other'` or `'ethernet'` on mobile):
    - Probe well-known tethering gateway IPs: `172.20.10.1` (iOS), `192.168.42.1` (Android)
-   - Send HTTPS HEAD to each candidate on port 8443
+   - Send HTTPS HEAD to each candidate on port 9455
 3. If response received: create Device with `discoveryMethod: 'usb'`
 
 **Device fields populated**:
 - `host`: Tethering gateway IP that responded
-- `port`: 8443 (default)
+- `port`: 9455 (default)
 - `discoveryMethod`: `'usb'`
 - `name`: From `/info` endpoint after connection
 

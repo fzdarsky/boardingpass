@@ -5,7 +5,7 @@ service:
   inactivity_timeout: "10m"      # Max idle time before service self-terminates (Go duration: "5m", "1h")
   session_ttl: "30m"             # Authenticated session lifetime (min: 5m)
   sentinel_file: "/etc/boardingpass/issued"  # Created on provisioning completion; prevents service restart
-  port: 8443                     # HTTPS listen port (shared by all transports)
+  port: 9455                     # HTTPS listen port (shared by all transports)
   tls_cert: "/var/lib/boardingpass/tls/server.crt"  # Path to TLS certificate (auto-generated if missing)
   tls_key: "/var/lib/boardingpass/tls/server.key"   # Path to TLS private key (auto-generated if missing)
   mdns:

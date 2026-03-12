@@ -519,7 +519,7 @@ BoardingPass devices broadcast their availability via mDNS service name `_boardi
 
 #### 3.4 **Fallback to Well-Known IP Only**
 
-- **Description**: Skip mDNS entirely, rely only on well-known IP address (192.168.1.100:8443)
+- **Description**: Skip mDNS entirely, rely only on well-known IP address (192.168.1.100:9455)
 - **Pros**:
   - Simple implementation
   - No native dependencies
@@ -626,7 +626,7 @@ This requires prebuild but maintains most Expo advantages while meeting core req
 4. **Fallback IP Strategy**:
    ```typescript
    const FALLBACK_IP = '192.168.1.100';
-   const FALLBACK_PORT = 8443;
+   const FALLBACK_PORT = 9455;
 
    async function checkFallbackDevice(): Promise<DiscoveredDevice | null> {
      try {
@@ -1472,7 +1472,7 @@ This approach leverages existing investment in OpenAPI spec and provides stronge
 5. **Type Safety Benefits**:
    ```typescript
    // TypeScript catches mismatches at compile time
-   const client = new BoardingPassClient('https://device.local:8443');
+   const client = new BoardingPassClient('https://device.local:9455');
 
    // Type error if request doesn't match schema
    await client.srpInit({

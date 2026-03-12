@@ -1,16 +1,21 @@
 /**
- * Expo config plugin to set iOS deployment target in Podfile.properties.json
+ * Expo config plugin to set iOS deployment target consistently across the project.
  *
- * Ensures CocoaPods uses the same deployment target as the Xcode project,
- * preventing pod compatibility errors for packages requiring newer iOS versions.
+ * Updates both:
+ * - Podfile.properties.json (for CocoaPods platform version)
+ * - Xcode project build settings (IPHONEOS_DEPLOYMENT_TARGET)
+ *
+ * This prevents linker warnings about objects built for newer iOS versions
+ * than the project target.
  */
 
-const { withDangerousMod } = require('@expo/config-plugins');
+const { withDangerousMod, withXcodeProject } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
 function withDeploymentTarget(config, { deploymentTarget }) {
-  return withDangerousMod(config, [
+  // 1. Set deployment target in Podfile.properties.json for CocoaPods
+  config = withDangerousMod(config, [
     'ios',
     (config) => {
       const podfilePropsPath = path.join(
@@ -29,6 +34,23 @@ function withDeploymentTarget(config, { deploymentTarget }) {
       return config;
     },
   ]);
+
+  // 2. Set IPHONEOS_DEPLOYMENT_TARGET in the Xcode project build settings
+  config = withXcodeProject(config, (config) => {
+    const project = config.modResults;
+    const configurations = project.pbxXCBuildConfigurationSection();
+
+    for (const key in configurations) {
+      const buildSettings = configurations[key].buildSettings;
+      if (buildSettings && buildSettings.IPHONEOS_DEPLOYMENT_TARGET) {
+        buildSettings.IPHONEOS_DEPLOYMENT_TARGET = deploymentTarget;
+      }
+    }
+
+    return config;
+  });
+
+  return config;
 }
 
 module.exports = withDeploymentTarget;

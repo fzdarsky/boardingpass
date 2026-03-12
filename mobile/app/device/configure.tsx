@@ -18,6 +18,7 @@ import { createAPIClient } from '../../src/services/api/client';
 import { getSystemInfo } from '../../src/services/api/info';
 import { getNetworkConfig } from '../../src/services/api/network';
 import { sessionManager } from '../../src/services/auth/session';
+import { markEnrolled } from '../../src/services/enrollment/store';
 import { createInitialWizardState } from '../../src/types/wizard';
 import type { APIClient } from '../../src/services/api/client';
 import type { components } from '../../src/types/api';
@@ -124,9 +125,12 @@ export default function ConfigureScreen() {
   }, [systemInfo, serviceInterfaceName]);
 
   const handleComplete = useCallback(() => {
-    // For US1, just navigate back (apply logic comes in US2)
-    router.back();
-  }, [router]);
+    if (id) {
+      markEnrolled(id);
+    }
+    // Navigate back to device list, not the device details screen
+    router.dismissAll();
+  }, [id, router]);
 
   // Missing params
   if (!id || !host || !port) {

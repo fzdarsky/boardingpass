@@ -51,7 +51,7 @@ Represents a single configured transport instance on the BoardingPass service.
 | enabled | bool | Yes | Whether this transport is enabled in config |
 | interface | string | Yes | Network interface name (e.g., `wlan0`, `bt0`, `usb0`) |
 | address | string | Yes | IP address to bind on this interface |
-| port | int | Yes | HTTPS port (shared across transports, default 8443) |
+| port | int | Yes | HTTPS port (shared across transports, default 9455) |
 | state | TransportState | No | Current lifecycle state (runtime only, not persisted) |
 | systemdUnit | string | No | Name of the systemd unit managing this transport (for wifi/bluetooth) |
 

@@ -25,8 +25,8 @@ export interface DeviceListProps {
   onDevicePress?: (device: Device) => void;
   onDeleteDevice?: (device: Device) => void;
   onStartScan?: () => void;
+  scanDisabled?: boolean;
   onAddDevice?: () => void;
-  authenticatedDeviceIds?: Set<string>;
 }
 
 export function DeviceList({
@@ -36,8 +36,8 @@ export function DeviceList({
   onDevicePress,
   onDeleteDevice,
   onStartScan,
+  scanDisabled = false,
   onAddDevice,
-  authenticatedDeviceIds,
 }: DeviceListProps) {
   const theme = useTheme();
 
@@ -65,10 +65,9 @@ export function DeviceList({
         onPress={() => onDevicePress?.(item)}
         onDelete={onDeleteDevice ? () => onDeleteDevice(item) : undefined}
         showDuplicateIndicator={hasDuplicateNames && deviceNamesCount[item.name] > 1}
-        isAuthenticated={authenticatedDeviceIds?.has(item.id) ?? false}
       />
     ),
-    [onDevicePress, onDeleteDevice, hasDuplicateNames, deviceNamesCount, authenticatedDeviceIds]
+    [onDevicePress, onDeleteDevice, hasDuplicateNames, deviceNamesCount]
   );
 
   // Render empty state
@@ -93,7 +92,13 @@ export function DeviceList({
           </Text>
         </View>
         {onStartScan && (
-          <Button mode="contained" onPress={onStartScan} icon="radar" style={styles.scanButton}>
+          <Button
+            mode="contained"
+            onPress={onStartScan}
+            icon="radar"
+            style={styles.scanButton}
+            disabled={scanDisabled}
+          >
             Scan Network
           </Button>
         )}

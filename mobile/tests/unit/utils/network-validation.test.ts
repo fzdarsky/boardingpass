@@ -186,7 +186,7 @@ describe('validatePort', () => {
     expect(validatePort(1)).toBeNull();
     expect(validatePort(80)).toBeNull();
     expect(validatePort(443)).toBeNull();
-    expect(validatePort(8443)).toBeNull();
+    expect(validatePort(9455)).toBeNull();
     expect(validatePort(65535)).toBeNull();
   });
 

@@ -55,14 +55,14 @@ The CLI supports three configuration methods (in order of precedence):
 ###1. Command-Line Flags (Highest Priority)
 
 ```bash
-boarding pass --host 192.168.1.100 --port 8443 --username admin
+boarding pass --host 192.168.1.100 --port 9455 --username admin
 ```
 
 ### 2. Environment Variables (Medium Priority)
 
 ```bash
 export BOARDING_HOST=192.168.1.100
-export BOARDING_PORT=8443
+export BOARDING_PORT=9455
 boarding pass --username admin
 ```
 
@@ -72,7 +72,7 @@ Create `~/.config/boardingpass/config.yaml` (Linux/Unix) or `%APPDATA%\boardingp
 
 ```yaml
 host: 192.168.1.100
-port: 8443
+port: 9455
 ```
 
 Then run commands without flags:
@@ -119,7 +119,7 @@ set -euo pipefail
 
 # Use environment variables for connection
 export BOARDING_HOST=${DEVICE_IP}
-export BOARDING_PORT=8443
+export BOARDING_PORT=9455
 
 # Authenticate with flags (no interactive prompts)
 boarding pass --username "${DEVICE_USER}" --password "${DEVICE_PASSWORD}"
@@ -150,7 +150,7 @@ boarding pass --host internal.example.com --ca-cert /path/to/ca-bundle.pem --use
 # Option 2: Via config file
 cat > ~/.config/boardingpass/config.yaml <<EOF
 host: internal.example.com
-port: 8443
+port: 9455
 ca_cert: /etc/ssl/certs/company-ca.pem
 EOF
 
@@ -168,7 +168,7 @@ boarding pass --host 192.168.1.100 --username admin
 Output:
 ```
 WARNING: Unknown TLS certificate fingerprint
-  Host: 192.168.1.100:8443
+  Host: 192.168.1.100:9455
   Fingerprint: SHA256:a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
 
 Do you want to accept this certificate? (yes/no): yes
@@ -193,7 +193,7 @@ boarding pass [flags]
 - `--username` - Username (required, or will prompt)
 - `--password` - Password (optional, prompts if not provided)
 - `--host` - BoardingPass service hostname/IP
-- `--port` - BoardingPass service port (default: 8443)
+- `--port` - BoardingPass service port (default: 9455)
 - `--ca-cert` - Path to custom CA certificate bundle
 
 **Examples**:
@@ -214,7 +214,7 @@ boarding pass --host internal.corp --ca-cert /etc/ssl/ca.pem --username admin
 **Output**:
 ```
 Password: ********
-Authenticating with 192.168.1.100:8443...
+Authenticating with 192.168.1.100:9455...
 Authentication successful. Session valid for 30 minutes.
 ```
 
@@ -437,7 +437,7 @@ boarding pass --username admin
 **Solution**:
 - Verify service is running: `systemctl status boardingpass`
 - Check network connectivity: `ping <host>`
-- Verify firewall rules allow port 8443
+- Verify firewall rules allow port 9455
 
 ### Error: "Certificate rejected by user"
 

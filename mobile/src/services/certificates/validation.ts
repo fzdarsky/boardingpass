@@ -6,6 +6,7 @@
  */
 
 import { CertificateInfo } from '../../types/certificate';
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
 import { useSecureStorage, STORAGE_KEYS } from '../../hooks/useSecureStorage';
 import {
   fetchCertificate,
@@ -39,14 +40,14 @@ export class CertificateValidationService {
    *
    * @param deviceId - Device identifier
    * @param host - Device hostname or IP
-   * @param port - Device port (default 8443)
+   * @param port - Device port
    * @param useMock - Use mock certificate for testing (default false)
    * @returns Validation result with certificate info
    */
   async validateCertificate(
     deviceId: string,
     host: string,
-    port: number = 8443,
+    port: number = DEFAULT_BOARDINGPASS_PORT,
     useMock: boolean = false
   ): Promise<CertificateValidationResult> {
     try {

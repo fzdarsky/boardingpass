@@ -90,12 +90,16 @@ func TestSRPAuthenticationFlow(t *testing.T) {
 	Avu.Mod(Avu, srp.N)
 	S := new(big.Int).Exp(Avu, b, srp.N)
 
-	// Server computes session key K = H(S)
+	// Server computes session key K = H(S) — pad S to N's byte length
+	// (matches internal/auth/srp.go computeK and pkg/srp/client.go ComputeSharedSecret)
+	SBytesPadded := make([]byte, maxLen)
+	copy(SBytesPadded[maxLen-len(S.Bytes()):], S.Bytes())
 	serverKHash := sha256.New()
-	serverKHash.Write(S.Bytes())
+	serverKHash.Write(SBytesPadded)
 	serverK := serverKHash.Sum(nil)
 
 	// Server computes expected M1
+	// A and B are padded to N's byte length (matches internal/auth/srp.go computeM1)
 	hashN := sha256.Sum256(srp.N.Bytes())
 	hashG := sha256.Sum256(srp.G.Bytes())
 	hashNXorG := make([]byte, len(hashN))
@@ -108,8 +112,8 @@ func TestSRPAuthenticationFlow(t *testing.T) {
 	serverM1Hash.Write(hashNXorG)
 	serverM1Hash.Write(hashUsername[:])
 	serverM1Hash.Write(saltBytes)
-	serverM1Hash.Write(ABytes)
-	serverM1Hash.Write(B.Bytes())
+	serverM1Hash.Write(ABytesPadded)
+	serverM1Hash.Write(BBytesPadded)
 	serverM1Hash.Write(serverK)
 	expectedM1 := serverM1Hash.Sum(nil)
 	expectedM1Base64 := base64.StdEncoding.EncodeToString(expectedM1)
@@ -118,8 +122,9 @@ func TestSRPAuthenticationFlow(t *testing.T) {
 	assert.Equal(t, expectedM1Base64, M1Base64, "client proof M1 should match server's computation")
 
 	// Phase 4: Server computes proof M2 = H(A | M1 | K)
+	// A is padded to N's byte length (matches internal/auth/srp.go computeM2)
 	serverM2Hash := sha256.New()
-	serverM2Hash.Write(ABytes)
+	serverM2Hash.Write(ABytesPadded)
 	clientM1, _ := base64.StdEncoding.DecodeString(M1Base64)
 	serverM2Hash.Write(clientM1)
 	serverM2Hash.Write(serverK)
@@ -231,7 +236,7 @@ func TestSessionTokenPersistence(t *testing.T) {
 	setupTestEnv(t)
 
 	host := "test.boardingpass.local"
-	port := 8443
+	port := 9455
 	expectedToken := "test-session-token-123456789"
 
 	// Create session store
@@ -276,8 +281,8 @@ func TestMultipleServerSessions(t *testing.T) {
 		port  int
 		token string
 	}{
-		{"server1.local", 8443, "token-for-server1"},
-		{"server2.local", 8443, "token-for-server2"},
+		{"server1.local", 9455, "token-for-server1"},
+		{"server2.local", 9455, "token-for-server2"},
 		{"server1.local", 9443, "token-for-server1-port9443"},
 	}
 
@@ -294,16 +299,16 @@ func TestMultipleServerSessions(t *testing.T) {
 	}
 
 	// Delete one token
-	err = store.Delete("server1.local", 8443)
+	err = store.Delete("server1.local", 9455)
 	require.NoError(t, err)
 
 	// Verify only that token is deleted
-	loaded, err := store.Load("server1.local", 8443)
+	loaded, err := store.Load("server1.local", 9455)
 	require.NoError(t, err)
 	assert.Equal(t, "", loaded)
 
 	// Other tokens should still exist
-	loaded, err = store.Load("server2.local", 8443)
+	loaded, err = store.Load("server2.local", 9455)
 	require.NoError(t, err)
 	assert.Equal(t, "token-for-server2", loaded)
 }

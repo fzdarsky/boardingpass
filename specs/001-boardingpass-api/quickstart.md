@@ -353,7 +353,7 @@ transports:
     enabled: true
     interfaces: []
     address: "127.0.0.1"
-    port: 8443
+    port: 9455
     tls_cert: "/etc/boardingpass/tls/server.crt"
     tls_key: "/etc/boardingpass/tls/server.key"
 
@@ -414,14 +414,14 @@ sudo chmod 500 /usr/local/bin/boardingpass-password-generator
 # Run service in foreground
 sudo ./_output/bin/boardingpass --config=/etc/boardingpass/config.yaml
 
-# Service will bind to https://127.0.0.1:8443
+# Service will bind to https://127.0.0.1:9455
 ```
 
 ### Test Service
 
 ```bash
 # Check service is running
-curl -k https://127.0.0.1:8443/info
+curl -k https://127.0.0.1:9455/info
 # Should return: {"error":"unauthorized","message":"Invalid or expired session token"}
 
 # TODO: Implement SRP client for authentication testing

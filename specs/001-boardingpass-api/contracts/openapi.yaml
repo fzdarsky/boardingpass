@@ -38,7 +38,7 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0.html
 
 servers:
-  - url: https://{device_ip}:8443
+  - url: https://{device_ip}:9455
     description: BoardingPass device endpoint
     variables:
       device_ip:
@@ -46,6 +46,8 @@ servers:
         description: IP address of the target device
 
 tags:
+  - name: Service
+    description: Service identity and health
   - name: Authentication
     description: SRP-6a authentication endpoints
   - name: Device Info
@@ -58,6 +60,43 @@ tags:
     description: Service lifecycle management
 
 paths:
+  /:
+    get:
+      operationId: getServiceInfo
+      tags:
+        - Service
+      summary: Service identity
+      description: |
+        Returns service identity information. Always returns the service name.
+        If a valid session token is provided, also returns the service version.
+
+        This endpoint does NOT require authentication.
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          description: Optional Bearer token for authenticated response with version
+          schema:
+            type: string
+            example: Bearer eyJhbGciOiJIUzI1NiIs...
+      responses:
+        "200":
+          description: Service identity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceInfo'
+              examples:
+                unauthenticated:
+                  summary: Unauthenticated response
+                  value:
+                    service: boardingpass
+                authenticated:
+                  summary: Authenticated response (includes version)
+                  value:
+                    service: boardingpass
+                    version: v0.1.0
+
   /auth/srp/init:
     post:
       operationId: srpInit
@@ -346,6 +385,22 @@ components:
         Include in Authorization header: `Authorization: Bearer <session_token>`
 
   schemas:
+    # ========== Service Schemas ==========
+
+    ServiceInfo:
+      type: object
+      required:
+        - service
+      properties:
+        service:
+          type: string
+          description: Service identifier, always "boardingpass"
+          example: boardingpass
+        version:
+          type: string
+          description: Service version (only present for authenticated requests)
+          example: v0.1.0
+
     # ========== Authentication Schemas ==========
 
     SRPInitRequest:

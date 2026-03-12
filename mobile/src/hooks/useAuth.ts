@@ -24,6 +24,7 @@ import {
   AppError,
 } from '../utils/error-messages';
 import { normalizeConnectionCode } from '../utils/validation';
+import { DEFAULT_BOARDINGPASS_PORT } from '@/constants/network';
 
 // Progressive delay thresholds (FR-038)
 const PROGRESSIVE_DELAYS = [1000, 2000, 5000, 60000]; // 1s, 2s, 5s, 60s
@@ -49,7 +50,7 @@ export interface UseAuthResult extends AuthState {
    * Authenticate with a device using connection code
    *
    * @param host - Device IP address or hostname
-   * @param port - Device HTTPS port (default 8443)
+   * @param port - Device HTTPS port
    * @param connectionCode - Device connection code (password)
    * @param username - SRP username (default "boardingpass")
    * @returns Authentication result with session token
@@ -151,7 +152,7 @@ export function useAuth(deviceId: string): UseAuthResult {
   const authenticate = useCallback(
     async (
       host: string,
-      port: number = 8443,
+      port: number = DEFAULT_BOARDINGPASS_PORT,
       connectionCode: string,
       username: string = 'boardingpass'
     ): Promise<AuthenticationResult> => {

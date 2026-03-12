@@ -1,22 +1,29 @@
 /**
  * useDeviceDiscovery Hook
  *
- * Combines mDNS discovery and fallback IP detection.
+ * Combines mDNS discovery and subnet scanning.
  * Manages device list state, discovery lifecycle, and auto-refresh.
+ * Periodically probes devices to track reachability and detect state changes.
  *
  * Contract: See mobile/tests/unit/hooks/useDeviceDiscovery.test.ts
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import * as ExpoDevice from 'expo-device';
-import { Device } from '@/types/device';
+import { Device, DeviceStatus } from '@/types/device';
 import { getMDNSDiscoveryService } from '@/services/discovery/mdns';
-import { getFallbackIPService } from '@/services/discovery/fallback';
+import { getSubnetScannerService } from '@/services/discovery/scan';
+import { probeDevice, probeAllDevices, ProbeResult } from '@/services/reachability/probe';
+import { sessionManager } from '@/services/auth/session';
+import * as enrollmentStore from '@/services/enrollment/store';
 import { toAppError, isNetworkError, AppError } from '@/utils/error-messages';
 
 /** Reason why mDNS auto-discovery is unavailable */
 export type MDNSUnavailableReason = 'simulator' | 'entitlement' | null;
+
+/** Interval between periodic reachability probes (ms) */
+const PROBE_INTERVAL = 30000;
 
 export interface UseDeviceDiscoveryResult {
   devices: Device[];
@@ -30,11 +37,13 @@ export interface UseDeviceDiscoveryResult {
   refreshDevices: () => void;
   addManualDevice: (ip: string, port: number) => Device;
   deleteDevice: (deviceId: string) => void;
+  markDeviceEnrolled: (deviceId: string) => void;
+  refreshAuthStates: () => Promise<void>;
 }
 
 /**
  * Device discovery hook
- * Combines mDNS and fallback IP detection
+ * Combines mDNS and subnet scanning
  */
 export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -44,9 +53,11 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   const [mdnsUnavailableReason, setMdnsUnavailableReason] = useState<MDNSUnavailableReason>(null);
 
   const mdnsService = useRef(getMDNSDiscoveryService());
-  const fallbackService = useRef(getFallbackIPService());
   const cleanupFunctions = useRef<(() => void)[]>([]);
   const discoveryTimeout = useRef<NodeJS.Timeout | null>(null);
+  const probeInterval = useRef<NodeJS.Timeout | null>(null);
+  const devicesRef = useRef(devices);
+  devicesRef.current = devices;
 
   /**
    * Add or update device in list
@@ -116,32 +127,13 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   }, []);
 
   /**
-   * Check fallback IP
+   * Start subnet scan as fallback when mDNS is unavailable.
    */
-  const checkFallback = useCallback(async () => {
-    try {
-      const fallbackDevice = await fallbackService.current.check();
-
-      if (fallbackDevice) {
-        // Only add if no mDNS device found at same IP
-        setDevices(prev => {
-          const mdnsDeviceExists = prev.some(
-            d => d.host === fallbackDevice.host && d.discoveryMethod === 'mdns'
-          );
-
-          if (mdnsDeviceExists) {
-            // mDNS takes precedence
-            return prev;
-          }
-
-          addOrUpdateDevice(fallbackDevice);
-          return prev;
-        });
-      }
-    } catch (err) {
-      console.warn('Fallback check failed:', err);
-      // Don't set error state for fallback failures
-    }
+  const startSubnetScan = useCallback(() => {
+    const scanner = getSubnetScannerService();
+    const cleanup = scanner.onDeviceFound(addOrUpdateDevice);
+    cleanupFunctions.current.push(cleanup);
+    scanner.start();
   }, [addOrUpdateDevice]);
 
   /**
@@ -149,7 +141,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
    */
   const startDiscovery = useCallback(() => {
     if (isScanning) {
-      console.warn('Discovery already in progress');
+      // eslint-disable-next-line no-console
+      console.log('Discovery already in progress');
       return;
     }
 
@@ -175,8 +168,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
           setMdnsUnavailableReason(reason);
           setError(null);
           setIsScanning(false);
-          // Check fallback IP since mDNS failed
-          checkFallback();
+          // Scan subnet since mDNS failed
+          startSubnetScan();
           return;
         }
 
@@ -198,8 +191,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       // Start mDNS scan
       mdnsService.current.start();
 
-      // Check fallback IP
-      checkFallback();
+      // Also start subnet scan (finds devices on USB tethering, Ethernet, etc.)
+      startSubnetScan();
 
       // Set timeout for discovery (10 seconds)
       discoveryTimeout.current = setTimeout(() => {
@@ -214,8 +207,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
         setMdnsUnavailableReason(reason);
         setError(null);
         setIsScanning(false);
-        // Still check fallback IP
-        checkFallback();
+        // Still scan subnet
+        startSubnetScan();
         return;
       }
 
@@ -229,7 +222,7 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       setErrorCount(prev => prev + 1);
       setIsScanning(false);
     }
-  }, [isScanning, addOrUpdateDevice, removeDevice, checkFallback]);
+  }, [isScanning, addOrUpdateDevice, removeDevice, startSubnetScan]);
 
   /**
    * Stop device discovery
@@ -241,6 +234,9 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
 
     // Stop mDNS scan
     mdnsService.current.stop();
+
+    // Stop subnet scanner
+    getSubnetScannerService().stop();
 
     // Clear timeout
     if (discoveryTimeout.current) {
@@ -279,10 +275,9 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   /**
    * Add a device manually by IP address and port.
    *
-   * No HTTPS probe is performed because React Native's native TLS stack
-   * rejects self-signed certificates at the handshake level, making probes
-   * fail against BoardingPass devices. Instead, the device is added directly
-   * and reachability is verified when the user initiates authentication.
+   * The device is added with 'offline' status and an immediate reachability
+   * probe is triggered. The probe result updates the status to 'online',
+   * 'unavailable', or keeps it 'offline'.
    */
   const addManualDevice = useCallback(
     (ip: string, port: number): Device => {
@@ -293,15 +288,151 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
         port,
         addresses: [ip],
         discoveryMethod: 'manual',
-        status: 'online',
+        status: 'offline',
         lastSeen: new Date(),
       };
 
       addOrUpdateDevice(manualDevice);
+
+      // Immediately probe the device
+      probeDevice(ip, port).then(result => {
+        setDevices(prev =>
+          prev.map(d =>
+            d.id === manualDevice.id ? { ...d, status: result, lastSeen: new Date() } : d
+          )
+        );
+      });
+
       return manualDevice;
     },
     [addOrUpdateDevice]
   );
+
+  /**
+   * Mark a device as enrolled (provisioning completed).
+   * The service has terminated; status shows 'enrolled' with timestamp.
+   * Also writes to the enrollment store so other screens can signal enrollment.
+   */
+  const markDeviceEnrolled = useCallback((deviceId: string) => {
+    enrollmentStore.markEnrolled(deviceId);
+    const enrolledAt = enrollmentStore.getEnrolledAt(deviceId) ?? new Date();
+    setDevices(prev =>
+      prev.map(d => (d.id === deviceId ? { ...d, status: 'enrolled' as const, enrolledAt } : d))
+    );
+  }, []);
+
+  /**
+   * Apply probe results to devices, respecting the enrolled state.
+   * Enrolled devices only transition to 'online' (factory reset detection);
+   * they stay 'enrolled' for refused/timeout results.
+   */
+  const applyProbeResults = useCallback((results: Map<string, ProbeResult>) => {
+    setDevices(prev =>
+      prev.map(d => {
+        const result = results.get(d.id);
+        if (!result) return d;
+
+        if (d.status === 'enrolled') {
+          // Only transition out of enrolled if service comes back online (factory reset)
+          if (result === 'online') {
+            enrollmentStore.clearEnrolled(d.id);
+            return { ...d, status: 'online' as const, enrolledAt: undefined, lastSeen: new Date() };
+          }
+          return d;
+        }
+
+        return { ...d, status: result as DeviceStatus, lastSeen: new Date() };
+      })
+    );
+  }, []);
+
+  /**
+   * Run probes for all devices that should be probed.
+   * Skips devices in 'authenticating' or 'authenticated' states.
+   */
+  const runPeriodicProbes = useCallback(async () => {
+    const probeable = devicesRef.current.filter(
+      d => d.status !== 'authenticating' && d.status !== 'authenticated'
+    );
+    if (probeable.length === 0) return;
+
+    const results = await probeAllDevices(probeable);
+    applyProbeResults(results);
+  }, [applyProbeResults]);
+
+  /**
+   * Check session validity and enrollment state for all devices.
+   * - Enrolled devices (from store) → 'enrolled'
+   * - Devices with valid sessions → 'authenticated'
+   * - Others remain unchanged (periodic probes handle status)
+   */
+  const refreshAuthStates = useCallback(async () => {
+    const enrolledIds = enrollmentStore.getAllEnrolledIds();
+    const updates: { id: string; hasSession: boolean }[] = [];
+
+    for (const device of devicesRef.current) {
+      const validation = await sessionManager.isSessionValid(device.id);
+      updates.push({ id: device.id, hasSession: validation.isValid });
+    }
+
+    setDevices(prev =>
+      prev.map(d => {
+        // Check enrollment store (handles cross-screen enrollment signaling)
+        if (enrolledIds.has(d.id) && d.status !== 'enrolled') {
+          return {
+            ...d,
+            status: 'enrolled' as const,
+            enrolledAt: enrollmentStore.getEnrolledAt(d.id) ?? new Date(),
+          };
+        }
+
+        const update = updates.find(u => u.id === d.id);
+        if (!update) return d;
+
+        if (update.hasSession && d.status !== 'authenticated' && d.status !== 'enrolled') {
+          return { ...d, status: 'authenticated' as const };
+        }
+
+        return d;
+      })
+    );
+  }, []);
+
+  /**
+   * Periodic reachability probes.
+   * Pauses when app is backgrounded, resumes when foregrounded.
+   */
+  useEffect(() => {
+    const startProbeInterval = () => {
+      if (probeInterval.current) return;
+      probeInterval.current = setInterval(runPeriodicProbes, PROBE_INTERVAL);
+    };
+
+    const stopProbeInterval = () => {
+      if (probeInterval.current) {
+        clearInterval(probeInterval.current);
+        probeInterval.current = null;
+      }
+    };
+
+    // Start immediately
+    startProbeInterval();
+
+    // Pause/resume based on AppState
+    const subscription = AppState.addEventListener('change', nextState => {
+      if (nextState === 'active') {
+        runPeriodicProbes(); // Probe immediately on foreground
+        startProbeInterval();
+      } else {
+        stopProbeInterval();
+      }
+    });
+
+    return () => {
+      stopProbeInterval();
+      subscription.remove();
+    };
+  }, [runPeriodicProbes]);
 
   /**
    * Cleanup on unmount
@@ -329,5 +460,7 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
     refreshDevices,
     addManualDevice,
     deleteDevice,
+    markDeviceEnrolled,
+    refreshAuthStates,
   };
 }

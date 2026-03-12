@@ -24,7 +24,7 @@ All data is stored in filesystem files using OS-specific standard directories.
 type Config struct {
     // Connection details
     Host   string  // BoardingPass service hostname or IP
-    Port   int     // BoardingPass service port (default: 8443)
+    Port   int     // BoardingPass service port (default: 9455)
     CACert string  // Optional path to custom CA certificate bundle
 
     // Future: Additional preferences (timeout, retries, etc.)
@@ -33,7 +33,7 @@ type Config struct {
 
 **Validation Rules**:
 - `Host` is REQUIRED (must be non-empty after loading all sources)
-- `Port` must be in range 1-65535 (default: 8443)
+- `Port` must be in range 1-65535 (default: 9455)
 - `CACert`, if provided, must be a readable file path
 
 **Storage Locations** (per FR-022):
@@ -44,7 +44,7 @@ type Config struct {
 **File Format** (flat YAML per FR-021):
 ```yaml
 host: boardingpass.local
-port: 8443
+port: 9455
 ca_cert: /path/to/ca-bundle.pem
 ```
 
@@ -118,7 +118,7 @@ Example: `session-a1b2c3d4e5f6g7h8.token`
 **Fields**:
 ```go
 type CertificateFingerprint struct {
-    Host        string    // "hostname:port" (e.g., "192.168.1.100:8443")
+    Host        string    // "hostname:port" (e.g., "192.168.1.100:9455")
     Fingerprint string    // "SHA256:base64-encoded-hash"
     AcceptedAt  time.Time // When user accepted this certificate
 }
@@ -137,10 +137,10 @@ type CertificateFingerprint struct {
 **File Format** (YAML array per FR-021 flat structure):
 ```yaml
 certificates:
-  - host: "192.168.1.100:8443"
+  - host: "192.168.1.100:9455"
     fingerprint: "SHA256:a1b2c3d4e5f6..."
     accepted_at: "2025-12-10T12:00:00Z"
-  - host: "boardingpass.local:8443"
+  - host: "boardingpass.local:9455"
     fingerprint: "SHA256:x9y8z7w6v5u4..."
     accepted_at: "2025-12-10T13:30:00Z"
 ```
@@ -221,7 +221,7 @@ User: boarding info
 ### TLS Certificate Verification Flow (TOFU)
 
 ```
-Client connects to https://192.168.1.100:8443
+Client connects to https://192.168.1.100:9455
   ↓
 1. TLS handshake begins
   ↓
@@ -235,7 +235,7 @@ Client connects to https://192.168.1.100:8443
    - If fingerprint differs → ERROR "Certificate changed!"
   ↓
 5. Prompt user:
-   "Unknown certificate for 192.168.1.100:8443
+   "Unknown certificate for 192.168.1.100:9455
     Fingerprint: SHA256:abc123...
     Accept? (yes/no)"
   ↓

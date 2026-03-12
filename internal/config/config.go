@@ -137,7 +137,7 @@ func Load(path string) (*Config, error) {
 
 	// Apply defaults for service-level settings
 	if cfg.Service.Port == 0 {
-		cfg.Service.Port = 8443
+		cfg.Service.Port = 9455
 	}
 	if cfg.Service.TLSCert == "" {
 		cfg.Service.TLSCert = DefaultTLSCertPath

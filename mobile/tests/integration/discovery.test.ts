@@ -3,12 +3,12 @@
  *
  * Tests the complete device discovery workflow including:
  * - mDNS service discovery
- * - Fallback IP detection (192.168.1.100:8443)
+ * - Scan IP detection (192.168.1.100:9455)
  * - Device list management
  * - Auto-refresh on device appear/disappear
  * - Duplicate device handling
  *
- * These tests validate integration between mDNS service, fallback service,
+ * These tests validate integration between mDNS service, scan service,
  * and device state management. Should FAIL before implementation.
  */
 
@@ -37,7 +37,7 @@ describe('Device Discovery Integration', () => {
       const mockMDNSEvent = {
         name: 'boardingpass-rpi4',
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100', 'fe80::1234:5678:90ab:cdef'],
         txt: {
           version: '1.0.0',
@@ -50,7 +50,7 @@ describe('Device Discovery Integration', () => {
         id: 'boardingpass-rpi4:192.168.1.100',
         name: 'boardingpass-rpi4',
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100', 'fe80::1234:5678:90ab:cdef'],
         discoveryMethod: 'mdns',
         txt: { version: '1.0.0', model: 'raspberry-pi-4' },
@@ -70,7 +70,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -94,75 +94,75 @@ describe('Device Discovery Integration', () => {
     });
   });
 
-  describe('Fallback IP Detection', () => {
-    it('should attempt fallback IP when mDNS unavailable', async () => {
-      // Integration: If mDNS fails or is blocked, try fallback IP
-      // Default: 192.168.1.100:8443 (configurable via .env)
+  describe('Scan IP Detection', () => {
+    it('should attempt scan IP when mDNS unavailable', async () => {
+      // Integration: If mDNS fails or is blocked, try scan IP
+      // Default: 192.168.1.100:9455 (configurable via .env)
 
-      const fallbackConfig = {
+      const scanConfig = {
         ip: '192.168.1.100',
-        port: 8443,
+        port: 9455,
       };
 
-      expect(fallbackConfig.ip).toBe('192.168.1.100');
-      expect(fallbackConfig.port).toBe(8443);
+      expect(scanConfig.ip).toBe('192.168.1.100');
+      expect(scanConfig.port).toBe(9455);
     });
 
-    it('should check fallback IP via HTTPS HEAD request', async () => {
-      // Integration: Fallback detection should attempt HEAD /
+    it('should check scan IP via HTTPS HEAD request', async () => {
+      // Integration: Scan detection should attempt HEAD /
       // to check if device is reachable
 
-      const fallbackRequest = {
+      const scanRequest = {
         method: 'HEAD',
-        url: 'https://192.168.1.100:8443/',
+        url: 'https://192.168.1.100:9455/',
         timeout: 5000,
         validateStatus: expect.any(Function),
       };
 
-      expect(fallbackRequest.method).toBe('HEAD');
-      expect(fallbackRequest.url).toContain('192.168.1.100');
-      expect(fallbackRequest.timeout).toBeDefined();
+      expect(scanRequest.method).toBe('HEAD');
+      expect(scanRequest.url).toContain('192.168.1.100');
+      expect(scanRequest.timeout).toBeDefined();
     });
 
-    it('should create Device entity with fallback discovery method', async () => {
-      // Integration: Device found via fallback should be marked appropriately
+    it('should create Device entity with scan discovery method', async () => {
+      // Integration: Device found via scan should be marked appropriately
 
-      const fallbackDevice: Device = {
-        id: 'fallback:192.168.1.100',
-        name: 'BoardingPass Device', // Generic name for fallback
+      const scanDevice: Device = {
+        id: 'scan:192.168.1.100',
+        name: 'BoardingPass Device', // Generic name for scan
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100'],
-        discoveryMethod: 'fallback',
+        discoveryMethod: 'scan',
         status: 'online',
         lastSeen: new Date(),
       };
 
-      expect(fallbackDevice.discoveryMethod).toBe('fallback');
-      expect(fallbackDevice.host).toBe('192.168.1.100');
+      expect(scanDevice.discoveryMethod).toBe('scan');
+      expect(scanDevice.host).toBe('192.168.1.100');
     });
 
-    it('should not add fallback device if unreachable', async () => {
-      // Integration: Failed fallback check should not add device to list
+    it('should not add scan device if unreachable', async () => {
+      // Integration: Failed scan check should not add device to list
 
-      const fallbackUnreachable = {
+      const scanUnreachable = {
         error: 'ECONNREFUSED',
         host: '192.168.1.100',
       };
 
-      expect(fallbackUnreachable.error).toBe('ECONNREFUSED');
+      expect(scanUnreachable.error).toBe('ECONNREFUSED');
       // Device list should remain empty or unchanged
     });
 
-    it('should prioritize mDNS over fallback for same device', async () => {
-      // Integration: If device is discovered via both mDNS and fallback,
+    it('should prioritize mDNS over scan for same device', async () => {
+      // Integration: If device is discovered via both mDNS and scan,
       // mDNS should take precedence (has more metadata)
 
       const mdnsDevice: Device = {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         txt: { version: '1.0.0' },
@@ -170,13 +170,13 @@ describe('Device Discovery Integration', () => {
         lastSeen: new Date(),
       };
 
-      const fallbackDevice: Device = {
-        id: 'fallback:192.168.1.100',
+      const scanDevice: Device = {
+        id: 'scan:192.168.1.100',
         name: 'BoardingPass Device',
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100'],
-        discoveryMethod: 'fallback',
+        discoveryMethod: 'scan',
         status: 'online',
         lastSeen: new Date(),
       };
@@ -184,7 +184,7 @@ describe('Device Discovery Integration', () => {
       // If both discovered, mDNS device should be kept
       expect(mdnsDevice.discoveryMethod).toBe('mdns');
       expect(mdnsDevice.txt).toBeDefined();
-      expect(fallbackDevice.txt).toBeUndefined();
+      expect(scanDevice.txt).toBeUndefined();
     });
   });
 
@@ -196,7 +196,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -219,7 +219,7 @@ describe('Device Discovery Integration', () => {
         id: 'boardingpass:192.168.1.100',
         name: 'boardingpass',
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -230,7 +230,7 @@ describe('Device Discovery Integration', () => {
         id: 'boardingpass:192.168.1.101',
         name: 'boardingpass',
         host: '192.168.1.101',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.101'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -250,7 +250,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -261,7 +261,7 @@ describe('Device Discovery Integration', () => {
         id: 'device2:192.168.1.101',
         name: 'device2',
         host: '192.168.1.101',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.101'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -285,7 +285,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -306,7 +306,7 @@ describe('Device Discovery Integration', () => {
         id: 'device1:192.168.1.100',
         name: 'device1',
         host: '192.168.1.100',
-        port: 8443,
+        port: 9455,
         addresses: ['192.168.1.100'],
         discoveryMethod: 'mdns',
         status: 'online',
@@ -405,7 +405,7 @@ describe('Device Discovery Integration', () => {
         id: `device${i}:192.168.1.${i}`,
         name: `device${i}`,
         host: `192.168.1.${i}`,
-        port: 8443,
+        port: 9455,
         addresses: [`192.168.1.${i}`],
         discoveryMethod: 'mdns' as DiscoveryMethod,
         status: 'online' as const,

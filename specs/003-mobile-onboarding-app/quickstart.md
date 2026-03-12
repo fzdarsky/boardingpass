@@ -319,7 +319,7 @@ Create a `.env` file in the `mobile/` directory:
 
 ```bash
 # .env
-EXPO_PUBLIC_DEFAULT_DEVICE_PORT=8443
+EXPO_PUBLIC_DEFAULT_DEVICE_PORT=9455
 EXPO_PUBLIC_FALLBACK_IP=192.168.1.100
 EXPO_PUBLIC_SESSION_TIMEOUT_MINUTES=30
 EXPO_PUBLIC_MDNS_SERVICE_NAME=_boardingpass._tcp
@@ -428,7 +428,7 @@ make build
 
 ```bash
 # Run BoardingPass in container
-podman run -p 8443:8443 \
+podman run -p 9455:9455 \
   -e BOARDINGPASS_PASSWORD="test-connection-code" \
   boardingpass:latest
 ```
@@ -439,7 +439,7 @@ If you have a physical device running BoardingPass on your local network, ensure
 
 1. Device is broadcasting via mDNS
 2. Mobile device is on the same network
-3. Firewall allows HTTPS traffic on port 8443
+3. Firewall allows HTTPS traffic on port 9455
 
 ### Obtaining Connection Codes
 
@@ -532,7 +532,7 @@ cd ..
 - ✅ BoardingPass device is broadcasting
 - ✅ Mobile device on same network
 - ✅ Permissions granted (iOS: Local Network, Android: Location)
-- ✅ Try fallback IP address (192.168.1.100:8443)
+- ✅ Try fallback IP address (192.168.1.100:9455)
 
 ### Issue: "Authentication fails with SRP error"
 

@@ -42,14 +42,14 @@ The CLI supports three configuration methods with clear precedence: **Flags > En
 ### Command-Line Flags
 
 ```bash
-boarding pass --host 192.168.1.100 --port 8443 --username admin
+boarding pass --host 192.168.1.100 --port 9455 --username admin
 ```
 
 ### Environment Variables
 
 ```bash
 export BOARDING_HOST=192.168.1.100
-export BOARDING_PORT=8443
+export BOARDING_PORT=9455
 export BOARDING_CA_CERT=/path/to/ca.pem
 ```
 
@@ -59,7 +59,7 @@ The config file at `~/.config/boardingpass/config.yaml` is automatically created
 
 ```yaml
 host: 192.168.1.100
-port: 8443
+port: 9455
 ca_cert: /path/to/ca.pem  # optional
 ```
 
@@ -82,7 +82,7 @@ boarding pass --host <host> [--port <port>] [--username <user>] [--password <pas
 | Flag | Env Var | Default | Description |
 | ---- | ------- | ------- | ----------- |
 | `--host` | `BOARDING_HOST` | — | Hostname or IP address |
-| `--port` | `BOARDING_PORT` | 8443 | Service port |
+| `--port` | `BOARDING_PORT` | 9455 | Service port |
 | `--username` | — | (prompts) | Username |
 | `--password` | — | (prompts) | Password |
 | `--ca-cert` | `BOARDING_CA_CERT` | — | Custom CA certificate bundle |
@@ -147,7 +147,7 @@ boarding complete
 set -euo pipefail
 
 export BOARDING_HOST=${DEVICE_IP}
-export BOARDING_PORT=8443
+export BOARDING_PORT=9455
 
 # Authenticate (non-interactive, auto-accept TLS certificate)
 boarding pass -y --username admin --password "${DEVICE_PASSWORD}"
@@ -191,7 +191,7 @@ The CLI uses **Trust-On-First-Use (TOFU)** for self-signed certificates:
 # First connection prompts for certificate acceptance
 boarding pass --host 192.168.1.100 --username admin
 # WARNING: Unknown TLS certificate fingerprint
-#   Host: 192.168.1.100:8443
+#   Host: 192.168.1.100:9455
 #   Fingerprint: SHA256:a1b2c3d4...
 # Do you want to accept this certificate? (yes/no): yes
 ```
@@ -218,7 +218,7 @@ boarding pass --host internal.corp --ca-cert /etc/ssl/ca-bundle.pem --username a
 Session expired (30-minute TTL) or no token found. Re-authenticate with `boarding pass`.
 
 **"connection refused"**
-Service not running or unreachable. Check `systemctl status boardingpass`, network connectivity, and firewall (port 8443).
+Service not running or unreachable. Check `systemctl status boardingpass`, network connectivity, and firewall (port 9455).
 
 **"certificate fingerprint mismatch"**
 Server certificate changed. If expected, remove the entry from `~/.config/boardingpass/known_certs.yaml` and re-connect. If unexpected, investigate.

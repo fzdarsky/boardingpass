@@ -442,11 +442,15 @@ run-app-ios:
 	@cd $(MOBILE_DIR) && npx expo run:ios --device "$(IOS_DEVICE)"
 
 ## run-app-ios-device: Run mobile app on connected physical iOS device
+## Note: EXPO_PACKAGER_PROXY_URL ensures Metro advertises the Mac's LAN IP instead
+## of localhost, so the dev client on the physical device can discover and connect.
 run-app-ios-device:
 	@echo "Starting Metro bundler and running on iOS device: $(IOS_PHYSICAL_DEVICE)..."
 	@echo "To use a different device, run: make run-app-ios-device IOS_PHYSICAL_DEVICE='<device-name>'"
 	@echo "Or list devices with: make list-ios-devices"
-	@cd $(MOBILE_DIR) && npx expo run:ios --device "$(IOS_PHYSICAL_DEVICE)"
+	@LOCAL_IP=$$(ipconfig getifaddr en0 2>/dev/null || echo "localhost"); \
+	echo "Metro bundler will advertise on $$LOCAL_IP:8081"; \
+	cd $(MOBILE_DIR) && EXPO_PACKAGER_PROXY_URL=http://$$LOCAL_IP:8081 npx expo run:ios --device "$(IOS_PHYSICAL_DEVICE)"
 
 ## list-ios-devices: List all available iOS devices (simulators and physical)
 list-ios-devices:
@@ -581,7 +585,7 @@ deploy: release
 	@echo "Container will run with systemd. Use 'podman ps' to see running containers."
 	@echo "Use 'podman exec -it $(CONTAINER_NAME) journalctl -u boardingpass' to view logs."
 	@podman run -d --name $(CONTAINER_NAME) --rm \
-		-p 8443:8443 \
+		-p 9455:9455 \
 		--tmpfs /tmp \
 		--tmpfs /run \
 		-v /sys/fs/cgroup:/sys/fs/cgroup:rw \

@@ -12,7 +12,7 @@
 - Q: How should the CLI handle TLS certificate validation for self-signed certificates? → A: Prompt user on first connection to accept/reject certificate fingerprint, then remember choice. Also support `--ca-cert` flag to specify a CA bundle for certificate verification if not in system's CA bundle.
 - Q: How should users specify BoardingPass service connection details (host, port)? → A: Support multiple methods with precedence: command-line flags > environment variables > config file. Config file is `config.yaml` located in OS-specific user config directory (e.g., `~/.config/boardingpass/` on Linux).
 - Q: Where should session tokens be stored and what security measures should apply? → A: Store in OS-specific temporary directory with restrictive file permissions (0600), allowing tokens to persist across CLI invocations but not system reboots.
-- Q: What structure should the config.yaml file use? → A: Flat structure with keys at root level (e.g., `host: boardingpass.local`, `port: 8443`).
+- Q: What structure should the config.yaml file use? → A: Flat structure with keys at root level (e.g., `host: boardingpass.local`, `port: 9455`).
 - Q: What should happen when no connection details are provided via any method? → A: Error immediately with a clear message indicating connection details are required.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -170,7 +170,7 @@ A developer or CI system needs to explicitly terminate their session after compl
 - **Session Token**: A cryptographic token issued by the BoardingPass service after successful SRP-6a authentication, valid for 30 minutes, used to authorize subsequent API requests; stored in OS-specific temporary directory with restrictive permissions (0600) to persist across CLI invocations but not system reboots
 - **Configuration Bundle**: A collection of files from a directory that are uploaded atomically to the BoardingPass service for device provisioning
 - **Command**: A string representing a system command to be executed on the device, subject to allow-list validation by the BoardingPass service
-- **Configuration File**: A YAML file (`config.yaml`) stored in the OS-specific user configuration directory with a flat structure containing connection details (e.g., `host: boardingpass.local`, `port: 8443`) and other CLI preferences; read during CLI startup with lower precedence than flags and environment variables
+- **Configuration File**: A YAML file (`config.yaml`) stored in the OS-specific user configuration directory with a flat structure containing connection details (e.g., `host: boardingpass.local`, `port: 9455`) and other CLI preferences; read during CLI startup with lower precedence than flags and environment variables
 
 ## Success Criteria *(mandatory)*
 

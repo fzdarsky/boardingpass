@@ -7,9 +7,16 @@
 
 import { CertificateInfo } from './certificate';
 
-export type DiscoveryMethod = 'mdns' | 'fallback' | 'manual' | 'wifi' | 'bluetooth' | 'usb';
+export type DiscoveryMethod = 'mdns' | 'scan' | 'manual' | 'wifi' | 'bluetooth' | 'usb';
 
-export type DeviceStatus = 'online' | 'offline' | 'authenticating' | 'authenticated' | 'error';
+export type DeviceStatus =
+  | 'online'
+  | 'offline'
+  | 'unavailable'
+  | 'authenticating'
+  | 'authenticated'
+  | 'enrolled'
+  | 'error';
 
 export interface Device {
   // Identity
@@ -28,6 +35,7 @@ export interface Device {
   // Status
   status: DeviceStatus;
   lastSeen: Date;
+  enrolledAt?: Date;
 
   // Relationships (loaded separately)
   certificateInfo?: CertificateInfo;
@@ -138,4 +146,8 @@ export const isDeviceOnline = (device: Device): boolean => {
 
 export const isDeviceAuthenticated = (device: Device): boolean => {
   return device.status === 'authenticated';
+};
+
+export const isDeviceEnrolled = (device: Device): boolean => {
+  return device.status === 'enrolled';
 };
