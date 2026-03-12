@@ -97,6 +97,7 @@ nfpms:
     maintainer: BoardingPass Team
     description: Lightweight ephemeral bootstrap service for headless Linux devices
     license: Apache-2.0
+    file_name_template: "{{ .ConventionalFileName }}"
     formats:
       - rpm
       - deb
