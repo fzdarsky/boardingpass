@@ -197,6 +197,7 @@ nfpms:
     scripts:
       preinstall: build/scripts/preinstall.sh
       postinstall: build/scripts/postinstall.sh
+      postremove: build/scripts/postremove.sh
     rpm:
       group: System Environment/Daemons
       compression: xz
