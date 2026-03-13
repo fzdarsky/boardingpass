@@ -27,6 +27,9 @@ type Server struct {
 	mu         sync.Mutex
 }
 
+// DefaultCertValidDays is the certificate validity period used for regeneration.
+const DefaultCertValidDays = 365
+
 // New creates a new API server instance.
 func New(cfg *config.Config, logger *logging.Logger) (*Server, error) {
 	mux := http.NewServeMux()
@@ -43,14 +46,20 @@ func New(cfg *config.Config, logger *logging.Logger) (*Server, error) {
 		config: cfg,
 	}
 
-	// Configure TLS
-	tlsCfg, err := tlspkg.NewServerConfig(
+	// Configure TLS with CertManager for dynamic SAN support.
+	// When a TLS handshake arrives on an IP not in the cert's SANs,
+	// the cert is regenerated automatically.
+	certMgr, err := tlspkg.NewCertManager(
 		cfg.Service.TLSCert,
 		cfg.Service.TLSKey,
+		DefaultCertValidDays,
+		logger,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create TLS config: %w", err)
+		return nil, fmt.Errorf("failed to create cert manager: %w", err)
 	}
+
+	tlsCfg := certMgr.ServerTLSConfig()
 	server.httpServer.TLSConfig = tlsCfg
 	server.tlsConfig = tlsCfg
 

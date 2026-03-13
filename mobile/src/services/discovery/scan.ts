@@ -25,6 +25,9 @@ const BATCH_SIZE = 20;
 /** Delay between batches (ms) to avoid overwhelming the network */
 const BATCH_DELAY = 100;
 
+/** Delay before auto-retry when no devices found (ms) */
+const RETRY_DELAY = 3000;
+
 export type ScanDeviceCallback = (device: Device) => void;
 export type ScanProgressCallback = (scanned: number, total: number) => void;
 
@@ -40,6 +43,7 @@ export class SubnetScannerService {
   private progressCallbacks: ScanProgressCallback[] = [];
   private running = false;
   private abortController: AbortController | null = null;
+  private foundCount = 0;
 
   /**
    * Start a subnet scan. Determines subnets from current network state.
@@ -50,18 +54,18 @@ export class SubnetScannerService {
     this.abortController = new AbortController();
 
     try {
-      const subnets = await this.getSubnetsToScan();
+      this.foundCount = 0;
+      await this.scanAllSubnets();
 
-      if (subnets.length === 0) {
-        // eslint-disable-next-line no-console
-        console.log('[Scanner] No scannable subnets found');
-        return;
-      }
-
-      for (const subnet of subnets) {
-        if (this.abortController.signal.aborted) break;
-        const hosts = this.generateHosts(subnet);
-        await this.scanHosts(hosts, DEFAULT_BOARDINGPASS_PORT);
+      // If nothing found, wait and retry once — covers the race where a
+      // USB tethering listener isn't ready yet on the service side.
+      if (this.foundCount === 0 && !this.abortController.signal.aborted) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        if (!this.abortController.signal.aborted) {
+          // eslint-disable-next-line no-console
+          console.log('[Scanner] No devices found, retrying...');
+          await this.scanAllSubnets();
+        }
       }
     } catch (error) {
       if (!this.abortController?.signal.aborted) {
@@ -105,6 +109,25 @@ export class SubnetScannerService {
 
   public isActive(): boolean {
     return this.running;
+  }
+
+  /**
+   * Run a single pass over all scannable subnets.
+   */
+  private async scanAllSubnets(): Promise<void> {
+    const subnets = await this.getSubnetsToScan();
+
+    if (subnets.length === 0) {
+      // eslint-disable-next-line no-console
+      console.log('[Scanner] No scannable subnets found');
+      return;
+    }
+
+    for (const subnet of subnets) {
+      if (this.abortController?.signal.aborted) break;
+      const hosts = this.generateHosts(subnet);
+      await this.scanHosts(hosts, DEFAULT_BOARDINGPASS_PORT);
+    }
   }
 
   /**
@@ -212,6 +235,7 @@ export class SubnetScannerService {
             lastSeen: new Date(),
           };
 
+          this.foundCount++;
           for (const cb of this.deviceCallbacks) {
             cb(device);
           }

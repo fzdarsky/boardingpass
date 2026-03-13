@@ -99,7 +99,6 @@ func buildSANs() (dnsNames []string, ipAddresses []net.IP) {
 }
 
 // GenerateSelfSignedCert generates a self-signed TLS certificate and key.
-// Returns the paths to the generated cert and key files.
 //
 //nolint:gosec // G304: File paths are from config, G302: 0644 is appropriate for certs
 func GenerateSelfSignedCert(certPath, keyPath string, validDays int) error {
@@ -109,17 +108,40 @@ func GenerateSelfSignedCert(certPath, keyPath string, validDays int) error {
 		return fmt.Errorf("failed to generate private key: %w", err)
 	}
 
-	// Generate a random serial number
+	if err := writeKeyFile(keyPath, privateKey); err != nil {
+		return err
+	}
+
+	return writeCertFile(certPath, privateKey, validDays)
+}
+
+// RegenerateCert creates a new certificate using the existing private key.
+// The new cert captures current network interfaces in its SANs while
+// preserving the same public key (SPKI), minimizing TOFU disruption.
+//
+//nolint:gosec // G304: File paths are from config, G302: 0644 is appropriate for certs
+func RegenerateCert(certPath, keyPath string, validDays int) error {
+	privateKey, err := loadPrivateKey(keyPath)
+	if err != nil {
+		return fmt.Errorf("failed to load existing private key: %w", err)
+	}
+
+	return writeCertFile(certPath, privateKey, validDays)
+}
+
+// writeCertFile creates a self-signed certificate using the given key and
+// writes it to certPath. SANs are populated from current network state.
+//
+//nolint:gosec // G304: File paths are from config, G302: 0644 is appropriate for certs
+func writeCertFile(certPath string, privateKey *ecdsa.PrivateKey, validDays int) error {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
 		return fmt.Errorf("failed to generate serial number: %w", err)
 	}
 
-	// Build SANs (includes static + dynamic hostname/IPs)
 	dnsNames, ipAddresses := buildSANs()
 
-	// Create certificate template
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
@@ -133,18 +155,15 @@ func GenerateSelfSignedCert(certPath, keyPath string, validDays int) error {
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
 
-		// Add SANs for maximum compatibility (static + dynamic)
 		DNSNames:    dnsNames,
 		IPAddresses: ipAddresses,
 	}
 
-	// Create self-signed certificate
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
 	if err != nil {
 		return fmt.Errorf("failed to create certificate: %w", err)
 	}
 
-	// Write certificate to file
 	certFile, err := os.Create(certPath)
 	if err != nil {
 		return fmt.Errorf("failed to create cert file: %w", err)
@@ -159,13 +178,18 @@ func GenerateSelfSignedCert(certPath, keyPath string, validDays int) error {
 		return fmt.Errorf("failed to write cert: %w", err)
 	}
 
-	// Set certificate file permissions (read-only for all)
 	//nolint:gofumpt // formatting is acceptable
 	if err := os.Chmod(certPath, 0644); err != nil {
 		return fmt.Errorf("failed to set cert permissions: %w", err)
 	}
 
-	// Write private key to file
+	return nil
+}
+
+// writeKeyFile marshals an ECDSA private key and writes it to keyPath.
+//
+//nolint:gosec // G304: File paths are from config
+func writeKeyFile(keyPath string, privateKey *ecdsa.PrivateKey) (err error) {
 	keyFile, err := os.Create(keyPath)
 	if err != nil {
 		return fmt.Errorf("failed to create key file: %w", err)
@@ -185,13 +209,34 @@ func GenerateSelfSignedCert(certPath, keyPath string, validDays int) error {
 		return fmt.Errorf("failed to write key: %w", err)
 	}
 
-	// Set key file permissions (read-only for owner)
 	//nolint:gofumpt // formatting is acceptable
 	if err := os.Chmod(keyPath, 0600); err != nil {
 		return fmt.Errorf("failed to set key permissions: %w", err)
 	}
 
 	return nil
+}
+
+// loadPrivateKey reads an ECDSA private key from a PEM file.
+//
+//nolint:gosec // G304: Key path is from config
+func loadPrivateKey(keyPath string) (*ecdsa.PrivateKey, error) {
+	keyPEM, err := os.ReadFile(keyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read key file: %w", err)
+	}
+
+	block, _ := pem.Decode(keyPEM)
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM block from key file")
+	}
+
+	key, err := x509.ParseECPrivateKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse EC private key: %w", err)
+	}
+
+	return key, nil
 }
 
 // CertificateExists checks if both certificate and key files exist.
