@@ -110,9 +110,9 @@ export class SubnetScannerService {
   /**
    * Determine which subnets to scan based on current network state.
    *
-   * - USB tethering (non-WiFi/non-cellular): scan well-known tethering subnets
-   * - WiFi with routable IP: scan the /24 around the phone's IP
-   * - Link-local (169.254.x.x) or no IP: no scan (user must add manually)
+   * Always includes platform-specific tethering subnets (iOS: 172.20.10.0/28,
+   * just 14 hosts) since USB tethering can be active alongside WiFi but
+   * NetInfo only reports the primary connection.
    */
   public async getSubnetsToScan(): Promise<SubnetRange[]> {
     let state: NetInfoState;
@@ -124,21 +124,24 @@ export class SubnetScannerService {
 
     if (!state.isConnected) return [];
 
-    // Non-WiFi, non-cellular connection → likely USB tethering
-    if (state.type !== 'wifi' && state.type !== 'cellular') {
-      return this.getTetheringSubnets();
-    }
+    // Scan tethering subnets first — they're small (iOS: 14 hosts) and
+    // most likely to contain a BoardingPass device on a direct connection
+    const subnets: SubnetRange[] = [...this.getTetheringSubnets()];
 
-    // WiFi connected — derive /24 from phone's IP
+    // WiFi connected — also scan the /24 around the phone's IP
     if (state.type === 'wifi') {
       const details = state.details as { ipAddress?: string } | null;
       const ip = details?.ipAddress;
       if (ip && !ip.startsWith('169.254.')) {
-        return [this.subnetFromIP(ip)];
+        const wifiSubnet = this.subnetFromIP(ip);
+        const isDuplicate = subnets.some(s => s.network === wifiSubnet.network);
+        if (!isDuplicate) {
+          subnets.push(wifiSubnet);
+        }
       }
     }
 
-    return [];
+    return subnets;
   }
 
   /**

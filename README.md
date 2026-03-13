@@ -35,17 +35,22 @@ BoardingPass provides a minimal service that runs on the headless device. You co
 
     ```sh
     VERSION=$(curl -s https://api.github.com/repos/fzdarsky/boardingpass/releases/latest | jq -r .tag_name)
-    sudo dnf install "https://github.com/fzdarsky/boardingpass/releases/download/${VERSION}/boardingpass-${VERSION#v}-1.$(uname -m).rpm"
+    sudo dnf install -y "https://github.com/fzdarsky/boardingpass/releases/download/${VERSION}/boardingpass-${VERSION#v}-1.$(uname -m).rpm"
     ```
 
 2. If you want to provision through a WiFi or Bluetooth transport, you need to install additional packages:
 
     ```sh
     # For WiFi AP transport:
-    sudo dnf install hostapd dnsmasq
+    sudo dnf install -y hostapd dnsmasq
 
     # For Bluetooth/BLE transport:
-    sudo dnf bluez
+    sudo dnf install -y bluez
+
+    # For USB transport:
+    sudo dnf install -y epel-release
+    sudo dnf install -y libimobiledevice
+    # You also need a very recent version of usbmuxd, which is not available on RHEL9
 
 3. Start the service:
 
