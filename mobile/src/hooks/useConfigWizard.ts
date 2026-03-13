@@ -188,9 +188,14 @@ export function buildStepCommands(step: number, state: WizardState): StepCommand
       // No commands for interface selection
       break;
 
-    case WIZARD_STEPS.ADDRESSING:
-      commands.push({ id: 'reload-connection', params: [CONNECTION_NAME] });
+    case WIZARD_STEPS.ADDRESSING: {
+      const reloadParams = [CONNECTION_NAME];
+      if (state.applyMode === 'immediate' && state.serviceInterfaceName) {
+        reloadParams.push(state.serviceInterfaceName);
+      }
+      commands.push({ id: 'reload-connection', params: reloadParams });
       break;
+    }
 
     case WIZARD_STEPS.SERVICES:
       if (state.services.ntp.mode === 'manual' || state.services.proxy) {
@@ -586,6 +591,12 @@ export function useConfigWizard() {
             if (state.addressing.ipv4.gateway) {
               params.push(state.addressing.ipv4.gateway);
             }
+            if (state.addressing.ipv4.method === 'static' && state.addressing.ipv4.address) {
+              if (!state.addressing.ipv4.gateway) {
+                params.push(''); // placeholder for gateway (auto-detect)
+              }
+              params.push(state.addressing.ipv4.address);
+            }
             const testResult = await executeCommand(client, 'connectivity-test', params);
             if (testResult.stdout) {
               connectivityResult = parseConnectivityResult(testResult.stdout);
@@ -736,6 +747,13 @@ export function useConfigWizard() {
                 const params: string[] = [state.networkInterface.interfaceName];
                 if (state.addressing.ipv4.gateway) {
                   params.push(state.addressing.ipv4.gateway);
+                }
+                if (state.addressing.ipv4.method === 'static' && state.addressing.ipv4.address) {
+                  // Pass expected IP so the test verifies the configured address is assigned
+                  if (!state.addressing.ipv4.gateway) {
+                    params.push(''); // placeholder for gateway (auto-detect)
+                  }
+                  params.push(state.addressing.ipv4.address);
                 }
                 const testResult = await executeCommand(client, 'connectivity-test', params);
                 if (testResult.stdout) {

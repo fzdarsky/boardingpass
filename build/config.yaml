@@ -2,8 +2,8 @@
 # Install to: /etc/boardingpass/config.yaml
 
 service:
-  inactivity_timeout: "10m"      # Max idle time before service self-terminates (Go duration: "5m", "1h")
-  session_ttl: "30m"             # Authenticated session lifetime (min: 5m)
+  inactivity_timeout: "60m"      # Max idle time before service self-terminates (Go duration: "5m", "1h")
+  session_ttl: "60m"             # Authenticated session lifetime (min: 5m)
   sentinel_file: "/etc/boardingpass/issued"  # Created on provisioning completion; prevents service restart
   port: 9455                     # HTTPS listen port (shared by all transports)
   tls_cert: "/var/lib/boardingpass/tls/server.crt"  # Path to TLS certificate (auto-generated if missing)
@@ -122,12 +122,12 @@ commands:
   - id: "reload-connection"
     path: "/usr/lib/boardingpass/scripts/reload-connection.sh"
     args: []
-    max_params: 1
+    max_params: 2
 
   - id: "connectivity-test"
     path: "/usr/lib/boardingpass/scripts/connectivity-test.sh"
     args: []
-    max_params: 2
+    max_params: 3
 
   - id: "enroll-insights"
     path: "/usr/lib/boardingpass/scripts/enroll-insights.sh"
