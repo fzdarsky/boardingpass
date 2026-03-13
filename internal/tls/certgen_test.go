@@ -170,6 +170,84 @@ func TestValidateCertificate_InvalidPEM(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to decode PEM block")
 }
 
+func TestRegenerateCert(t *testing.T) {
+	tmpDir := t.TempDir()
+	certPath := filepath.Join(tmpDir, "server.crt")
+	keyPath := filepath.Join(tmpDir, "server.key")
+
+	// Generate initial cert+key
+	err := tlspkg.GenerateSelfSignedCert(certPath, keyPath, 365)
+	require.NoError(t, err)
+
+	// Read original key
+	origKey, err := os.ReadFile(keyPath)
+	require.NoError(t, err)
+
+	// Read original cert
+	origCert, err := os.ReadFile(certPath)
+	require.NoError(t, err)
+
+	// Regenerate cert (reuses existing key)
+	err = tlspkg.RegenerateCert(certPath, keyPath, 365)
+	require.NoError(t, err)
+
+	// Key file should be unchanged
+	newKey, err := os.ReadFile(keyPath)
+	require.NoError(t, err)
+	assert.Equal(t, origKey, newKey, "private key should not change during regeneration")
+
+	// Cert file should be different (new serial number at minimum)
+	newCert, err := os.ReadFile(certPath)
+	require.NoError(t, err)
+	assert.NotEqual(t, origCert, newCert, "certificate should change during regeneration")
+
+	// New cert should be valid and parseable
+	block, _ := pem.Decode(newCert)
+	require.NotNil(t, block)
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	require.NoError(t, err)
+	assert.Contains(t, cert.DNSNames, "localhost")
+	assert.Contains(t, cert.Subject.Organization, "BoardingPass")
+}
+
+func TestRegenerateCert_PreservesPublicKey(t *testing.T) {
+	tmpDir := t.TempDir()
+	certPath := filepath.Join(tmpDir, "server.crt")
+	keyPath := filepath.Join(tmpDir, "server.key")
+
+	err := tlspkg.GenerateSelfSignedCert(certPath, keyPath, 365)
+	require.NoError(t, err)
+
+	// Parse original cert's public key
+	origPEM, _ := os.ReadFile(certPath)
+	origBlock, _ := pem.Decode(origPEM)
+	origCert, _ := x509.ParseCertificate(origBlock.Bytes)
+	origPubKey := origCert.PublicKey
+
+	// Regenerate
+	err = tlspkg.RegenerateCert(certPath, keyPath, 365)
+	require.NoError(t, err)
+
+	// Parse regenerated cert's public key
+	newPEM, _ := os.ReadFile(certPath)
+	newBlock, _ := pem.Decode(newPEM)
+	newCert, _ := x509.ParseCertificate(newBlock.Bytes)
+	newPubKey := newCert.PublicKey
+
+	assert.Equal(t, origPubKey, newPubKey, "public key (SPKI) should be preserved")
+}
+
+func TestRegenerateCert_MissingKeyFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	certPath := filepath.Join(tmpDir, "server.crt")
+	keyPath := filepath.Join(tmpDir, "server.key")
+
+	err := tlspkg.RegenerateCert(certPath, keyPath, 365)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to load existing private key")
+}
+
 func TestGenerateSelfSignedCert_CustomValidDays(t *testing.T) {
 	tmpDir := t.TempDir()
 	certPath := filepath.Join(tmpDir, "server.crt")

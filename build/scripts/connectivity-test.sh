@@ -1,18 +1,20 @@
 #!/bin/bash
 # connectivity-test.sh - Test network connectivity and output JSON results
-# Usage: connectivity-test.sh -- <interface> [gateway]
+# Usage: connectivity-test.sh -- <interface> [gateway] [expected-ip]
 # If gateway is omitted, the default gateway from the routing table is used.
+# If expected-ip is provided, verifies that specific IP is assigned (not just any IP).
 # Called by BoardingPass via the command allow-list.
 set -euo pipefail
 [ "${1:-}" = "--" ] && shift
 
 if [ $# -lt 1 ]; then
-    echo "Usage: connectivity-test.sh <interface> [gateway]" >&2
+    echo "Usage: connectivity-test.sh <interface> [gateway] [expected-ip]" >&2
     exit 1
 fi
 
 IFACE="$1"
 GATEWAY="${2:-}"
+EXPECTED_IP="${3:-}"
 
 # Validate interface name
 if ! [[ "$IFACE" =~ ^[a-zA-Z0-9._-]+$ ]]; then
@@ -37,16 +39,28 @@ if [ -n "$GATEWAY" ] && ! [[ "$GATEWAY" =~ ^[0-9a-fA-F.:]+$ ]]; then
     exit 1
 fi
 
+# Validate expected IP if provided (IPv4 or IPv6)
+if [ -n "$EXPECTED_IP" ] && ! [[ "$EXPECTED_IP" =~ ^[0-9a-fA-F.:]+$ ]]; then
+    echo "Error: invalid expected IP address '$EXPECTED_IP'" >&2
+    exit 1
+fi
+
 # 1. Check link/carrier (is a cable plugged in?)
 LINK_UP=false
 if [ "$(cat /sys/class/net/"$IFACE"/carrier 2>/dev/null || echo 0)" = "1" ]; then
     LINK_UP=true
 fi
 
-# 2. Check interface has an IP address
+# 2. Check interface has the expected IP address (or any IP if not specified)
 IP_ASSIGNED=false
-if ip -j addr show "$IFACE" 2>/dev/null | grep -q '"local"'; then
-    IP_ASSIGNED=true
+if [ -n "$EXPECTED_IP" ]; then
+    if ip -j addr show "$IFACE" 2>/dev/null | grep -q "\"local\":\"$EXPECTED_IP\""; then
+        IP_ASSIGNED=true
+    fi
+else
+    if ip -j addr show "$IFACE" 2>/dev/null | grep -q '"local"'; then
+        IP_ASSIGNED=true
+    fi
 fi
 
 # 3. Ping gateway via the provisioning interface (skip if no gateway found)

@@ -56,6 +56,8 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
   const cleanupFunctions = useRef<(() => void)[]>([]);
   const discoveryTimeout = useRef<NodeJS.Timeout | null>(null);
   const probeInterval = useRef<NodeJS.Timeout | null>(null);
+  const isScanningRef = useRef(isScanning);
+  isScanningRef.current = isScanning;
   const devicesRef = useRef(devices);
   devicesRef.current = devices;
 
@@ -133,14 +135,19 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
     const scanner = getSubnetScannerService();
     const cleanup = scanner.onDeviceFound(addOrUpdateDevice);
     cleanupFunctions.current.push(cleanup);
-    scanner.start();
+    scanner.start().finally(() => {
+      // Only clear scanning state when running as standalone fallback (no mDNS timeout active)
+      if (!discoveryTimeout.current) {
+        setIsScanning(false);
+      }
+    });
   }, [addOrUpdateDevice]);
 
   /**
    * Start device discovery
    */
   const startDiscovery = useCallback(() => {
-    if (isScanning) {
+    if (isScanningRef.current) {
       // eslint-disable-next-line no-console
       console.log('Discovery already in progress');
       return;
@@ -155,21 +162,12 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       const cleanupResolved = mdnsService.current.onDeviceResolved(addOrUpdateDevice);
       const cleanupRemoved = mdnsService.current.onDeviceRemoved(removeDevice);
       const cleanupError = mdnsService.current.onError(err => {
-        // Clear the discovery timeout since we're handling the error now
-        if (discoveryTimeout.current) {
-          clearTimeout(discoveryTimeout.current);
-          discoveryTimeout.current = null;
-        }
-
-        // On iOS, mDNS may be unavailable on simulator or without multicast entitlement
+        // On iOS, mDNS may be unavailable on simulator or without multicast entitlement.
+        // The subnet scan is already running (started below), so just record the reason.
         if (Platform.OS === 'ios') {
-          // Determine reason: simulator vs missing entitlement (paid developer account)
           const reason: MDNSUnavailableReason = ExpoDevice.isDevice ? 'entitlement' : 'simulator';
           setMdnsUnavailableReason(reason);
           setError(null);
-          setIsScanning(false);
-          // Scan subnet since mDNS failed
-          startSubnetScan();
           return;
         }
 
@@ -183,7 +181,6 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
 
         setError(appError);
         setErrorCount(prev => prev + 1);
-        setIsScanning(false);
       });
 
       cleanupFunctions.current.push(cleanupFound, cleanupResolved, cleanupRemoved, cleanupError);
@@ -206,8 +203,7 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
         const reason: MDNSUnavailableReason = ExpoDevice.isDevice ? 'entitlement' : 'simulator';
         setMdnsUnavailableReason(reason);
         setError(null);
-        setIsScanning(false);
-        // Still scan subnet
+        // Still scan subnet (scan completion will clear isScanning)
         startSubnetScan();
         return;
       }
@@ -222,16 +218,12 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
       setErrorCount(prev => prev + 1);
       setIsScanning(false);
     }
-  }, [isScanning, addOrUpdateDevice, removeDevice, startSubnetScan]);
+  }, [addOrUpdateDevice, removeDevice, startSubnetScan]);
 
   /**
    * Stop device discovery
    */
   const stopDiscovery = useCallback(() => {
-    if (!isScanning) {
-      return;
-    }
-
     // Stop mDNS scan
     mdnsService.current.stop();
 
@@ -251,7 +243,7 @@ export function useDeviceDiscovery(): UseDeviceDiscoveryResult {
     setIsScanning(false);
     // eslint-disable-next-line no-console
     console.log('Discovery stopped');
-  }, [isScanning]);
+  }, []);
 
   /**
    * Refresh devices (re-scan)

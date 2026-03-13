@@ -25,6 +25,9 @@ const BATCH_SIZE = 20;
 /** Delay between batches (ms) to avoid overwhelming the network */
 const BATCH_DELAY = 100;
 
+/** Delay before auto-retry when no devices found (ms) */
+const RETRY_DELAY = 3000;
+
 export type ScanDeviceCallback = (device: Device) => void;
 export type ScanProgressCallback = (scanned: number, total: number) => void;
 
@@ -40,6 +43,7 @@ export class SubnetScannerService {
   private progressCallbacks: ScanProgressCallback[] = [];
   private running = false;
   private abortController: AbortController | null = null;
+  private foundCount = 0;
 
   /**
    * Start a subnet scan. Determines subnets from current network state.
@@ -50,18 +54,18 @@ export class SubnetScannerService {
     this.abortController = new AbortController();
 
     try {
-      const subnets = await this.getSubnetsToScan();
+      this.foundCount = 0;
+      await this.scanAllSubnets();
 
-      if (subnets.length === 0) {
-        // eslint-disable-next-line no-console
-        console.log('[Scanner] No scannable subnets found');
-        return;
-      }
-
-      for (const subnet of subnets) {
-        if (this.abortController.signal.aborted) break;
-        const hosts = this.generateHosts(subnet);
-        await this.scanHosts(hosts, DEFAULT_BOARDINGPASS_PORT);
+      // If nothing found, wait and retry once — covers the race where a
+      // USB tethering listener isn't ready yet on the service side.
+      if (this.foundCount === 0 && !this.abortController.signal.aborted) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        if (!this.abortController.signal.aborted) {
+          // eslint-disable-next-line no-console
+          console.log('[Scanner] No devices found, retrying...');
+          await this.scanAllSubnets();
+        }
       }
     } catch (error) {
       if (!this.abortController?.signal.aborted) {
@@ -108,11 +112,30 @@ export class SubnetScannerService {
   }
 
   /**
+   * Run a single pass over all scannable subnets.
+   */
+  private async scanAllSubnets(): Promise<void> {
+    const subnets = await this.getSubnetsToScan();
+
+    if (subnets.length === 0) {
+      // eslint-disable-next-line no-console
+      console.log('[Scanner] No scannable subnets found');
+      return;
+    }
+
+    for (const subnet of subnets) {
+      if (this.abortController?.signal.aborted) break;
+      const hosts = this.generateHosts(subnet);
+      await this.scanHosts(hosts, DEFAULT_BOARDINGPASS_PORT);
+    }
+  }
+
+  /**
    * Determine which subnets to scan based on current network state.
    *
-   * - USB tethering (non-WiFi/non-cellular): scan well-known tethering subnets
-   * - WiFi with routable IP: scan the /24 around the phone's IP
-   * - Link-local (169.254.x.x) or no IP: no scan (user must add manually)
+   * Always includes platform-specific tethering subnets (iOS: 172.20.10.0/28,
+   * just 14 hosts) since USB tethering can be active alongside WiFi but
+   * NetInfo only reports the primary connection.
    */
   public async getSubnetsToScan(): Promise<SubnetRange[]> {
     let state: NetInfoState;
@@ -124,21 +147,24 @@ export class SubnetScannerService {
 
     if (!state.isConnected) return [];
 
-    // Non-WiFi, non-cellular connection → likely USB tethering
-    if (state.type !== 'wifi' && state.type !== 'cellular') {
-      return this.getTetheringSubnets();
-    }
+    // Scan tethering subnets first — they're small (iOS: 14 hosts) and
+    // most likely to contain a BoardingPass device on a direct connection
+    const subnets: SubnetRange[] = [...this.getTetheringSubnets()];
 
-    // WiFi connected — derive /24 from phone's IP
+    // WiFi connected — also scan the /24 around the phone's IP
     if (state.type === 'wifi') {
       const details = state.details as { ipAddress?: string } | null;
       const ip = details?.ipAddress;
       if (ip && !ip.startsWith('169.254.')) {
-        return [this.subnetFromIP(ip)];
+        const wifiSubnet = this.subnetFromIP(ip);
+        const isDuplicate = subnets.some(s => s.network === wifiSubnet.network);
+        if (!isDuplicate) {
+          subnets.push(wifiSubnet);
+        }
       }
     }
 
-    return [];
+    return subnets;
   }
 
   /**
@@ -209,6 +235,7 @@ export class SubnetScannerService {
             lastSeen: new Date(),
           };
 
+          this.foundCount++;
           for (const cb of this.deviceCallbacks) {
             cb(device);
           }
